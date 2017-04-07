@@ -144,6 +144,7 @@ void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, C
             { "get_tx_key"       , makeMemberMethod(&wallet_rpc_server::on_get_tx_key)        },
             { "sign_message"     , makeMemberMethod(&wallet_rpc_server::on_sign_message)      },
             { "verify_message"   , makeMemberMethod(&wallet_rpc_server::on_verify_message)    },
+            { "change_password"  , makeMemberMethod(&wallet_rpc_server::on_change_password)   },
 		};
 
 		auto it = s_methods.find(jsonRequest.getMethod());
@@ -537,6 +538,21 @@ bool wallet_rpc_server::on_verify_message(const wallet_rpc::COMMAND_RPC_VERIFY_M
 	}
     res.good = m_wallet.verify_message(req.message, address, req.signature);
     return true;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------
+bool wallet_rpc_server::on_change_password(const wallet_rpc::COMMAND_RPC_CHANGE_PASSWORD::request& req, wallet_rpc::COMMAND_RPC_CHANGE_PASSWORD::response& res)
+{
+	std::error_code ec = m_wallet.changePassword(req.old_password, req.new_password);
+	if (!ec)
+	{
+		res.password_changed = true; // Success.
+	}
+	else
+	{
+		res.password_changed = false; // Failure.
+	}
+	return true;
 }
 
 } //Tools

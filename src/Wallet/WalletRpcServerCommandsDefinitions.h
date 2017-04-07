@@ -376,4 +376,29 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	struct COMMAND_RPC_CHANGE_PASSWORD
+	{
+		struct request
+		{
+			std::string old_password;
+			std::string new_password;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(old_password);
+				KV_MEMBER(new_password);
+			}
+		};
+
+		struct response
+		{
+			bool password_changed;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(password_changed);
+			}
+		};
+	};
+
 }} //Tools::wallet_rpc
