@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers, The Karbowanec developers
 // Copyright (c) 2016, The Karbowanec developers
 //
 // This file is part of Bytecoin.
@@ -1320,7 +1320,15 @@ bool Blockchain::getRandomOutsByAmount(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_
     if (up_index_limit > 0) {
       ShuffleGenerator<size_t, Crypto::random_engine<size_t>> generator(up_index_limit);
       for (uint64_t j = 0; j < up_index_limit && result_outs.outs.size() < req.outs_count; ++j) {
-        add_out_to_get_random_outs(amount_outs, result_outs, amount, generator());
+        // triangular distribution over [a,b) with a=0, mode c=b=up_index_limit
+        uint64_t r = Crypto::rand<uint64_t>() % ((uint64_t)1 << 53);
+        double frac = std::sqrt((double)r / ((uint64_t)1 << 53));
+        size_t i = (size_t)(frac*up_index_limit);
+        // just in case rounding up to 1 occurs after sqrt
+        if (i == up_index_limit)
+          --i;
+
+        add_out_to_get_random_outs(amount_outs, result_outs, amount, i);
       }
     }
   }
