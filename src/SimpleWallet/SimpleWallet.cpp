@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers, The ElyaCoin developers
 // Copyright (c) 2014-2016, XDN developers
 // Copyright (c) 2014-2017, The Forknote developers
 // Copyright (c) 2016-2018, Karbo developers
+// Copyright (c) 2018, ElyaCoin developers
 //
 // All rights reserved.
 // 
@@ -519,8 +520,8 @@ bool processServerAliasResponse(const std::string& s, std::string& address) {
 	try {
 
 		// Courtesy of Monero Project
-		// make sure the txt record has "oa1:krb" and find it
-		auto pos = s.find("oa1:krb");
+		// make sure the txt record has "oa1:elya" and find it
+		auto pos = s.find("oa1:elya");
 		if (pos == std::string::npos)
 			return false;
 		// search from there to find "recipient_address="

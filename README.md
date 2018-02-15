@@ -1,6 +1,5 @@
-The Karbo (Karbovanets) is cryptocurrency of Ukrainian origin, just like Bitcoin but more anonymous and privacy centric with opaque and more analysis resistant blockchain. It is people's electronic cash, not connected to government or officials.
 
-## Building Karbo 
+## Building Elyacoin 
 
 ### On *nix
 
@@ -62,7 +61,7 @@ export PATH=/opt/android/tool32/arm-linux-androideabi/bin:/opt/android/tool32/bi
 ./b2 abi=aapcs architecture=arm binary-format=elf address-model=32 link=static runtime-link=static --with-chrono --with-date_time --with-filesystem --with-program_options --with-regex --with-serialization --with-system --with-thread --with-context --with-coroutine --with-atomic --build-dir=android32 --stagedir=android32 toolset=clang threading=multi threadapi=pthread target-os=android --reconfigure stage
 ```
 
-Build Karbo for 32 bit Android
+Build Elya for 32 bit Android
 ```
 mkdir -p build/release.android32
 cd build/release.android32
