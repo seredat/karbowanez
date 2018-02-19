@@ -44,7 +44,7 @@ const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V2  = 1000000;
 const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_V1  = 100000;
 const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
 const size_t   CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE        = 600;
-const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 12;
+const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 10;
 const uint64_t MINIMUM_FEE                                   = UINT64_C(100000000);
 const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(100000000);
 
@@ -89,7 +89,7 @@ const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json"
 } // parameters
 
 const char     CRYPTONOTE_NAME[]                             = "elyacoin";
-const char     GENESIS_COINBASE_TX_HEX[]		     	= "010a01ff000101029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101bb272d466672554ab3c95fb8ba7f0e5b798d10911dc29f96f8f7f26175579f6f";
+const char     GENESIS_COINBASE_TX_HEX[]		     	= "010a01ff0001fac484c69cd608029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101a7c135e15f1506791655e56db1c88b7c9aa41b803aea077664df1248d4873f98";
 
 
 const uint8_t  CURRENT_TRANSACTION_VERSION                   =  1;

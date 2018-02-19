@@ -149,6 +149,7 @@ namespace CryptoNote {
 
 
 
+		/*
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
 			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
@@ -163,6 +164,7 @@ namespace CryptoNote {
 		if (alreadyGeneratedCoins + baseReward >= m_moneySupply) {
 			baseReward = 0;
 		}
+		*/
 
 
 
