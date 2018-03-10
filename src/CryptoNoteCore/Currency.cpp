@@ -147,6 +147,8 @@ namespace CryptoNote {
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 
 
+		logger(INFO) << "generated " << (alreadyGeneratedCoins / (m_moneySupply / 100)) << " percent";
+		
 
 
 		/*
