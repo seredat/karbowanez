@@ -147,28 +147,6 @@ namespace CryptoNote {
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 
 
-		logger(INFO) << "generated " << (alreadyGeneratedCoins / (m_moneySupply / 100)) << " percent";
-		
-
-
-		/*
-		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
-		{
-			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
-		}
-
-		if (alreadyGeneratedCoins == 0) {
-			baseReward = 1;
-		}
-		if (alreadyGeneratedCoins == 1) {
-			baseReward =m_moneySupply*0.10;
-		}
-		if (alreadyGeneratedCoins + baseReward >= m_moneySupply) {
-			baseReward = 0;
-		}
-		*/
-
-
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
