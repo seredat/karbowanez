@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016 XDN developers
-// Copyright (c) 2016 Karbowanec developers
+// Copyright (c) 2016-2018 Karbowanec developers
 //
 // This file is part of Bytecoin.
 //
@@ -88,7 +88,7 @@ void HttpServer::stop() {
 
 void HttpServer::acceptLoop() {
   try {
-    System::TcpConnection connection;
+    System::TcpConnection connection; 
     bool accepted = false;
 
     while (!accepted) {
@@ -106,7 +106,13 @@ void HttpServer::acceptLoop() {
     BOOST_SCOPE_EXIT_ALL(this, &connection) { 
       m_connections.erase(&connection); };
 
-    auto addr = connection.getPeerAddressAndPort();
+	//auto addr = connection.getPeerAddressAndPort();
+	auto addr = std::pair<System::Ipv4Address, uint16_t>(static_cast<System::Ipv4Address>(0), 0);
+	try {
+		addr = connection.getPeerAddressAndPort();
+	} catch (std::runtime_error&) {
+		logger(WARNING) << "Could not get IP of connection";
+	}
 
     logger(DEBUGGING) << "Incoming connection from " << addr.first.toDottedDecimal() << ":" << addr.second;
 

@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright(c) 2014 - 2017 XDN - project developers
+// Copyright(c) 2018 The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -38,12 +40,16 @@ Configuration::Configuration() {
   logLevel = Logging::INFO;
   bindAddress = "";
   bindPort = 0;
+  m_rpcUser = "";
+  m_rpcPassword = "";
 }
 
 void Configuration::initOptions(boost::program_options::options_description& desc) {
   desc.add_options()
-      ("bind-address", po::value<std::string>()->default_value("0.0.0.0"), "payment service bind address")
+      ("bind-address", po::value<std::string>()->default_value("127.0.0.1"), "payment service bind address")
       ("bind-port", po::value<uint16_t>()->default_value(8070), "payment service bind port")
+      ("rpc-user", po::value<std::string>(), "Username to use with the RPC server. If empty, no server authorization will be done")
+      ("rpc-password", po::value<std::string>(), "Password to use with the RPC server. If empty, no server authorization will be done")
       ("container-file,w", po::value<std::string>(), "container file")
       ("container-password,p", po::value<std::string>(), "container password")
       ("generate-container,g", "generate new container file with one wallet and exit")
@@ -101,6 +107,14 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("bind-port") != 0 && (!options["bind-port"].defaulted() || bindPort == 0)) {
     bindPort = options["bind-port"].as<uint16_t>();
+  }
+
+  if (options.count("rpc-user") != 0) {
+    m_rpcUser = options["rpc-user"].as<std::string>();
+  }
+
+  if (options.count("rpc-password") != 0) {
+    m_rpcPassword = options["rpc-password"].as<std::string>();
   }
 
   if (options.count("container-file") != 0) {
