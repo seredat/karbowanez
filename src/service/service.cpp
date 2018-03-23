@@ -27,17 +27,39 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
+#include <iostream>
+#include <boost/filesystem.hpp>
+#include <string>
 
 #include "service/service.h"
 #include "service/posix_fork.h"
 
 namespace Service {
 
-  bool run(){
-    posix::fork("/tmp/node.pid");
-    return true;
-  }
+service::service(std::string srv_name){
+  boost::filesystem::path temp = boost::filesystem::temp_directory_path();
+  this->status = false;
+  this->pidfile = temp.native() + "/" + srv_name + ".pid";
+}
+
+service::~service(){
+}
+
+void service::setPid(std::string pidfile){
+  this->pidfile = pidfile;
+}
+
+void service::run(){
+  std::cout << "Process forking..." << std::endl;
+  posix::fork(this->pidfile);
+}
+
+void service::kill(){
+}
+
+bool service::getStatus(){
+  return true;
+}
 
 }

@@ -39,16 +39,7 @@ void fork(const std::string &pidfile){
       pidofs.close();
       exit(0);
       } else {
-      std::cout << "First fork failed" << std::endl;
-    }
-  }
-  setsid();
-  if (pid_t pid = ::fork()){
-    if (pid > 0){
-      pidofs.close();
-      exit(0);
-      } else {
-      std::cout << "Second fork failed" << std::endl;
+      std::cout << "Fork failed" << std::endl;
     }
   }
   if (!pidofs.fail()){
@@ -58,7 +49,6 @@ void fork(const std::string &pidfile){
   }
   close(0);
   close(1);
-  close(2);
   if (open("/dev/null", O_RDONLY) < 0){
     std::cout << "Unable to open /dev/null" << std::endl;
   }

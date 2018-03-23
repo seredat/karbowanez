@@ -48,6 +48,7 @@
 using Common::JsonValue;
 using namespace CryptoNote;
 using namespace Logging;
+using namespace Service;
 
 namespace po = boost::program_options;
 
@@ -58,6 +59,7 @@ namespace
   const command_line::arg_descriptor<std::string> arg_log_file    = {"log-file", "", ""};
   const command_line::arg_descriptor<int>         arg_log_level   = {"log-level", "", 2}; // info level
   const command_line::arg_descriptor<bool>        arg_as_service  = {"as-service", "Starting daemon as service", false};
+  const command_line::arg_descriptor<bool>        arg_kill        = {"kill", "Kill service", false};
   const command_line::arg_descriptor<std::string> arg_pid_file    = {"pid-file", "Specify pid file", ""};
   const command_line::arg_descriptor<bool>        arg_console     = {"no-console", "Disable daemon console commands"};
   const command_line::arg_descriptor<bool>        arg_restricted_rpc = {"restricted-rpc", "Restrict RPC to view only commands to prevent abuse"};
@@ -123,6 +125,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_log_file);
     command_line::add_arg(desc_cmd_sett, arg_log_level);
     command_line::add_arg(desc_cmd_sett, arg_as_service);
+    command_line::add_arg(desc_cmd_sett, arg_kill);
     command_line::add_arg(desc_cmd_sett, arg_pid_file);
     command_line::add_arg(desc_cmd_sett, arg_console);
     command_line::add_arg(desc_cmd_sett, arg_restricted_rpc);
@@ -175,16 +178,25 @@ int main(int argc, char* argv[])
 
     if (!r)
       return 1;
-    
-    if (command_line::get_arg(vm, arg_as_service)){
-      std::cout << "Process is forking..." << std::endl;
-      Service::run();
+
+    service srv = service("daemon");
+    auto cfgPidFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_pid_file));
+    if (!cfgPidFile.empty()){
+      if (Common::HasParentPath(cfgPidFile)){
+        srv.setPid(cfgPidFile);
+      }
     }
-  
+    if (command_line::get_arg(vm, arg_as_service)){
+      srv.run();
+    }
+    if (command_line::get_arg(vm, arg_kill)){
+      srv.kill();
+    }
+
     auto modulePath = Common::NativePathToGeneric(argv[0]);
     auto cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));
 
-    if (cfgLogFile.empty()) {
+    if (cfgLogFile.empty()){
       cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
     } else {
       if (!Common::HasParentPath(cfgLogFile)) {

@@ -27,7 +27,24 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#pragma once
+#include <string>
+
 namespace Service {
+
+class service {
+  public:
+    service(std::string srv_name);
+    ~service();
+    void setPid(std::string pidfile);
+    void run();
+    void kill();
+    bool getStatus();
+  private:
+    bool status;
+    std::string srv_name;
+    std::string pidfile;
+};
 
 bool run();
 

@@ -77,6 +77,8 @@
 #include "Wallet/LegacyKeysImporter.h"
 #include "WalletLegacy/WalletHelper.h"
 
+#include "service/service.h"
+
 #include "version.h"
 #include "mnemonics/electrum-words.h"
 
@@ -100,6 +102,7 @@
 using namespace CryptoNote;
 using namespace Logging;
 using Common::JsonValue;
+using namespace Service;
 
 namespace po = boost::program_options;
 
@@ -120,6 +123,9 @@ const command_line::arg_descriptor<bool> arg_non_deterministic = { "non-determin
 const command_line::arg_descriptor<uint16_t> arg_daemon_port = { "daemon-port", "Use daemon instance at port <arg> instead of 32348", 0 };
 const command_line::arg_descriptor<std::string> arg_log_file = {"log-file", "Set the log file location", ""};
 const command_line::arg_descriptor<uint32_t> arg_log_level = { "log-level", "Set the log verbosity level", INFO, true };
+const command_line::arg_descriptor<bool>        arg_as_service  = {"as-service", "Starting as service", false};
+const command_line::arg_descriptor<bool>        arg_kill        = {"kill", "Kill service", false};
+const command_line::arg_descriptor<std::string> arg_pid_file    = {"pid-file", "Specify pid file", ""};
 const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to deploy test nets. The daemon must be launched with --testnet flag", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
 
@@ -2089,6 +2095,9 @@ int main(int argc, char* argv[]) {
   command_line::add_arg(desc_params, arg_command);
   command_line::add_arg(desc_params, arg_log_file);
   command_line::add_arg(desc_params, arg_log_level);
+  command_line::add_arg(desc_params, arg_as_service);
+  command_line::add_arg(desc_params, arg_kill);
+  command_line::add_arg(desc_params, arg_pid_file);
   command_line::add_arg(desc_params, arg_testnet);
   Tools::wallet_rpc_server::init_options(desc_params);
 
@@ -2238,6 +2247,20 @@ int main(int argc, char* argv[]) {
     Tools::SignalHandler::install([&wrpc, &wallet] {
       wrpc.send_stop_signal();
     });
+    
+    service srv = service("simplewallet");
+    auto cfgPidFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_pid_file));
+    if (!cfgPidFile.empty()){
+      if (Common::HasParentPath(cfgPidFile)){
+        srv.setPid(cfgPidFile);
+      }
+    }
+    if (command_line::get_arg(vm, arg_as_service)){
+      srv.run();
+    }
+    if (command_line::get_arg(vm, arg_kill)){
+      srv.kill();
+    }
 
     logger(INFO) << "Starting wallet rpc server";
     wrpc.run();
