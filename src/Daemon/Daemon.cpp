@@ -147,6 +147,23 @@ int main(int argc, char* argv[])
     bool r = command_line::handle_error_helper(desc_options, [&]()
     {
       po::store(po::parse_command_line(argc, argv, desc_options), vm);
+      
+      service srv = service("daemon");
+      auto cfgPidFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_pid_file));
+      if (!cfgPidFile.empty()){
+        if (Common::HasParentPath(cfgPidFile)){
+          srv.setPid(cfgPidFile);
+        }
+      }
+      if (command_line::get_arg(vm, arg_as_service)){
+        srv.run();
+          if (srv.getStatus()){
+          exit(0);
+        }
+      }
+      if (command_line::get_arg(vm, arg_kill)){
+        srv.stop();
+      }
 
       if (command_line::get_arg(vm, command_line::arg_help))
       {
@@ -178,20 +195,6 @@ int main(int argc, char* argv[])
 
     if (!r)
       return 1;
-
-    service srv = service("daemon");
-    auto cfgPidFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_pid_file));
-    if (!cfgPidFile.empty()){
-      if (Common::HasParentPath(cfgPidFile)){
-        srv.setPid(cfgPidFile);
-      }
-    }
-    if (command_line::get_arg(vm, arg_as_service)){
-      srv.run();
-    }
-    if (command_line::get_arg(vm, arg_kill)){
-      srv.kill();
-    }
 
     auto modulePath = Common::NativePathToGeneric(argv[0]);
     auto cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));

@@ -27,8 +27,14 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef SERVICE_H
+#define SERVICE_H
+
 #pragma once
 #include <string>
+
+#define SRV_SIZE 64
+#define PIDFILE_SIZE 128
 
 namespace Service {
 
@@ -38,14 +44,17 @@ class service {
     ~service();
     void setPid(std::string pidfile);
     void run();
-    void kill();
+    void stop();
     bool getStatus();
   private:
+    bool createPID(int pid);
+    int readPID();
+    bool deletePID();
     bool status;
-    std::string srv_name;
-    std::string pidfile;
+    char srv_name[SRV_SIZE];
+    char pidfile[PIDFILE_SIZE];
 };
 
-bool run();
-
 }
+
+#endif
