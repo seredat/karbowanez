@@ -519,13 +519,13 @@ namespace CryptoNote {
 	difficulty_type Currency::nextDifficultyV3(std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 
-		// WHM difficulty algorithm by Zawy
-		// https://github.com/zawy12/difficulty-algorithms/issues/3
-		// Linearly - weighted moving average of the solvetimes.
-		// This is an improved version of Tom Harding's (Deger8) "WT-144".
-		// This is a basic average that gives more weight to the most recent blocks so it estimates
-		// *current* difficulty by taking a kind of "slope" into account. A simple average is just
-		// an estimate of the correct difficulty as it was N / 2 blocks in the past.
+		// LWMA difficulty algorithm
+		// Copyright (c) 2017-2018 Zawy
+		// MIT license http://www.opensource.org/licenses/mit-license.php.
+		// This is an improved version of Tom Harding's (Deger8) "WT-144"  
+		// Karbowanec, Masari, Bitcoin Gold, and Bitcoin Cash have contributed.
+		// See https://github.com/zawy12/difficulty-algorithms/issues/1 for other algos.
+		// Do not use "if solvetime < 0 then solvetime = 1" which allows a catastrophic exploit.
 
 		int64_t T = static_cast<int64_t>(m_difficultyTarget);
 		size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V3;
@@ -534,44 +534,38 @@ namespace CryptoNote {
 			timestamps.resize(N);
 			cumulativeDifficulties.resize(N);
 		}
-		size_t length = timestamps.size();
-		assert(length == cumulativeDifficulties.size());
-		assert(length <= N);
-		if (length <= 1)
+		size_t n = timestamps.size();
+		assert(n == cumulativeDifficulties.size());
+		assert(n < N);
+		if (n <= 1)
 			return 1;
 
-		// To get a more accurate solvetime to within + / -~0.2%, use an adjustment factor.
-		const double_t adjust = pow(0.9989, 500 / N);
-		const uint64_t k = static_cast<uint64_t>((N + 1) / 2 * adjust * T);
+		// To get an average solvetime to within +/- ~0.1%, use an adjustment factor.
+		const double_t adjust = 0.998;
+		// The divisor k normalizes it to an LWMA average.
+		const double_t k = n * (n + 1) / 2;
 
-		int64_t t = 0, j = 0; // weighted solve times
+		double_t LWMA(0);
 		int64_t solveTime(0);
+		uint64_t diff(0), harmonicMeanDiff(0), nextDiff(0);
 
-		for (int64_t i = 1; i <= length; i++) { // off-by-one if not <= instead of <
-			solveTime = static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i - 1]);		
-			//solveTime = std::min<int64_t>((T * 6), std::max<int64_t>(solveTime, (-5 * T)));
-			t += solveTime * i;
+		// Loop through N most recent blocks.
+		for (int64_t i = 1; i < n; i++) { // off-by-one because we have to calculate diff. acutal N is then N - 1
+			solveTime = static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i - 1]);
+			solveTime = std::min<int64_t>((T * 7), std::max<int64_t>(solveTime, (-6 * T)));
+			LWMA += solveTime * i / k;
+			diff = cumulativeDifficulties[i] - cumulativeDifficulties[i - 1];
+			harmonicMeanDiff += diff / (n - 1);
 		}
 
-		// Keep t reasonable in case strange solvetimes occurred in an unforeseeable way.
-		if (t < N * (N + 1) / 2 * T / 4)
-			t = N * (N + 1) / 2 * T / 4;
+		// Keep LWMA reasonable in case a coin does not have appropriate limits on
+		// old timestamps (like bitcoin's MTP) which could cause LWMA to go negative.
+		if (LWMA < T / 4)
+			LWMA = T / 4;
 
-		difficulty_type totalWork = cumulativeDifficulties.back() - cumulativeDifficulties.front();
-		difficulty_type previousDifficulty = cumulativeDifficulties.back() - cumulativeDifficulties.end()[-2];
-		assert(totalWork > 0);
+		nextDiff = static_cast<uint64_t>(harmonicMeanDiff * T / LWMA * adjust);
 
-		uint64_t low, high, nextDifficulty;
-		low = mul128(totalWork, k, &high);
-		if (high != 0)
-			return 0;
-
-		nextDifficulty = low / t;
-
-		// A symmetric 15 % limit on how fast it rises or falls
-		nextDifficulty = static_cast<uint64_t>(std::max<uint64_t>(previousDifficulty * 0.85, std::min<uint64_t>(nextDifficulty, previousDifficulty / 0.85)));
-
-		return nextDifficulty;
+		return nextDiff;
 	}
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
