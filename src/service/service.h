@@ -35,6 +35,7 @@
 
 #define SRV_SIZE 64
 #define PIDFILE_SIZE 128
+#define KILLWAIT 300
 
 namespace Service {
 

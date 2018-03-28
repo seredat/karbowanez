@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <signal.h>
 #include <string>
 #include <boost/filesystem.hpp>
@@ -129,14 +128,21 @@ void service::run(){
 void service::stop(){
   int pid;
   bool stop_t;
+  int exit_status = 0;
   pid = this->readPID();
   //std::cout << pid << std::endl;
+  std::string stat_file = "/proc/" + std::to_string(pid) + "/stat"; // C++ 11   
   if (pid != -1){
-    if (kill((pid_t) pid, 15) == 0){
+    if (!boost::filesystem::exists(stat_file)){
+      this->deletePID();
+      exit_status = 1;
+      std::cout << "Service already stoped. Probably there was an error." << std::endl;
+    }
+    if (kill((pid_t) pid, SIGTERM) == 0){
       std::cout << "Send stop signal and wait..." << std::endl;
       stop_t = false;
-      for (unsigned int n = 0; n < 300; n++){ 
-        if (waitpid((pid_t) pid, NULL, 0) == -1){
+      for (unsigned int n = 0; n < KILLWAIT; n++){
+        if (!boost::filesystem::exists(stat_file)){
           this->deletePID();
 	  stop_t = true;
           break;
@@ -144,15 +150,31 @@ void service::stop(){
         usleep(1000000);
       }
       if (stop_t){
-        std::cout << "Service stoped" << std::endl;
+        std::cout << "Service stoped success" << std::endl;
         } else {
-        std::cout << "Error stop service!" << std::endl;
+        std::cout << "Error stop service! But, try again this..." << std::endl;
+        exit_status = 1;
+        if (kill((pid_t) pid, SIGKILL) == 0){
+          for (unsigned int n = 0; n < KILLWAIT; n++){
+            if (!boost::filesystem::exists(stat_file)){
+              this->deletePID();
+	      stop_t = true;
+              break;
+	    }
+	  }
+          usleep(1000000);
+        }
+        if (stop_t){
+         std::cout << "Sended SIGKILL (kill -9) and remove PID file. Service stoped extremaly!" << std::endl;
+	 } else {
+         std::cout << "Error stop service!" << std::endl;
+        }
       }
     }
-    exit(0);
+    exit(exit_status);
     } else {
     std::cout << "Service not started!" << std::endl;
-    exit(0);
+    exit(1);
   }
 }
 
