@@ -148,9 +148,9 @@ namespace CryptoNote
     size_t get_outgoing_connections_count();
 
     CryptoNote::PeerlistManager& getPeerlistManager() { return m_peerlist; }
-    bool ban_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
-    bool unban_host(const uint32_t address_ip);
-    std::map<uint32_t, time_t> get_blocked_hosts() { return m_blocked_hosts; };
+    bool ban_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME) override;
+    bool unban_host(const uint32_t address_ip) override;
+    std::map<uint32_t, time_t> get_blocked_hosts() override { return m_blocked_hosts; };
 
   private:
 

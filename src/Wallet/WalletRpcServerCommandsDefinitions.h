@@ -195,7 +195,31 @@ using CryptoNote::ISerializer;
 		};
 	};
 
-	/* Command: get_transfers */
+	/* Command: get_transaction */
+	struct COMMAND_RPC_GET_TRANSACTION
+	{
+		struct request
+		{
+			std::string tx_hash;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_hash)
+			}
+		};
+		struct response
+		{
+			Transfer transaction_details;
+			std::list<transfer_destination> destinations;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(transaction_details)
+				KV_MEMBER(destinations)
+			}
+		};
+	};
+
 	struct COMMAND_RPC_GET_HEIGHT
 	{
 		typedef CryptoNote::EMPTY_STRUCT request;

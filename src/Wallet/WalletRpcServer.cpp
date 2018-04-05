@@ -17,6 +17,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <boost/algorithm/string/predicate.hpp>
 #include "WalletRpcServer.h"
 #include "crypto/hash.h"
 #include "Common/CommandLine.h"
@@ -27,9 +28,8 @@
 #include "WalletLegacy/WalletHelper.h"
 #include "WalletLegacy/WalletLegacy.h"
 #include "Common/StringTools.h"
-#include <Common/Base58.h>
+#include "Common/Base58.h"
 #include "Common/Util.h"
-// #include "wallet_errors.h"
 
 using namespace Logging;
 using namespace CryptoNote;
@@ -127,17 +127,18 @@ void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, C
 
 		static const std::unordered_map<std::string, JsonMemberMethod> s_methods =
 		{
-			{ "getbalance"	 , makeMemberMethod(&wallet_rpc_server::on_getbalance)		},
-			{ "transfer"	 , makeMemberMethod(&wallet_rpc_server::on_transfer)		},
-			{ "store"		 , makeMemberMethod(&wallet_rpc_server::on_store)			},
-			{ "stop_wallet"  , makeMemberMethod(&wallet_rpc_server::on_stop_wallet)		},
-			{ "get_payments" , makeMemberMethod(&wallet_rpc_server::on_get_payments)	},
-			{ "get_transfers", makeMemberMethod(&wallet_rpc_server::on_get_transfers)	},
-			{ "get_height"	 , makeMemberMethod(&wallet_rpc_server::on_get_height)		},
-			{ "get_address"	 , makeMemberMethod(&wallet_rpc_server::on_get_address)		},
-			{ "query_key"    , makeMemberMethod(&wallet_rpc_server::on_query_key)		},
-			{ "reset"		 , makeMemberMethod(&wallet_rpc_server::on_reset)			},
-			{ "get_paymentid", makeMemberMethod(&wallet_rpc_server::on_gen_paymentid)	},
+			{ "getbalance"	   , makeMemberMethod(&wallet_rpc_server::on_getbalance)	  },
+			{ "transfer"	   , makeMemberMethod(&wallet_rpc_server::on_transfer)		  },
+			{ "store"		   , makeMemberMethod(&wallet_rpc_server::on_store)			  },
+			{ "stop_wallet"    , makeMemberMethod(&wallet_rpc_server::on_stop_wallet)	  },
+			{ "get_payments"   , makeMemberMethod(&wallet_rpc_server::on_get_payments)	  },
+			{ "get_transfers"  , makeMemberMethod(&wallet_rpc_server::on_get_transfers)	  },
+			{ "get_transaction", makeMemberMethod(&wallet_rpc_server::on_get_transaction) },
+			{ "get_height"	   , makeMemberMethod(&wallet_rpc_server::on_get_height)	  },
+			{ "get_address"	   , makeMemberMethod(&wallet_rpc_server::on_get_address)	  },
+			{ "query_key"      , makeMemberMethod(&wallet_rpc_server::on_query_key)		  },
+			{ "reset"		   , makeMemberMethod(&wallet_rpc_server::on_reset)			  },
+			{ "get_paymentid"  , makeMemberMethod(&wallet_rpc_server::on_gen_paymentid)	  },
 		};
 
 		auto it = s_methods.find(jsonRequest.getMethod());
@@ -262,10 +263,10 @@ bool wallet_rpc_server::on_get_payments(const wallet_rpc::COMMAND_RPC_GET_PAYMEN
 
 	expectedPaymentId = *reinterpret_cast<const Crypto::Hash*>(payment_id_blob.data());
 	size_t transactionsCount = m_wallet.getTransactionCount();
-	for (size_t trantransactionNumber = 0; trantransactionNumber < transactionsCount; ++trantransactionNumber)
+	for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber)
 	{
 		WalletLegacyTransaction txInfo;
-		m_wallet.getTransaction(trantransactionNumber, txInfo);
+		m_wallet.getTransaction(transactionNumber, txInfo);
 		if (txInfo.state != WalletLegacyTransactionState::Active || txInfo.blockHeight == WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT)
 			continue;
 		if (txInfo.totalAmount < 0)
@@ -302,12 +303,12 @@ bool wallet_rpc_server::on_get_transfers(const wallet_rpc::COMMAND_RPC_GET_TRANS
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Failed to get blockchain height: ") + e.what());
 	}
 
-	for (size_t trantransactionNumber = 0; trantransactionNumber < transactionsCount; ++trantransactionNumber)
+	for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber)
 	{
 		WalletLegacyTransaction txInfo;
-		m_wallet.getTransaction(trantransactionNumber, txInfo);
-		//if (txInfo.state != WalletLegacyTransactionState::Sending || txInfo.state != WalletLegacyTransactionState::Active || txInfo.blockHeight == WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT)
-		if (txInfo.state == WalletLegacyTransactionState::Cancelled || txInfo.state == WalletLegacyTransactionState::Deleted || txInfo.state == WalletLegacyTransactionState::Failed)
+		m_wallet.getTransaction(transactionNumber, txInfo);
+		if (txInfo.state == WalletLegacyTransactionState::Cancelled || txInfo.state == WalletLegacyTransactionState::Deleted 
+			|| txInfo.state == WalletLegacyTransactionState::Failed)
 			continue;
 
 		std::string address = "";
@@ -340,6 +341,76 @@ bool wallet_rpc_server::on_get_transfers(const wallet_rpc::COMMAND_RPC_GET_TRANS
 		res.transfers.push_back(transfer);
 	}
 	return true;
+}
+
+bool wallet_rpc_server::on_get_transaction(const wallet_rpc::COMMAND_RPC_GET_TRANSACTION::request& req,
+	wallet_rpc::COMMAND_RPC_GET_TRANSACTION::response& res)
+{
+	res.destinations.clear();
+	uint64_t bc_height;
+	try {
+		bc_height = m_node.getKnownBlockCount();
+	}
+	catch (std::exception &e) {
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Failed to get blockchain height: ") + e.what());
+	}
+
+	size_t transactionsCount = m_wallet.getTransactionCount();
+	for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber)
+	{
+		WalletLegacyTransaction txInfo;
+		m_wallet.getTransaction(transactionNumber, txInfo);
+		if (txInfo.state == WalletLegacyTransactionState::Cancelled || txInfo.state == WalletLegacyTransactionState::Deleted
+			|| txInfo.state == WalletLegacyTransactionState::Failed)
+			continue;
+
+		if (boost::iequals(Common::podToHex(txInfo.hash), req.tx_hash))
+		{
+			std::string address = "";
+			if (txInfo.totalAmount < 0 && txInfo.transferCount > 0)
+			{
+				WalletLegacyTransfer ftr;
+				m_wallet.getTransfer(txInfo.firstTransferId, ftr);
+				address = ftr.address;
+			}
+
+			wallet_rpc::Transfer transfer;
+			transfer.time = txInfo.timestamp;
+			transfer.output = txInfo.totalAmount < 0;
+			transfer.transactionHash = Common::podToHex(txInfo.hash);
+			transfer.amount = std::abs(txInfo.totalAmount);
+			transfer.fee = txInfo.fee;
+			transfer.address = address;
+			transfer.blockIndex = txInfo.blockHeight;
+			transfer.unlockTime = txInfo.unlockTime;
+			transfer.paymentId = "";
+			transfer.confirmations = bc_height - txInfo.blockHeight;
+
+			std::vector<uint8_t> extraVec;
+			extraVec.reserve(txInfo.extra.size());
+			std::for_each(txInfo.extra.begin(), txInfo.extra.end(), [&extraVec](const char el) { extraVec.push_back(el); });
+
+			Crypto::Hash paymentId;
+			transfer.paymentId = (getPaymentIdFromTxExtra(extraVec, paymentId) && paymentId != NULL_HASH ? Common::podToHex(paymentId) : "");
+
+			res.transaction_details = transfer;
+
+			for (TransferId id = txInfo.firstTransferId; id < txInfo.firstTransferId + txInfo.transferCount; ++id) {
+				WalletLegacyTransfer txtr;
+				m_wallet.getTransfer(id, txtr);
+				wallet_rpc::transfer_destination dest;
+				dest.amount = txtr.amount;
+				dest.address = txtr.address;
+				res.destinations.push_back(dest);
+			}
+			return true;
+		}
+	}
+
+	throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR,
+		std::string("Transaction with this hash not found: ") + req.tx_hash);
+
+	return false;
 }
 
 bool wallet_rpc_server::on_get_height(const wallet_rpc::COMMAND_RPC_GET_HEIGHT::request& req, 
