@@ -110,12 +110,12 @@ const size_t   COMMAND_RPC_GET_BLOCKS_FAST_MAX_COUNT         =  1000;
 const int      P2P_DEFAULT_PORT                              =  32347;
 const int      RPC_DEFAULT_PORT                              =  32348;
 
-const size_t   P2P_LOCAL_WHITE_PEERLIST_LIMIT                =  1000;
+const size_t   P2P_LOCAL_WHITE_PEERLIST_LIMIT                =  10000; // Increased to show more users on the peer map
 const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 
 const size_t   P2P_CONNECTION_MAX_WRITE_BUFFER_SIZE          = 64 * 1024 * 1024; // 64 MB
-const uint32_t P2P_DEFAULT_CONNECTIONS_COUNT                 = 8;
-const size_t   P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT     = 70;
+const uint32_t P2P_DEFAULT_CONNECTIONS_COUNT                 = 10;
+const size_t   P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT     = 7; // 70% of 1000 is 700, 7% of 10000 is 700
 const uint32_t P2P_DEFAULT_HANDSHAKE_INTERVAL                = 60;            // seconds
 const uint32_t P2P_DEFAULT_PACKET_MAX_SIZE                   = 50000000;      // 50000000 bytes maximum packet size
 const uint32_t P2P_DEFAULT_PEERS_IN_HANDSHAKE                = 250;
