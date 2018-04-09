@@ -178,6 +178,17 @@ void WalletGreen::initializeWithViewKey(const std::string& path, const std::stri
   m_logger(INFO, BRIGHT_WHITE) << "Container initialized with view secret key, public view key " << viewPublicKey;
 }
 
+void WalletGreen::initializeWithViewKeyAndTimestamp(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint64_t& creationTimestamp) {
+  Crypto::PublicKey viewPublicKey;
+  if (!Crypto::secret_key_to_public_key(viewSecretKey, viewPublicKey)) {
+    m_logger(ERROR, BRIGHT_RED) << "initializeWithViewKey(" << viewSecretKey << ") Failed to convert secret key to public key";
+    throw std::system_error(make_error_code(CryptoNote::error::KEY_GENERATION_ERROR));
+  }
+
+  initWithKeysAndTimestamp(path, password, viewPublicKey, viewSecretKey, creationTimestamp);
+  m_logger(INFO, BRIGHT_WHITE) << "Container initialized with view secret key, public view key " << viewPublicKey;
+}
+
 void WalletGreen::shutdown() {
   throwIfNotInitialized();
   doShutdown();
@@ -327,6 +338,44 @@ void WalletGreen::initWithKeys(const std::string& path, const std::string& passw
 
   uint64_t creationTimestamp = time(nullptr);
   prefix->encryptedViewKeys = encryptKeyPair(viewPublicKey, viewSecretKey, creationTimestamp, m_key, prefix->nextIv);
+
+  newStorage.flush();
+  m_containerStorage.swap(newStorage);
+  incNextIv();
+
+  m_viewPublicKey = viewPublicKey;
+  m_viewSecretKey = viewSecretKey;
+  m_password = password;
+  m_path = path;
+  m_logger = Logging::LoggerRef(m_logger.getLogger(), "WalletGreen/" + podToHex(m_viewPublicKey).substr(0, 5));
+
+  assert(m_blockchain.empty());
+  m_blockchain.push_back(m_currency.genesisBlockHash());
+
+  m_blockchainSynchronizer.addObserver(this);
+
+  m_state = WalletState::INITIALIZED;
+}
+
+void WalletGreen::initWithKeysAndTimestamp(const std::string& path, const std::string& password,
+  const Crypto::PublicKey& viewPublicKey, const Crypto::SecretKey& viewSecretKey, const uint64_t& _creationTimestamp) {
+
+  if (m_state != WalletState::NOT_INITIALIZED) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to initialize with keys: already initialized. Current state: " << m_state;
+    throw std::system_error(make_error_code(CryptoNote::error::ALREADY_INITIALIZED));
+  }
+
+  throwIfStopped();
+
+  ContainerStorage newStorage(path, Common::FileMappedVectorOpenMode::CREATE, sizeof(ContainerStoragePrefix));
+  ContainerStoragePrefix* prefix = reinterpret_cast<ContainerStoragePrefix*>(newStorage.prefix());
+  prefix->version = static_cast<uint8_t>(WalletSerializerV2::SERIALIZATION_VERSION);
+  prefix->nextIv = Crypto::rand<Crypto::chacha8_iv>();
+
+  Crypto::cn_context cnContext;
+  Crypto::generate_chacha8_key(cnContext, password, m_key);
+
+  prefix->encryptedViewKeys = encryptKeyPair(viewPublicKey, viewSecretKey, _creationTimestamp, m_key, prefix->nextIv);
 
   newStorage.flush();
   m_containerStorage.swap(newStorage);
@@ -928,6 +977,16 @@ std::string WalletGreen::createAddress(const Crypto::SecretKey& spendSecretKey, 
     throw std::system_error(make_error_code(CryptoNote::error::KEY_GENERATION_ERROR));
   }
   uint64_t creationTimestamp = reset ? 0 : static_cast<uint64_t>(time(nullptr));
+
+  return doCreateAddress(spendPublicKey, spendSecretKey, creationTimestamp);
+}
+
+std::string WalletGreen::createAddressWithTimestamp(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) {
+  Crypto::PublicKey spendPublicKey;
+  if (!Crypto::secret_key_to_public_key(spendSecretKey, spendPublicKey)) {
+    m_logger(ERROR, BRIGHT_RED) << "createAddress(" << spendSecretKey << ") Failed to convert secret key to public key";
+    throw std::system_error(make_error_code(CryptoNote::error::KEY_GENERATION_ERROR));
+  }
 
   return doCreateAddress(spendPublicKey, spendSecretKey, creationTimestamp);
 }

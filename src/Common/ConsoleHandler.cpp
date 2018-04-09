@@ -12,6 +12,9 @@
 #include <sstream>
 
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <Windows.h>
 #else
 #include <unistd.h>
@@ -42,6 +45,24 @@ void AsyncConsoleReader::start() {
 bool AsyncConsoleReader::getline(std::string& line) {
   return m_queue.pop(line);
 }
+
+void AsyncConsoleReader::pause() {
+  if (m_stop) {
+    return;
+  }
+
+  m_stop = true;
+
+  if (m_thread.joinable()) {
+    m_thread.join();
+  }
+
+  m_thread = std::thread();
+}
+
+void AsyncConsoleReader::unpause() {
+  start();
+} 
 
 void AsyncConsoleReader::stop() {
 
@@ -155,6 +176,14 @@ void ConsoleHandler::stop() {
   wait();
 }
 
+void ConsoleHandler::pause() {
+  m_consoleReader.pause();
+}
+
+void ConsoleHandler::unpause() {
+  m_consoleReader.unpause();
+}
+  
 void ConsoleHandler::wait() {
 
   try {

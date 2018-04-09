@@ -48,7 +48,13 @@
 #include <map>
 
 #include <boost/bind.hpp>
+#if defined __linux__ && !defined __ANDROID__
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#endif
 #include <boost/filesystem.hpp>
+#if defined __linux__ && !defined __ANDROID__
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
+#endif
 #include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
 #include <boost/algorithm/string.hpp>
@@ -113,7 +119,7 @@ const command_line::arg_descriptor<bool> arg_restore_deterministic_wallet = { "r
 const command_line::arg_descriptor<bool> arg_non_deterministic = { "non-deterministic", "Creates non-deterministic (classic) view and spend keys", false };
 const command_line::arg_descriptor<uint16_t> arg_daemon_port = { "daemon-port", "Use daemon instance at port <arg> instead of 32348", 0 };
 const command_line::arg_descriptor<std::string> arg_log_file = {"log-file", "Set the log file location", ""};
-const command_line::arg_descriptor<uint32_t> arg_log_level = { "set_log", "", INFO, true };
+const command_line::arg_descriptor<uint32_t> arg_log_level = { "log-level", "Set the log verbosity level", INFO, true };
 const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to deploy test nets. The daemon must be launched with --testnet flag", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
 
@@ -642,6 +648,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("tracking_key", boost::bind(&simple_wallet::export_tracking_key, this, _1), "Show the tracking key of the opened wallet");
   m_consoleHandler.setHandler("balance", boost::bind(&simple_wallet::show_balance, this, _1), "Show current wallet balance");
   m_consoleHandler.setHandler("incoming_transfers", boost::bind(&simple_wallet::show_incoming_transfers, this, _1), "Show incoming transfers");
+  m_consoleHandler.setHandler("outgoing_transfers", boost::bind(&simple_wallet::show_outgoing_transfers, this, _1), "Show outgoing transfers");
   m_consoleHandler.setHandler("list_transfers", boost::bind(&simple_wallet::listTransfers, this, _1), "Show all known transfers");
   m_consoleHandler.setHandler("payments", boost::bind(&simple_wallet::show_payments, this, _1), "payments <payment_id_1> [<payment_id_2> ... <payment_id_N>] - Show payments <payment_id_1>, ... <payment_id_N>");
   m_consoleHandler.setHandler("bc_height", boost::bind(&simple_wallet::show_blockchain_height, this, _1), "Show blockchain height");
@@ -654,6 +661,8 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("save", boost::bind(&simple_wallet::save, this, _1), "Save wallet synchronized data");
   m_consoleHandler.setHandler("reset", boost::bind(&simple_wallet::reset, this, _1), "Discard cache data and start synchronizing from the start");
   m_consoleHandler.setHandler("show_seed", boost::bind(&simple_wallet::seed, this, _1), "Get wallet recovery phrase (deterministic seed)");
+  m_consoleHandler.setHandler("payment_id", boost::bind(&simple_wallet::payment_id, this, _1), "Generate random Payment ID");
+  m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Change password");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
 }
@@ -686,6 +695,13 @@ bool simple_wallet::set_log(const std::vector<std::string> &args)
 
 //----------------------------------------------------------------------------------------------------
 
+bool simple_wallet::payment_id(const std::vector<std::string> &args) {
+  success_msg_writer() << "Payment ID: " << Crypto::rand<Crypto::Hash>();
+  return true;
+}
+
+//----------------------------------------------------------------------------------------------------
+
 bool simple_wallet::init(const boost::program_options::variables_map& vm)
 {
 	handle_command_line(vm);
@@ -701,7 +717,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n";
 		std::cout << "O - open wallet\n";
 		std::cout << "G - generate new wallet\n";
-		std::cout << "P - change password\n";
 		std::cout << "I - import wallet from keys\n";
 		std::cout << "R - restore backup/paperwallet\n";
 		std::cout << "T - import tracking wallet\n";
@@ -713,7 +728,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			std::string answer;
 			std::getline(std::cin, answer);
 			c = answer[0];
-			if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'P' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' || c == 'p' ))
+			if (!(c == 'O' || c == 'G' || c == 'E' || c == 'I' || c == 'R' || c == 'T' || c == 'o' || c == 'g' || c == 'e' || c == 'i' || c == 'r' || c == 't' ))
 				std::cout << "Unknown command: " << c <<std::endl;
 			else
 				break;
@@ -725,13 +740,32 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 
 		std::cout << "Specify wallet file name (e.g., wallet.bin).\n";
 		std::string userInput;
-		do
+		bool validInput = true;
+		do 
 		{
 			std::cout << "Wallet file name: ";
 			std::getline(std::cin, userInput);
 			boost::algorithm::trim(userInput);
-		}
-		while (userInput.empty());
+		
+			if (c != 'o')
+			{
+				std::string ignoredString;
+				std::string walletFileName;
+				
+				WalletHelper::prepareFileNames(userInput, ignoredString, walletFileName);
+				boost::system::error_code ignore;
+				if (boost::filesystem::exists(walletFileName, ignore))
+				{
+					std::cout << walletFileName << " already exists! Try a different name." << std::endl;
+					validInput = false;
+				}
+				else
+				{
+					validInput = true;
+				}
+			}
+			
+		} while (!validInput);
 
 		if (c == 'i' || c == 'I')
 			m_import_new = userInput;
@@ -741,8 +775,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			m_generate_new = userInput;
 		else if (c == 't' || c == 'T')
 			m_track_new = userInput;
-		else if (c == 'p' || c == 'P')
-			m_change_password = userInput;
 		else
 			m_wallet_file_arg = userInput;
 	}
@@ -760,7 +792,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	}
 
 	std::string walletFileName;
-	if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty() || !m_change_password.empty())
+	if (!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty())
 	{
 		std::string ignoredString;
 		if (!m_generate_new.empty())
@@ -771,8 +803,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			WalletHelper::prepareFileNames(m_restore_new, ignoredString, walletFileName);
 		else if (!m_track_new.empty())
 			WalletHelper::prepareFileNames(m_track_new, ignoredString, walletFileName);
-		else if (!m_change_password.empty())
-			m_wallet_file_arg = m_change_password;
 
 		boost::system::error_code ignore;
 		if (boost::filesystem::exists(walletFileName, ignore))
@@ -807,7 +837,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	{
 		pwd_container.password(command_line::get_arg(vm, arg_password));
 	}
-	else if (!pwd_container.read_password())
+	else if (!pwd_container.read_password(!m_generate_new.empty() || !m_import_new.empty() || !m_restore_new.empty() || !m_track_new.empty()))
 	{
 		fail_msg_writer() << "failed to read wallet password";
 		return false;
@@ -1096,9 +1126,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			m_trackingWallet = true;
 			success_msg_writer() << "This is tracking wallet. Spending unavailable.\n";
 		}
-
-		if (!m_change_password.empty())
-			change_password();
 
 		success_msg_writer() <<
 			"**********************************************************************\n" <<
@@ -1488,31 +1515,27 @@ bool simple_wallet::reset(const std::vector<std::string> &args) {
   return true;
 }
 
-std::string simple_wallet::get_password() {
-	pwd_container.read_password();
-	return pwd_container.password();
-}
-
-bool simple_wallet::change_password() {
-  std::cout << std::endl;
-  //std::cout << "Old ";
-  //const auto oldpwd = get_password();
+bool simple_wallet::change_password(const std::vector<std::string>& args) {
+  std::cout << "Old ";
+  m_consoleHandler.pause();
+  if (!pwd_container.read_and_validate()) {
+    std::cout << "Incorrect password!" << std::endl;
+    m_consoleHandler.unpause();
+    return false;
+  }
   const auto oldpwd = pwd_container.password();
+
   std::cout << "New ";
-  const auto newpwd = get_password();
-  std::cout << "Repeat new ";
-  const auto newpwd2 = get_password();
-  if (newpwd != newpwd2) {
-	fail_msg_writer() << "Passwords doesn't match. Try again.";
-	change_password();
-	return false;
-  } 
+  pwd_container.read_password(true);
+  const auto newpwd = pwd_container.password();
+  m_consoleHandler.unpause();
+
   try
 	{
 		m_wallet->changePassword(oldpwd, newpwd);
 	}
 	catch (const std::exception& e) {
-		fail_msg_writer() << e.what();
+		fail_msg_writer() << "Could not change password: " << e.what();
 		return false;
 	}
 	success_msg_writer(true) << "Password changed.";
@@ -1667,7 +1690,8 @@ bool simple_wallet::export_tracking_key(const std::vector<std::string>& args/* =
 //---------------------------------------------------------------------------------------------------- 
 bool simple_wallet::show_balance(const std::vector<std::string>& args/* = std::vector<std::string>()*/) {
   success_msg_writer() << "available balance: " << m_currency.formatAmount(m_wallet->actualBalance()) <<
-    ", locked amount: " << m_currency.formatAmount(m_wallet->pendingBalance());
+    ", locked amount: " << m_currency.formatAmount(m_wallet->pendingBalance()) <<
+	", total balance: " << m_currency.formatAmount(m_wallet->actualBalance() + m_wallet->pendingBalance());
 
   return true;
 }
@@ -1675,9 +1699,9 @@ bool simple_wallet::show_balance(const std::vector<std::string>& args/* = std::v
 bool simple_wallet::show_incoming_transfers(const std::vector<std::string>& args) {
   bool hasTransfers = false;
   size_t transactionsCount = m_wallet->getTransactionCount();
-  for (size_t trantransactionNumber = 0; trantransactionNumber < transactionsCount; ++trantransactionNumber) {
+  for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber) {
     WalletLegacyTransaction txInfo;
-    m_wallet->getTransaction(trantransactionNumber, txInfo);
+    m_wallet->getTransaction(transactionNumber, txInfo);
     if (txInfo.totalAmount < 0) continue;
     hasTransfers = true;
     logger(INFO) << "        amount       \t                              tx id";
@@ -1688,14 +1712,36 @@ bool simple_wallet::show_incoming_transfers(const std::vector<std::string>& args
   if (!hasTransfers) success_msg_writer() << "No incoming transfers";
   return true;
 }
+//----------------------------------------------------------------------------------------------------
+bool simple_wallet::show_outgoing_transfers(const std::vector<std::string>& args) {
+  bool hasTransfers = false;
+  size_t transactionsCount = m_wallet->getTransactionCount();
+  for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber) {
+    WalletLegacyTransaction txInfo;
+    m_wallet->getTransaction(transactionNumber, txInfo);
+    if (txInfo.totalAmount > 0) continue;
+    hasTransfers = true;
+    logger(INFO) << "        amount       \t                              tx id";
+	logger(INFO, BRIGHT_MAGENTA) << std::setw(TOTAL_AMOUNT_MAX_WIDTH) << m_currency.formatAmount(txInfo.totalAmount) << '\t' << Common::podToHex(txInfo.hash);
+
+	for (TransferId id = txInfo.firstTransferId; id < txInfo.firstTransferId + txInfo.transferCount; ++id) {
+		WalletLegacyTransfer tr;
+		m_wallet->getTransfer(id, tr);
+		logger(INFO, MAGENTA) << std::setw(TOTAL_AMOUNT_MAX_WIDTH) << m_currency.formatAmount(-tr.amount) << '\t' << tr.address;
+	}
+  }
+
+  if (!hasTransfers) success_msg_writer() << "No outgoing transfers";
+  return true;
+}
 
 bool simple_wallet::listTransfers(const std::vector<std::string>& args) {
   bool haveTransfers = false;
 
   size_t transactionsCount = m_wallet->getTransactionCount();
-  for (size_t trantransactionNumber = 0; trantransactionNumber < transactionsCount; ++trantransactionNumber) {
+  for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber) {
     WalletLegacyTransaction txInfo;
-    m_wallet->getTransaction(trantransactionNumber, txInfo);
+    m_wallet->getTransaction(transactionNumber, txInfo);
     if (txInfo.state != WalletLegacyTransactionState::Active || txInfo.blockHeight == WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT) {
       continue;
     }
@@ -1730,9 +1776,9 @@ bool simple_wallet::show_payments(const std::vector<std::string> &args) {
     Crypto::Hash expectedPaymentId;
     if (CryptoNote::parsePaymentId(arg, expectedPaymentId)) {
       size_t transactionsCount = m_wallet->getTransactionCount();
-      for (size_t trantransactionNumber = 0; trantransactionNumber < transactionsCount; ++trantransactionNumber) {
+      for (size_t transactionNumber = 0; transactionNumber < transactionsCount; ++transactionNumber) {
         WalletLegacyTransaction txInfo;
-        m_wallet->getTransaction(trantransactionNumber, txInfo);
+        m_wallet->getTransaction(transactionNumber, txInfo);
         if (txInfo.totalAmount < 0) continue;
         std::vector<uint8_t> extraVec;
         extraVec.reserve(txInfo.extra.size());
@@ -2114,7 +2160,7 @@ int main(int argc, char* argv[]) {
   }
 
   //set up logging options
-  Level logLevel = DEBUGGING;
+  Level logLevel = INFO;
 
   if (command_line::has_arg(vm, arg_log_level)) {
     logLevel = static_cast<Level>(command_line::get_arg(vm, arg_log_level));

@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2018, The Karbowanec developers
 //
 // This file is part of Bytecoin.
 //
@@ -112,6 +113,7 @@ bool saveStringToFile(const std::string& filepath, const std::string& buf);
 std::string base64Decode(std::string const& encoded_string);
 
 std::string ipAddressToString(uint32_t ip);
+uint32_t stringToIpAddress(std::string addr);
 bool parseIpAddressAndPort(uint32_t& ip, uint32_t& port, const std::string& addr);
 
 std::string timeIntervalToString(uint64_t intervalInSeconds);

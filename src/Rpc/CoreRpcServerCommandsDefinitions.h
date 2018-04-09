@@ -688,20 +688,6 @@ struct F_COMMAND_RPC_GET_TRANSACTION_DETAILS {
   };
 };
 
-struct F_COMMAND_RPC_GET_POOL_RAW {
-  typedef std::vector<std::string> request;
-
-  struct response {
-    std::string transactions;
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(transactions)
-      KV_MEMBER(status)
-    }
-  };
-};
-
 struct F_COMMAND_RPC_GET_POOL {
   typedef EMPTY_STRUCT request;
 
@@ -783,6 +769,18 @@ struct COMMAND_RPC_QUERY_BLOCKS_LITE {
       KV_MEMBER(fullOffset)
       KV_MEMBER(items)
     }
+  };
+};
+
+struct COMMAND_RPC_GEN_PAYMENT_ID {
+  typedef EMPTY_STRUCT request;
+  
+  struct response {
+	  std::string payment_id;
+
+	  void serialize(ISerializer &s) {
+		  KV_MEMBER(payment_id)
+	  }
   };
 };
 

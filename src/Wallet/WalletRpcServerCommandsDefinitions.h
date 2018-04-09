@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2017, Karbo developers
+// Copyright (c) 2016-2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -106,6 +106,13 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	/* Command: stop_wallet */
+	struct COMMAND_RPC_STOP
+	{
+		typedef CryptoNote::EMPTY_STRUCT request;
+		typedef CryptoNote::EMPTY_STRUCT response;
+	};
+
 	/* Command: get_payments */
 	struct payment_details
 	{
@@ -157,6 +164,7 @@ using CryptoNote::ISerializer;
 		std::string address;
 		uint64_t blockIndex;
 		uint64_t unlockTime;
+		uint64_t confirmations;
 
 		void serialize(ISerializer& s)
 		{
@@ -169,6 +177,7 @@ using CryptoNote::ISerializer;
 			KV_MEMBER(address)
 			KV_MEMBER(blockIndex)
 			KV_MEMBER(unlockTime)
+			KV_MEMBER(confirmations)
 		}
 	};
 
@@ -186,7 +195,31 @@ using CryptoNote::ISerializer;
 		};
 	};
 
-	/* Command: get_transfers */
+	/* Command: get_transaction */
+	struct COMMAND_RPC_GET_TRANSACTION
+	{
+		struct request
+		{
+			std::string tx_hash;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_hash)
+			}
+		};
+		struct response
+		{
+			Transfer transaction_details;
+			std::list<transfer_destination> destinations;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(transaction_details)
+				KV_MEMBER(destinations)
+			}
+		};
+	};
+
 	struct COMMAND_RPC_GET_HEIGHT
 	{
 		typedef CryptoNote::EMPTY_STRUCT request;
@@ -242,6 +275,21 @@ using CryptoNote::ISerializer;
 			void serialize(ISerializer& s)
 			{
 				KV_MEMBER(address)
+			}
+		};
+	};
+
+	/* Command: paymentid */
+	struct COMMAND_RPC_GEN_PAYMENT_ID
+	{
+		typedef CryptoNote::EMPTY_STRUCT request;
+		struct response
+		{
+			std::string payment_id;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(payment_id)
 			}
 		};
 	};
