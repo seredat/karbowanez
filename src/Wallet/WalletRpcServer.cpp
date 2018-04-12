@@ -329,7 +329,7 @@ bool wallet_rpc_server::on_get_transfers(const wallet_rpc::COMMAND_RPC_GET_TRANS
 		transfer.blockIndex		 = txInfo.blockHeight;
 		transfer.unlockTime		 = txInfo.unlockTime;
 		transfer.paymentId		 = "";
-		transfer.confirmations = bc_height - txInfo.blockHeight;
+		transfer.confirmations	 = (txInfo.blockHeight != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX ? bc_height - txInfo.blockHeight : 0);
 
 		std::vector<uint8_t> extraVec;
 		extraVec.reserve(txInfo.extra.size());
@@ -384,7 +384,7 @@ bool wallet_rpc_server::on_get_transaction(const wallet_rpc::COMMAND_RPC_GET_TRA
 			transfer.blockIndex = txInfo.blockHeight;
 			transfer.unlockTime = txInfo.unlockTime;
 			transfer.paymentId = "";
-			transfer.confirmations = bc_height - txInfo.blockHeight;
+			transfer.confirmations = (txInfo.blockHeight != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX ? bc_height - txInfo.blockHeight : 0);
 
 			std::vector<uint8_t> extraVec;
 			extraVec.reserve(txInfo.extra.size());

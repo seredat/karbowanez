@@ -25,6 +25,12 @@
 
 #include <boost/program_options.hpp>
 
+#include "SimpleWallet/PasswordContainer.h"
+
+namespace {
+	Tools::PasswordContainer pwd_container;
+}
+
 namespace PaymentService {
 
 class ConfigurationError : public std::runtime_error {
