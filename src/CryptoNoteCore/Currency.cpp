@@ -536,17 +536,20 @@ namespace CryptoNote {
 		// N = int(45 * (600 / T) ^ 0.3));
 
 		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
-		const size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V3;
+		size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V3;
 
-		if (timestamps.size() > N + 1) {
+		// return a difficulty of 1 for first 3 blocks if it's the start of the chain
+		if (timestamps.size() < 4) {
+			return 1;
+		}
+		// otherwise, use a smaller N if the start of the chain is less than N+1
+		else if (timestamps.size() < N + 1) {
+			N = timestamps.size() - 1;
+		}
+		else if (timestamps.size() > N + 1) {
 			timestamps.resize(N + 1);
 			cumulativeDifficulties.resize(N + 1);
 		}
-		size_t n = timestamps.size();
-		assert(n == cumulativeDifficulties.size());
-		assert(n <= CryptoNote::parameters::DIFFICULTY_WINDOW_V3 + 1);
-		if (n <= 1)
-			return 1;
 
 		// To get an average solvetime to within +/- ~0.1%, use an adjustment factor.
 		const double_t adjust = 0.998;
