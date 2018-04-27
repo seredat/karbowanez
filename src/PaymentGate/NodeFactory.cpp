@@ -84,6 +84,8 @@ public:
     const Callback& callback) override { }
 
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
+  
+  //virtual uint64_t getMinimalFee() override { }
 
 };
 

@@ -380,6 +380,10 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   else {
 	  res.fee_address = m_fee_address;
   }
+
+  res.min_tx_fee = m_core.getMinimalFee();
+  res.readable_tx_fee = m_core.currency().formatAmount(m_core.getMinimalFee());
+
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }
@@ -586,6 +590,7 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
     block_short.cumul_size = blokBlobSize + tx_cumulative_block_size - minerTxBlobSize;
     block_short.tx_count = blk.transactionHashes.size() + 1;
 	block_short.difficulty = blockDiff;
+	block_short.min_tx_fee = m_core.getMinimalFeeForHeight(i);
 
     res.blocks.push_back(block_short);
 
