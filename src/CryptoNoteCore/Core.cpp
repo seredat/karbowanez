@@ -22,6 +22,7 @@
 #include "../CryptoNoteConfig.h"
 #include "../Common/CommandLine.h"
 #include "../Common/Util.h"
+#include "../Common/Math.h"
 #include "../Common/StringTools.h"
 #include "../crypto/crypto.h"
 #include "../CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
@@ -427,6 +428,35 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
 
     b.previousBlockHash = get_tail_id();
     b.timestamp = time(NULL);
+
+    // Courtesy of Jagerman
+    // https://github.com/graft-project/GraftNetwork/pull/118/commits
+    //
+    // If some other node has submitted enough blocks with forged future
+    // timestamps, legitimate nodes end up providing their pools with a block
+    // template that cannot be accepted -- it fails the requirement that a block
+    // timestamp be greater than the median of the recent block window.
+    // 
+    // This fix allows the node to increase the timestamp to the median (i.e. the
+    // minimum required) if the timestamp would be rejected so that it doesn't
+    // end up handing out impossible-to-accept block templates.
+    //
+    // Most importantly, this prohibits an attacker from stalling all
+    // legitimate pools by submitting fake timestamps to the network.
+
+    if(height >= m_currency.timestampCheckWindow()) {
+      std::vector<uint64_t> timestamps;
+      for(size_t offset = height - m_currency.timestampCheckWindow(); offset < height; ++offset) {
+        Crypto::Hash id = getBlockIdByHeight(offset);
+        Block bl;
+        if (getBlockByHash(id, bl))
+           timestamps.push_back(bl.timestamp);
+      }
+      uint64_t median_ts = Common::medianValue(timestamps);
+      if (b.timestamp < median_ts) {
+          b.timestamp = median_ts;
+      }
+    }
 
     median_size = m_blockchain.getCurrentCumulativeBlocksizeLimit() / 2;
     already_generated_coins = m_blockchain.getCoinsInCirculation();
