@@ -201,7 +201,7 @@ bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_contex
   tvc = boost::value_initialized<tx_verification_context>();
   //want to process all transactions sequentially
 
-  if (tx_blob.size() > m_currency.maxTxSize()) {
+  if (tx_blob.size() > m_currency.maxTransactionSizeLimit()) {
     logger(INFO) << "WRONG TRANSACTION BLOB, too big size " << tx_blob.size() << ", rejected";
     tvc.m_verifivation_failed = true;
     return false;
@@ -236,10 +236,14 @@ bool core::check_tx_mixin(const Transaction& tx) {
     assert(inputIndex < tx.signatures.size());
     if (txin.type() == typeid(KeyInput)) {
       uint64_t txMixin = boost::get<KeyInput>(txin).outputIndexes.size();
-      if (txMixin > CryptoNote::parameters::MAX_TX_MIXIN_SIZE) {
-        logger(ERROR) << "Transaction " << getObjectHash(tx) << " has too large mixin count, rejected";
+      if (txMixin > m_currency.maxMixin()) {
+        logger(ERROR) << "Transaction " << getObjectHash(tx) << " has too large mixIn count, rejected";
         return false;
       }
+	  if (txMixin < m_currency.minMixin() && txMixin != 1) {
+		  logger(ERROR) << "Transaction " << getObjectHash(tx) << " has mixIn count below the required minimum, rejected";
+		  return false;
+	  }
     }
   }
   return true;
@@ -1072,6 +1076,13 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
 
   // is in checkpoint zone
   if (!m_blockchain.isInCheckpointZone(get_current_blockchain_height())) {
+
+	  if (blobSize > m_currency.maxTransactionSizeLimit()) {
+		  logger(INFO) << "Transaction verification failed: too big size " << blobSize << " of transaction " << txHash << ", rejected";
+		  tvc.m_verifivation_failed = true;
+		  return false;
+	  }
+
 	  if (!check_tx_fee(tx, blobSize, tvc)) {
 		  tvc.m_verifivation_failed = true;
 		  return false;
@@ -1130,6 +1141,20 @@ std::unique_ptr<IBlock> core::getBlock(const Crypto::Hash& blockId) {
   }
 
   return std::move(blockPtr);
+}
+
+bool core::f_getMixin(const Transaction& transaction, uint64_t& mixin) {
+  mixin = 0;
+  for (const TransactionInput& txin : transaction.inputs) {
+    if (txin.type() != typeid(KeyInput)) {
+      continue;
+    }
+    uint64_t currentMixin = boost::get<KeyInput>(txin).outputIndexes.size();
+    if (currentMixin > mixin) {
+      mixin = currentMixin;
+    }
+  }
+  return true;
 }
 
 bool core::addMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) {
