@@ -464,6 +464,7 @@ bool get_block_hash(const Block& b, Hash& res) {
     return false;
   }
 
+  // The header of block version 1 differs from headers of blocks starting from v.2
   if (BLOCK_MAJOR_VERSION_2 <= b.majorVersion) {
     BinaryArray parent_blob;
     auto serializer = makeParentBlockSerializer(b, true, false);
