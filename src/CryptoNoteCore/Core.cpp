@@ -103,6 +103,11 @@ uint32_t core::get_current_blockchain_height() {
   return m_blockchain.getCurrentBlockchainHeight();
 }
 
+uint8_t core::getCurrentBlockMajorVersion() {
+  assert(m_blockchain.getCurrentBlockchainHeight() > 0);
+  return m_blockchain.getBlockMajorVersionForHeight(m_blockchain.getCurrentBlockchainHeight());
+}
+
 void core::get_blockchain_top(uint32_t& height, Crypto::Hash& top_id) {
   assert(m_blockchain.getCurrentBlockchainHeight() > 0);
   top_id = m_blockchain.getTailId(height);
@@ -239,7 +244,7 @@ bool core::check_tx_mixin(const Transaction& tx) {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " has too large mixIn count, rejected";
         return false;
       }
-	  if (txMixin < m_currency.minMixin() && txMixin != 1) {
+	  if (getCurrentBlockMajorVersion() >= BLOCK_MAJOR_VERSION_4 && txMixin < m_currency.minMixin() && txMixin != 1) {
 		  logger(ERROR) << "Transaction " << getObjectHash(tx) << " has mixIn count below the required minimum, rejected";
 		  return false;
 	  }
