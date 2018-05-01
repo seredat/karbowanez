@@ -1,5 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers, The Karbowanec developers
-// Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
+// Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -1318,7 +1318,6 @@ bool Blockchain::getRandomOutsByAmount(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_
     if (!(up_index_limit <= amount_outs.size())) { logger(ERROR, BRIGHT_RED) << "internal error: find_end_of_allowed_index returned wrong index=" << up_index_limit << ", with amount_outs.size = " << amount_outs.size(); return false; }
 
     if (up_index_limit > 0) {
-      ShuffleGenerator<size_t, Crypto::random_engine<size_t>> generator(up_index_limit);
       for (uint64_t j = 0; j < up_index_limit && result_outs.outs.size() < req.outs_count; ++j) {
         // triangular distribution over [a,b) with a=0, mode c=b=up_index_limit
         uint64_t r = Crypto::rand<uint64_t>() % ((uint64_t)1 << 53);
