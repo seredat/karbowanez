@@ -718,6 +718,38 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
   return m_blocks[height].bl.timestamp;
 }
 
+uint64_t Blockchain::getMinimalFee(int32_t height) {
+	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+	std::vector<uint64_t> timestamps;
+	std::vector<difficulty_type> cumulative_difficulties;
+	size_t offset;
+	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay()));
+
+	if (offset == 0) {
+		++offset;
+	}
+	for (; offset < height; offset++) {
+		timestamps.push_back(m_blocks[offset].bl.timestamp);
+		cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
+	}
+
+	auto blockMajorVersion = getBlockMajorVersionForHeight(height);
+	uint64_t alreadyGeneratedCoins, reward;
+	int64_t emissionChange;
+	std::vector<size_t> lastBlocksSizes;
+	get_last_n_blocks_sizes(lastBlocksSizes, m_currency.rewardBlocksWindow());
+	size_t effectiveSizeMedian = std::max(Common::medianValue(lastBlocksSizes), CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
+	size_t cumulativeSize;
+	getBlockSize(getBlockIdByHeight(height), cumulativeSize);
+	getAlreadyGeneratedCoins(getBlockIdByHeight(height), alreadyGeneratedCoins);
+
+	if (!m_currency.getBlockReward(blockMajorVersion, effectiveSizeMedian, cumulativeSize, alreadyGeneratedCoins, 0, reward, emissionChange)) {
+		return m_currency.minimumFee();
+	}
+
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, reward);
+}
+
 uint64_t Blockchain::getCoinsInCirculation() {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   if (m_blocks.empty()) {

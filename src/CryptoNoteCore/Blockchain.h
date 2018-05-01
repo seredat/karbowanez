@@ -91,6 +91,7 @@ namespace CryptoNote {
     Crypto::Hash getTailId(uint32_t& height);
     difficulty_type getDifficultyForNextBlock();
 	uint64_t getBlockTimestamp(uint32_t height);
+	uint64_t getMinimalFee(int32_t height);
     uint64_t getCoinsInCirculation();
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
 	uint8_t blockMajorVersion;
