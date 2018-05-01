@@ -218,6 +218,16 @@ struct TransferCommand {
         return false;
       }
 
+	  if (fake_outs_count < m_currency.minMixin() && fake_outs_count != 0) {
+          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or bigger than " << m_currency.minMixin();
+          return false;
+      }
+
+      if (fake_outs_count > m_currency.maxMixin()) {
+          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or less than " << m_currency.maxMixin();
+          return false;
+      }
+
       while (!ar.eof()) {
 
         auto arg = ar.next();
