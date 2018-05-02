@@ -205,7 +205,7 @@ bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_contex
   tvc = boost::value_initialized<tx_verification_context>();
   //want to process all transactions sequentially
 
-  if (tx_blob.size() > m_currency.maxTransactionSizeLimit()) {
+  if (tx_blob.size() > m_currency.maxTransactionSizeLimit() && getCurrentBlockMajorVersion() >= BLOCK_MAJOR_VERSION_4) {
     logger(INFO) << "WRONG TRANSACTION BLOB, too big size " << tx_blob.size() << ", rejected";
     tvc.m_verifivation_failed = true;
     return false;
