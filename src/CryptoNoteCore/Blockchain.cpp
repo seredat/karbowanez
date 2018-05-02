@@ -1,5 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
+// Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cmath>
 #include <boost/foreach.hpp>
 #include "Common/Math.h"
 #include "Common/ShuffleGenerator.h"
@@ -1349,11 +1350,28 @@ bool Blockchain::getRandomOutsByAmount(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_
     size_t up_index_limit = find_end_of_allowed_index(amount_outs);
     if (!(up_index_limit <= amount_outs.size())) { logger(ERROR, BRIGHT_RED) << "internal error: find_end_of_allowed_index returned wrong index=" << up_index_limit << ", with amount_outs.size = " << amount_outs.size(); return false; }
 
-    if (up_index_limit > 0) {
-      ShuffleGenerator<size_t, Crypto::random_engine<size_t>> generator(up_index_limit);
-      for (uint64_t j = 0; j < up_index_limit && result_outs.outs.size() < req.outs_count; ++j) {
-        add_out_to_get_random_outs(amount_outs, result_outs, amount, generator());
+	if(amount_outs.size() > req.outs_count)
+    {
+      std::set<size_t> used;
+      size_t try_count = 0;
+      for(uint64_t j = 0; j != req.outs_count && try_count < up_index_limit;)
+      {
+	    // triangular distribution over [a,b) with a=0, mode c=b=up_index_limit
+        uint64_t r = Crypto::rand<uint64_t>() % ((uint64_t)1 << 53);
+        double frac = std::sqrt((double)r / ((uint64_t)1 << 53));
+        size_t i = (size_t)(frac*up_index_limit);
+        if(used.count(i))
+          continue;
+        bool added = add_out_to_get_random_outs(amount_outs, result_outs, amount, i);
+        used.insert(i);
+        if(added)
+          ++j;
+        ++try_count;
       }
+    }else
+    {
+      for(size_t i = 0; i != up_index_limit; i++)
+        add_out_to_get_random_outs(amount_outs, result_outs, amount, i);
     }
   }
   return true;
