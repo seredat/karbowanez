@@ -290,7 +290,6 @@ namespace CryptoNote
 
       for (unsigned i = 0; i < nthreads; ++i) {
         threads[i] = std::async(std::launch::async, [&, i]() {
-		  cn_pow_hash_v2 m_pow_ctx;
           Crypto::Hash h;
 
           Block lb(bl); // copy to local block
