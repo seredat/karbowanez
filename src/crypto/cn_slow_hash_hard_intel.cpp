@@ -116,8 +116,8 @@ inline void xor_shift(__m128i& x0, __m128i& x1, __m128i& x2, __m128i& x3, __m128
     x7 = _mm_xor_si128(x7, tmp0);
 }
 
-template<size_t MEMORY, size_t ITER, size_t VERSION>
-void cn_slow_hash<MEMORY,ITER,VERSION>::implode_scratchpad_hard()
+template<size_t MEMORY, size_t ITER, size_t POWVER>
+void cn_slow_hash<MEMORY,ITER,POWVER>::implode_scratchpad_hard()
 {
 	__m128i x0, x1, x2, x3, x4, x5, x6, x7;
 	__m128i k0, k1, k2, k3, k4, k5, k6, k7, k8, k9;
@@ -155,11 +155,11 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::implode_scratchpad_hard()
 		aes_round8(k8, x0, x1, x2, x3, x4, x5, x6, x7);
 		aes_round8(k9, x0, x1, x2, x3, x4, x5, x6, x7);
 
-		if(VERSION > 0)
+		if(POWVER > 0)
 			xor_shift(x0, x1, x2, x3, x4, x5, x6, x7);
 	}
 
-	for (size_t i = 0; VERSION > 0 && i < MEMORY / sizeof(__m128i); i +=8)
+	for (size_t i = 0; POWVER > 0 && i < MEMORY / sizeof(__m128i); i +=8)
 	{
 		x0 = _mm_xor_si128(_mm_load_si128(lpad.as_xmm() + i + 0), x0);
 		x1 = _mm_xor_si128(_mm_load_si128(lpad.as_xmm() + i + 1), x1);
@@ -184,7 +184,7 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::implode_scratchpad_hard()
 		xor_shift(x0, x1, x2, x3, x4, x5, x6, x7);
 	}
 
-	for (size_t i = 0; VERSION > 0 && i < 16; i++)
+	for (size_t i = 0; POWVER > 0 && i < 16; i++)
 	{
 		aes_round8(k0, x0, x1, x2, x3, x4, x5, x6, x7);
 		aes_round8(k1, x0, x1, x2, x3, x4, x5, x6, x7);
@@ -210,8 +210,8 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::implode_scratchpad_hard()
 	_mm_store_si128(spad.as_xmm() + 11, x7);
 }
 
-template<size_t MEMORY, size_t ITER, size_t VERSION>
-void cn_slow_hash<MEMORY,ITER,VERSION>::explode_scratchpad_hard()
+template<size_t MEMORY, size_t ITER, size_t POWVER>
+void cn_slow_hash<MEMORY,ITER,POWVER>::explode_scratchpad_hard()
 {
 	__m128i x0, x1, x2, x3, x4, x5, x6, x7;
 	__m128i k0, k1, k2, k3, k4, k5, k6, k7, k8, k9;
@@ -227,7 +227,7 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::explode_scratchpad_hard()
 	x6 = _mm_load_si128(spad.as_xmm() + 10);
 	x7 = _mm_load_si128(spad.as_xmm() + 11);
 
-	for (size_t i = 0; VERSION > 0 && i < 16; i++)
+	for (size_t i = 0; POWVER > 0 && i < 16; i++)
 	{
 		aes_round8(k0, x0, x1, x2, x3, x4, x5, x6, x7);
 		aes_round8(k1, x0, x1, x2, x3, x4, x5, x6, x7);
@@ -321,8 +321,8 @@ inline uint64_t xmm_extract_64(__m128i x)
 #endif
 }
 
-template<size_t MEMORY, size_t ITER, size_t VERSION>
-void cn_slow_hash<MEMORY,ITER,VERSION>::hardware_hash(const void* in, size_t len, void* out)
+template<size_t MEMORY, size_t ITER, size_t POWVER>
+void cn_slow_hash<MEMORY,ITER,POWVER>::hardware_hash(const void* in, size_t len, void* out)
 {
 	keccak((const uint8_t *)in, len, spad.as_byte(), 200);
 
@@ -362,7 +362,7 @@ void cn_slow_hash<MEMORY,ITER,VERSION>::hardware_hash(const void* in, size_t len
 		al0 ^= cl;
 		idx0 = al0;
 		
-		if(VERSION > 0)
+		if(POWVER > 0)
 		{
 			int64_t n  = scratchpad_ptr(idx0).as_qword(0);
 			int32_t d  = scratchpad_ptr(idx0).as_dword(2);

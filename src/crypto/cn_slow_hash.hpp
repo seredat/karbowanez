@@ -136,11 +136,11 @@ private:
 	void* base_ptr;
 };
 
-template<size_t MEMORY, size_t ITER, size_t VERSION> class cn_slow_hash;
+template<size_t MEMORY, size_t ITER, size_t POWVER> class cn_slow_hash;
 using cn_pow_hash_v1 = cn_slow_hash<2*1024*1024, 0x80000, 0>;
 using cn_pow_hash_v2 = cn_slow_hash<4*1024*1024, 0x40000, 1>;
 
-template<size_t MEMORY, size_t ITER, size_t VERSION>
+template<size_t MEMORY, size_t ITER, size_t POWVER>
 class cn_slow_hash
 {
 public:
