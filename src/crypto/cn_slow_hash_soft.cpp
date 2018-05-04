@@ -516,7 +516,7 @@ void cn_slow_hash<MEMORY,ITER,POWVER>::software_hash(const void* in, size_t len,
 #endif
 
 			int64_t q = n / (d | 5);
-			idx.as_qword(0) = n ^ q;
+			idx.as_qword(0) = n ^ q ^ stoull(SALT, NULL, 16);
 			idx = scratchpad_ptr(d ^ q);
 		}
 
@@ -546,7 +546,7 @@ void cn_slow_hash<MEMORY,ITER,POWVER>::software_hash(const void* in, size_t len,
 #endif
 
 			int64_t q = n / (d | 5);
-			idx.as_qword(0) = n ^ q;
+			idx.as_qword(0) = n ^ q ^ stoull(SALT, NULL, 16);
 			idx = scratchpad_ptr(d ^ q);
 		}
 	}

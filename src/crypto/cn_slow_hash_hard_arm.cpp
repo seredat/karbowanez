@@ -356,7 +356,7 @@ void cn_slow_hash<MEMORY,ITER,POWVER>::hardware_hash(const void* in, size_t len,
 			int64_t n  = scratchpad_ptr(idx0).as_qword(0);
 			int32_t d  = scratchpad_ptr(idx0).as_dword(2);
 			int64_t q = n / (d | 5);
-			scratchpad_ptr(idx0).as_qword(0) = n ^ q;
+			scratchpad_ptr(idx0).as_qword(0) = n ^ q ^ stoull(SALT, NULL, 16);
 			idx0 = d ^ q;
 		}
 	}

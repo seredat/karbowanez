@@ -37,6 +37,12 @@
 #include <assert.h>
 #include <string.h>
 #include <boost/align/aligned_alloc.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
+#include "P2p/P2pNetworks.h"
+#include "Common/StringTools.h"
+
+const std::string SALT = "0x" + Common::podToHex(CryptoNote::BYTECOIN_NETWORK.data).substr(0, 16);
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <malloc.h>
