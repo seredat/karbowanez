@@ -1,0 +1,32 @@
+#include <windows.h>
+
+1 VERSIONINFO
+ FILEVERSION 1,5,2,1
+ PRODUCTVERSION 1,5,2,0
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Karbo Foundation"
+            VALUE "FileDescription", "Karbo network daemon"
+            VALUE "FileVersion", "1.5.2.1"
+            VALUE "InternalName", "karbowanecd.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2016-2018, Karbowanec Developers"
+            VALUE "OriginalFilename", "karbowanecd.exe"
+            VALUE "ProductName", "Karbo"
+            VALUE "ProductVersion", "1.5.2.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+101               ICON                    "karbo.ico"

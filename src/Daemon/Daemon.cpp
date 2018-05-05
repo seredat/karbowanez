@@ -198,6 +198,15 @@ int main(int argc, char* argv[])
       return 0;
     }
 
+	std::cout <<
+"\n                                                   \n"
+"  _|    _|    _|_|    _|_|_|    _|_|_|      _|_|    \n"
+"  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
+"  _|_|      _|_|_|_|  _|_|_|    _|_|_|    _|    _|  \n"
+"  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
+"  _|    _|  _|    _|  _|    _|  _|_|_|      _|_|    \n"
+"                                                    \n" << ENDL;
+
     logger(INFO) << "Module folder: " << argv[0];
 
     bool testnet_mode = command_line::get_arg(vm, arg_testnet_on);
