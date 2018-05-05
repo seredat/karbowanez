@@ -412,6 +412,8 @@ namespace CryptoNote {
 
 	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock) const {
+		sort(timestamps.begin(), timestamps.end());
+		sort(cumulativeDifficulties.begin(), cumulativeDifficulties.end());
 
 		const uint64_t avgRefDifficulty = UINT64_C(1400000000);
 		const uint64_t avgRefReward = UINT64_C(21598000000000);

@@ -718,15 +718,16 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	std::vector<uint64_t> timestamps;
 	std::vector<difficulty_type> cumulative_difficulties;
 	size_t offset;
-	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay()));
+	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay() * 7));
 
 	if (offset == 0) {
 		++offset;
 	}
-	for (; offset < height; offset++) {
-		timestamps.push_back(m_blocks[offset].bl.timestamp);
-		cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
-	}
+
+	timestamps.push_back(m_blocks[offset].bl.timestamp);
+	cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
+	timestamps.push_back(m_blocks[height].bl.timestamp);
+	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
 
 	auto blockMajorVersion = getBlockMajorVersionForHeight(height);
 	uint64_t alreadyGeneratedCoins, reward;
