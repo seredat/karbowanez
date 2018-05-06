@@ -23,6 +23,7 @@
 #include <boost/math/special_functions/round.hpp>
 #include <boost/lexical_cast.hpp>
 #include "../Common/Base58.h"
+#include "../Common/Math.h"
 #include "../Common/int-util.h"
 #include "../Common/StringTools.h"
 
@@ -410,23 +411,24 @@ namespace CryptoNote {
 		return Common::fromString(strAmount, amount);
 	}
 
-	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps,
-		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock) const {
+	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties,
+		std::vector<difficulty_type> refCumulativeDifficulties, std::vector<uint64_t> refTimestamps, uint64_t rewardPerBlock, std::vector<uint64_t> rewards) const {
 		sort(timestamps.begin(), timestamps.end());
+		sort(refTimestamps.begin(), refTimestamps.end());
 		sort(cumulativeDifficulties.begin(), cumulativeDifficulties.end());
+		sort(refCumulativeDifficulties.begin(), refCumulativeDifficulties.end());
 
-		const uint64_t avgRefDifficulty = UINT64_C(1400000000);
-		const uint64_t avgRefReward = UINT64_C(21598000000000);
-		const double fiatEq = double(0.01);
-
-		uint64_t minimumFee(0), dailyDifficulty, low, high;
+		uint64_t medianReward = Common::medianValue(rewards);
+		uint64_t minimumFee(0), dailyDifficulty, low, high, medianDiff, low2, high2;
 		low = mul128(cumulativeDifficulties.back() - cumulativeDifficulties.front(), m_difficultyTarget, &high);
 		dailyDifficulty = low / (m_difficultyTarget / 2 * m_expectedNumberOfBlocksPerDay + (timestamps.back() - timestamps.front()) / 2);
+		low2 = mul128(refCumulativeDifficulties.back() - refCumulativeDifficulties.front(), m_difficultyTarget, &high2);
+		medianDiff = low2 / (refTimestamps.back() - refTimestamps.front());
 
-		double minFee = fiatEq * static_cast<double>(avgRefDifficulty) / static_cast<double>(dailyDifficulty) * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
-
+		double minFee2 = double(0.01) * static_cast<double>(medianDiff) / static_cast<double>(dailyDifficulty) * static_cast<double>(rewardPerBlock) / static_cast<double>(medianReward);
+		
 		std::stringstream ss;
-		ss << std::fixed << std::setprecision(12) << minFee;
+		ss << std::fixed << std::setprecision(12) << minFee2;
 		std::string feeString = ss.str();
 		parseAmount(feeString, minimumFee);
 		

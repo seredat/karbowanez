@@ -723,6 +723,9 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 	std::vector<uint64_t> timestamps;
 	std::vector<difficulty_type> cumulative_difficulties;
+	std::vector<uint64_t> ref_timestamps;
+	std::vector<difficulty_type> ref_cumulative_difficulties;
+	std::vector<uint64_t> rewards;
 	size_t offset;
 	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay() * 7));
 
@@ -735,8 +738,13 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	timestamps.push_back(m_blocks[height].bl.timestamp);
 	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
 
+	ref_timestamps.push_back(m_blocks[1].bl.timestamp);
+	ref_timestamps.push_back(m_blocks.back().bl.timestamp);
+    ref_cumulative_difficulties.push_back(m_blocks[1].cumulative_difficulty);
+	ref_cumulative_difficulties.push_back(m_blocks.back().cumulative_difficulty);
+
 	auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-	uint64_t alreadyGeneratedCoins, reward;
+	uint64_t alreadyGeneratedCoins, currentReward;
 	int64_t emissionChange;
 	std::vector<size_t> lastBlocksSizes;
 	get_last_n_blocks_sizes(lastBlocksSizes, m_currency.rewardBlocksWindow());
@@ -745,11 +753,19 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	getBlockSize(getBlockIdByHeight(height), cumulativeSize);
 	getAlreadyGeneratedCoins(getBlockIdByHeight(height), alreadyGeneratedCoins);
 
-	if (!m_currency.getBlockReward(blockMajorVersion, effectiveSizeMedian, cumulativeSize, alreadyGeneratedCoins, 0, reward, emissionChange)) {
-		return m_currency.minimumFee();
+	uint64_t initialReward = 0;
+	for (const TransactionOutput& out : m_blocks[1].bl.baseTransaction.outputs) {
+		initialReward += out.amount;
 	}
 
-	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, reward);
+	if (!m_currency.getBlockReward(blockMajorVersion, effectiveSizeMedian, cumulativeSize, alreadyGeneratedCoins, 0, currentReward, emissionChange)) {
+		return m_currency.minimumFee();
+	}
+	
+	rewards.push_back(initialReward);
+	rewards.push_back(currentReward);
+
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, ref_cumulative_difficulties, ref_timestamps, currentReward, rewards);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {

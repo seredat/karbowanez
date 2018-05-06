@@ -80,7 +80,8 @@ public:
   uint64_t coin() const { return m_coin; }
 
   uint64_t minimumFee() const { return m_mininumFee; }
-  uint64_t getMinimalFee(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties, uint64_t reward) const;
+  uint64_t getMinimalFee(std::vector<uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties,
+	  std::vector<difficulty_type> refCumulativeDifficulties, std::vector<uint64_t> refTimestamps, uint64_t rewardPerBlock, std::vector<uint64_t> rewards) const;
   uint64_t defaultDustThreshold() const { return m_defaultDustThreshold; }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
