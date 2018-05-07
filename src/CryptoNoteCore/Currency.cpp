@@ -425,7 +425,7 @@ namespace CryptoNote {
 		low2 = mul128(refCumulativeDifficulties.back() - refCumulativeDifficulties.front(), m_difficultyTarget, &high2);
 		medianDiff = low2 / (refTimestamps.back() - refTimestamps.front());
 
-		double minFee2 = double(0.01) * static_cast<double>(medianDiff) / static_cast<double>(dailyDifficulty) * static_cast<double>(rewardPerBlock) / static_cast<double>(medianReward);
+		double minFee2 = static_cast<double>(medianDiff) / static_cast<double>(dailyDifficulty) * static_cast<double>(rewardPerBlock) / static_cast<double>(medianReward);
 		
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(12) << minFee2;
