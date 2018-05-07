@@ -718,7 +718,7 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	std::vector<uint64_t> timestamps;
 	std::vector<difficulty_type> cumulative_difficulties;
 	size_t offset;
-	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay() * 7));
+	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay()));
 
 	if (offset == 0) {
 		++offset;
@@ -729,21 +729,12 @@ uint64_t Blockchain::getMinimalFee(int32_t height) {
 	timestamps.push_back(m_blocks[height].bl.timestamp);
 	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
 
-	auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-	uint64_t alreadyGeneratedCoins, reward;
-	int64_t emissionChange;
-	std::vector<size_t> lastBlocksSizes;
-	get_last_n_blocks_sizes(lastBlocksSizes, m_currency.rewardBlocksWindow());
-	size_t effectiveSizeMedian = std::max(Common::medianValue(lastBlocksSizes), CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
-	size_t cumulativeSize;
-	getBlockSize(getBlockIdByHeight(height), cumulativeSize);
-	getAlreadyGeneratedCoins(getBlockIdByHeight(height), alreadyGeneratedCoins);
-
-	if (!m_currency.getBlockReward(blockMajorVersion, effectiveSizeMedian, cumulativeSize, alreadyGeneratedCoins, 0, reward, emissionChange)) {
-		return m_currency.minimumFee();
+	uint64_t lastReward = 0;
+	for (const TransactionOutput& out : m_blocks[height].bl.baseTransaction.outputs) {
+		lastReward += out.amount;
 	}
 
-	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, reward);
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
