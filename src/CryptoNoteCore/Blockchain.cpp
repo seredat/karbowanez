@@ -713,13 +713,17 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
-uint64_t Blockchain::getMinimalFee(int32_t height) {
+uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
+  assert(height < m_blocks.size());
+  return m_blocks[height].bl.timestamp;
+}
+
+uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 	std::vector<uint64_t> timestamps;
 	std::vector<difficulty_type> cumulative_difficulties;
 	size_t offset;
-	offset = height - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.expectedNumberOfBlocksPerDay()));
-
+	offset = height - std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
 	if (offset == 0) {
 		++offset;
 	}
