@@ -738,7 +738,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 		lastReward += out.amount;
 	}
 
-	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward);
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {

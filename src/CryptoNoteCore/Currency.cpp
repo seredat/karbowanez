@@ -411,26 +411,28 @@ namespace CryptoNote {
 	}
 
 	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps,
-		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock) const {
+		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock, uint32_t height) const {
 		sort(timestamps.begin(), timestamps.end());
 		sort(cumulativeDifficulties.begin(), cumulativeDifficulties.end());
 
-		const uint64_t avgRefDifficulty = UINT64_C(1400000000);
+		const uint64_t avgRefDifficulty = UINT64_C(6000000000);
 		const uint64_t avgRefReward = UINT64_C(21598000000000);
-		const double fiatEq = double(0.01);
+		const uint32_t blockConst = UINT32_C(156300);
+		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
+		const double gauge = double(0.01);
 
 		uint64_t minimumFee(0), dailyDifficulty, low, high;
 		low = mul128(cumulativeDifficulties.back() - cumulativeDifficulties.front(), m_difficultyTarget, &high);
 		dailyDifficulty = low / (m_difficultyTarget / 2 * m_expectedNumberOfBlocksPerDay + (timestamps.back() - timestamps.front()) / 2);
-
-		double minFee = fiatEq * static_cast<double>(avgRefDifficulty) / static_cast<double>(dailyDifficulty) * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
+		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
+		double minFee = gauge * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
 
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(12) << minFee;
 		std::string feeString = ss.str();
 		parseAmount(feeString, minimumFee);
-		
-		return minimumFee;
+
+		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
