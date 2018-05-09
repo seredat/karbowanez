@@ -735,10 +735,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	timestamps.push_back(m_blocks[height].bl.timestamp);
 	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
 
-	uint64_t lastReward = 0;
-	for (const TransactionOutput& out : m_blocks[height].bl.baseTransaction.outputs) {
-		lastReward += out.amount;
-	}
+	uint64_t lastReward = get_outs_money_amount(m_blocks[height].bl.baseTransaction);
 
 	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward, height);
 }
