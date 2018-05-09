@@ -19,6 +19,7 @@
 #include "Blockchain.h"
 
 #include <algorithm>
+#include <numeric>
 #include <cstdio>
 #include <boost/foreach.hpp>
 #include "Common/Math.h"
@@ -720,10 +721,11 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
 
 uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+	std::vector<uint64_t> rewards;
 	std::vector<uint64_t> timestamps;
 	std::vector<difficulty_type> cumulative_difficulties;
-	size_t offset;
-	offset = height - std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+	size_t window = std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+	size_t offset = height - window;
 	if (offset == 0) {
 		++offset;
 	}
@@ -733,9 +735,15 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	timestamps.push_back(m_blocks[height].bl.timestamp);
 	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
 
-	uint64_t lastReward = get_outs_money_amount(m_blocks[height].bl.baseTransaction);
+	uint64_t lastAvgReward = 0;
+	rewards.reserve(window);
+	for (; offset < height; offset++) {
+		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
+	}
+	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / window;
+	rewards.shrink_to_fit();
 
-	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward, height);
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastAvgReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
