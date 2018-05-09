@@ -410,6 +410,34 @@ namespace CryptoNote {
 		return Common::fromString(strAmount, amount);
 	}
 
+	// Copyright (c) 2017-2018 Zawy 
+	// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
+	// Moore's law application by Sergey Kozlov
+	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps, 
+		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock, uint32_t height) const {
+		sort(timestamps.begin(), timestamps.end());
+		sort(cumulativeDifficulties.begin(), cumulativeDifficulties.end());
+
+		const uint64_t avgRefDifficulty = UINT64_C(7500000000);
+		const uint64_t avgRefReward = UINT64_C(21598000000000);
+		const uint32_t blockConst = UINT32_C(156300);
+		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
+		const double gauge = double(0.01);
+
+		uint64_t minimumFee(0), dailyDifficulty, low, high;
+		low = mul128(cumulativeDifficulties.back() - cumulativeDifficulties.front(), m_difficultyTarget, &high);
+		dailyDifficulty = low / (m_difficultyTarget / 2 * m_expectedNumberOfBlocksPerDay + (timestamps.back() - timestamps.front()) / 2);
+		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
+		double minFee = gauge * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
+
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(12) << minFee;
+		std::string feeString = ss.str();
+		parseAmount(feeString, minimumFee);
+
+		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
+	}
+
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
@@ -685,6 +713,7 @@ namespace CryptoNote {
 		maxTxSize(parameters::CRYPTONOTE_MAX_TX_SIZE);
 		publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
 		minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+		expectedNumberOfBlocksPerDay(parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY);
 
 		timestampCheckWindow(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW);
 		timestampCheckWindow_v1(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V1);

@@ -720,6 +720,29 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
   return m_blocks[height].bl.timestamp;
 }
 
+uint64_t Blockchain::getMinimalFee(uint32_t height) {
+	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+	std::vector<uint64_t> timestamps;
+	std::vector<difficulty_type> cumulative_difficulties;
+	size_t offset;
+	offset = height - std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+	if (offset == 0) {
+		++offset;
+	}
+
+	timestamps.push_back(m_blocks[offset].bl.timestamp);
+	cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
+	timestamps.push_back(m_blocks[height].bl.timestamp);
+	cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
+
+	uint64_t lastReward = 0;
+	for (const TransactionOutput& out : m_blocks[height].bl.baseTransaction.outputs) {
+		lastReward += out.amount;
+	}
+
+	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastReward, height);
+}
+
 uint64_t Blockchain::getCoinsInCirculation() {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   if (m_blocks.empty()) {
