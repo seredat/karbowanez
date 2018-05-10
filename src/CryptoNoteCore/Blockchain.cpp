@@ -729,6 +729,9 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	if (offset == 0) {
 		++offset;
 	}
+	if (window == 0) {
+		++window;
+	}
 
 	timestamps.push_back(m_blocks[offset].bl.timestamp);
 	cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
