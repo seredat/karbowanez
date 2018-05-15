@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2018, The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -17,6 +19,7 @@
 
 #include "Checkpoints.h"
 #include "Common/StringTools.h"
+#include <boost/regex.hpp>
 
 using namespace Logging;
 
@@ -38,6 +41,51 @@ bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
   }
 
   m_points[height] = h;
+  return true;
+}
+//---------------------------------------------------------------------------
+const boost::regex linesregx("\\r\\n|\\n\\r|\\n|\\r");
+const boost::regex fieldsregx(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
+bool Checkpoints::load_checkpoints_from_file(const std::string& fileName) {
+  std::string buff;
+  if (!Common::loadFileToString(fileName, buff)) {
+    logger(Logging::ERROR, BRIGHT_RED) << "Could not load checkpoints file: " << fileName;
+    return false;
+  }
+  const char* data = buff.c_str();
+  unsigned int length = strlen(data);
+
+  boost::cregex_token_iterator li(data, data + length, linesregx, -1);
+  boost::cregex_token_iterator end;
+
+  int count = 0;
+  while (li != end) {
+    std::string line = li->str();
+    ++li;
+ 
+    boost::sregex_token_iterator ti(line.begin(), line.end(), fieldsregx, -1);
+    boost::sregex_token_iterator end2;
+ 
+    std::vector<std::string> row;
+    while (ti != end2) {
+      std::string token = ti->str();
+      ++ti;
+      row.push_back(token);
+    }
+    if (row.size() != 2) {
+      logger(Logging::ERROR, BRIGHT_RED) << "Invalid checkpoint file format";
+      return false;
+    } else {
+      uint32_t height = stoi(row[0]);
+      bool r = add_checkpoint(height, row[1]);
+      if (!r) {
+        return false;
+      }
+      count += 1;
+    }
+  }
+
+  logger(Logging::INFO) << "Loaded " << count << " checkpoint(s) from " << fileName;
   return true;
 }
 //---------------------------------------------------------------------------
