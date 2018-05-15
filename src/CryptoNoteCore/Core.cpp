@@ -426,8 +426,14 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
         b.minorVersion = BLOCK_MINOR_VERSION_0;
       }
 
-      b.parentBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
-      b.parentBlock.majorVersion = BLOCK_MINOR_VERSION_0;
+	  if (b.majorVersion >= BLOCK_MAJOR_VERSION_4) {
+		  b.parentBlock.majorVersion = b.majorVersion;
+		  b.parentBlock.minorVersion = BLOCK_MINOR_VERSION_1;
+	  }
+	  else {
+		  b.parentBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
+		  b.parentBlock.minorVersion = BLOCK_MINOR_VERSION_0;
+	  }
       b.parentBlock.transactionCount = 1;
       TransactionExtraMergeMiningTag mm_tag = boost::value_initialized<decltype(mm_tag)>();
 
