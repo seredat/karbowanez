@@ -675,6 +675,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("show_seed", boost::bind(&simple_wallet::seed, this, _1), "Get wallet recovery phrase (deterministic seed)");
   m_consoleHandler.setHandler("payment_id", boost::bind(&simple_wallet::payment_id, this, _1), "Generate random Payment ID");
   m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Change password");
+  m_consoleHandler.setHandler("optimize", boost::bind(&simple_wallet::optimize, this, _1), "Sweep unmixable dust");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
 }
@@ -1740,7 +1741,8 @@ bool simple_wallet::export_tracking_key(const std::vector<std::string>& args/* =
 bool simple_wallet::show_balance(const std::vector<std::string>& args/* = std::vector<std::string>()*/) {
   success_msg_writer() << "available balance: " << m_currency.formatAmount(m_wallet->actualBalance()) <<
     ", locked amount: " << m_currency.formatAmount(m_wallet->pendingBalance()) <<
-	", total balance: " << m_currency.formatAmount(m_wallet->actualBalance() + m_wallet->pendingBalance());
+	", total balance: " << m_currency.formatAmount(m_wallet->actualBalance() + m_wallet->pendingBalance())
+	  << ", dust: " << m_currency.formatAmount(m_wallet->dustBalance());
 
   return true;
 }
@@ -2082,6 +2084,71 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
   return true;
 }
 //----------------------------------------------------------------------------------------------------
+bool simple_wallet::optimize(const std::vector<std::string>& args) {
+	if (m_trackingWallet) {
+		fail_msg_writer() << "This is tracking wallet. Spending is impossible.";
+		return true;
+	}
+	try {
+		WalletLegacyTransfer destination;
+		destination.address = m_wallet->getAddress();
+		//destination.amount = m_wallet->dustBalance();
+		CryptoNote::TransactionDestinationEntry de;
+		ArgumentReader<std::vector<std::string>::const_iterator> ar(args.begin(), args.end());
+		auto arg = ar.next();
+		if (arg.size()) {
+			bool ok = m_currency.parseAmount(arg, de.amount);
+			if (!ok || 0 == de.amount) {
+				logger(ERROR, BRIGHT_RED) << "Please enter amount to optimize to.";
+				return false;
+			}
+			destination.amount = de.amount;
+		}
+		
+		CryptoNote::WalletHelper::SendCompleteResultObserver sent;
+		std::string extraString;
+
+		WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
+
+		CryptoNote::TransactionId tx = m_wallet->sendDustTransaction(destination, /* m_node->getMinimalFee() */ 0, extraString, 0, 0);
+		if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
+			fail_msg_writer() << "Can't send money";
+			return true;
+		}
+
+		std::error_code sendError = sent.wait(tx);
+		removeGuard.removeObserver();
+
+		if (sendError) {
+			fail_msg_writer() << sendError.message();
+			return true;
+		}
+
+		CryptoNote::WalletLegacyTransaction txInfo;
+		m_wallet->getTransaction(tx, txInfo);
+		success_msg_writer(true) << "Money successfully sent, transaction " << Common::podToHex(txInfo.hash);
+
+		try {
+			CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
+		}
+		catch (const std::exception& e) {
+			fail_msg_writer() << e.what();
+			return true;
+		}
+	}
+	catch (const std::system_error& e) {
+		fail_msg_writer() << e.what();
+	}
+	catch (const std::exception& e) {
+		fail_msg_writer() << e.what();
+	}
+	catch (...) {
+		fail_msg_writer() << "unknown error";
+	}
+
+	return true;
+}
+//----------------------------------------------------------------------------------------------------
 bool simple_wallet::run() {
   {
     std::unique_lock<std::mutex> lock(m_walletSynchronizedMutex);
@@ -2282,7 +2349,7 @@ int main(int argc, char* argv[]) {
       walletFileName = ::tryToOpenWalletOrLoadKeysOrThrow(logger, wallet, wallet_file, wallet_password);
 
       logger(INFO) << "available balance: " << currency.formatAmount(wallet->actualBalance()) <<
-      ", locked amount: " << currency.formatAmount(wallet->pendingBalance());
+      ", locked amount: " << currency.formatAmount(wallet->pendingBalance()) << ", dust: " << currency.formatAmount(wallet->dustBalance());
 
       logger(INFO, BRIGHT_GREEN) << "Loaded ok";
     } catch (const std::exception& e)  {

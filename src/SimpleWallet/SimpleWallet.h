@@ -123,6 +123,7 @@ namespace CryptoNote
     bool set_log(const std::vector<std::string> &args);
 	bool payment_id(const std::vector<std::string> &args);
 	bool change_password(const std::vector<std::string> &args);
+	bool optimize(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
 	std::string resolveAlias(const std::string& aliasUrl);
