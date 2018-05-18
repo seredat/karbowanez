@@ -1742,7 +1742,7 @@ bool simple_wallet::show_balance(const std::vector<std::string>& args/* = std::v
   success_msg_writer() << "available balance: " << m_currency.formatAmount(m_wallet->actualBalance()) <<
     ", locked amount: " << m_currency.formatAmount(m_wallet->pendingBalance()) <<
 	", total balance: " << m_currency.formatAmount(m_wallet->actualBalance() + m_wallet->pendingBalance())
-	  << ", dust: " << m_currency.formatAmount(m_wallet->dustBalance());
+	  << ", unixable dust: " << m_currency.formatAmount(m_wallet->dustBalance());
 
   return true;
 }
@@ -2092,17 +2092,17 @@ bool simple_wallet::optimize(const std::vector<std::string>& args) {
 	try {
 		WalletLegacyTransfer destination;
 		destination.address = m_wallet->getAddress();
-		//destination.amount = m_wallet->dustBalance();
 		CryptoNote::TransactionDestinationEntry de;
-		ArgumentReader<std::vector<std::string>::const_iterator> ar(args.begin(), args.end());
-		auto arg = ar.next();
-		if (arg.size()) {
+		if (0 == args.size()) {
+			destination.amount = m_wallet->dustBalance();
+		}
+		else {
+			ArgumentReader<std::vector<std::string>::const_iterator> ar(args.begin(), args.end());
+			auto arg = ar.next();
 			bool ok = m_currency.parseAmount(arg, de.amount);
 			if (!ok || 0 == de.amount) {
-				logger(ERROR, BRIGHT_RED) << "Please enter amount to optimize to.";
-				return false;
 			}
-			destination.amount = de.amount;
+			destination.amount = de.amount;	
 		}
 		
 		CryptoNote::WalletHelper::SendCompleteResultObserver sent;
@@ -2110,7 +2110,7 @@ bool simple_wallet::optimize(const std::vector<std::string>& args) {
 
 		WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
 
-		CryptoNote::TransactionId tx = m_wallet->sendDustTransaction(destination, /* m_node->getMinimalFee() */ 0, extraString, 0, 0);
+		CryptoNote::TransactionId tx = m_wallet->sendDustTransaction(destination, getMinimalRoundedFee(), extraString, 0, 0);
 		if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
 			fail_msg_writer() << "Can't send money";
 			return true;
@@ -2147,6 +2147,20 @@ bool simple_wallet::optimize(const std::vector<std::string>& args) {
 	}
 
 	return true;
+}
+//----------------------------------------------------------------------------------------------------
+uint64_t simple_wallet::getMinimalRoundedFee() {
+	double fee = std::stod(m_currency.formatAmount(m_node->getMinimalFee()));
+	int digits = 2; // round fee to 2 digits after leading zeroes
+	double scale = pow(10., floor(log10(fabs(fee))) + (1 - digits));
+	double roundedFee = ceil(fee / scale) * scale;
+	uint64_t res;
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(12) << roundedFee;
+	std::string feeString = ss.str();
+	m_currency.parseAmount(feeString, res);
+
+	return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, res);
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::run() {

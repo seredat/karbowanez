@@ -284,8 +284,7 @@ namespace CryptoNote {
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
 			if (amount < defaultDustThreshold()) {
-				//return false;
-				//allow dust optimization in fusion
+				return false;
 			}
 
 			inputAmount += amount;
