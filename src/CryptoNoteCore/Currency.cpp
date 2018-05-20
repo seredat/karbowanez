@@ -429,7 +429,7 @@ namespace CryptoNote {
 		dailyDifficulty = low / (m_difficultyTarget / 2 * m_expectedNumberOfBlocksPerDay + (timestamps.back() - timestamps.front()) / 2);
 		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
 		double minFee = gauge * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
-		if (minFee == 0 || !isfinite(minFee))
+		if (minFee == 0 || !std::isfinite(minFee))
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
 		
 		// round fee to 3 digits after leading zeroes
