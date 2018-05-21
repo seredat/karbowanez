@@ -78,7 +78,7 @@ namespace CryptoNote {
 			m_upgradeHeightV2 = 10;
 			m_upgradeHeightV3 = 20;
 			m_upgradeHeightV4 = 30;
-			m_upgradeHeightV5 = -1;
+			m_upgradeHeightV5 = 50;
 			m_blocksFileName = "testnet_" + m_blocksFileName;
 			m_blocksCacheFileName = "testnet_" + m_blocksCacheFileName;
 			m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
@@ -444,7 +444,10 @@ namespace CryptoNote {
 
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
-		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
+			return nextDifficultyV4(blockMajorVersion, timestamps, cumulativeDifficulties);
+		}
+		else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
 			return nextDifficultyV3(timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
@@ -616,6 +619,66 @@ namespace CryptoNote {
 
 		return next_difficulty;
 	}	
+
+	// Round Off Protection. D must be > 20.
+	double Currency::ROP(double RR) const {
+		if (ceil(RR + 0.01) > ceil(RR - 0.01)) { 
+			RR = ceil(RR + 0.03);
+		}
+		return RR;
+	}
+
+	difficulty_type Currency::nextDifficultyV4(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
+		std::vector<difficulty_type> cumulativeDifficulties) const {
+
+		// EMA-LWMA difficulty algorithm
+		// Copyright (c) 2018 Zawy
+		// https://github.com/zawy12/difficulty-algorithms/issues/27
+		// EMA & LWMA math by Jacob Eliosoff and Tom Harding.
+		// CN coins must make the following changes:
+		// const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT   = 3xT;  // (360 for T=120 seconds)
+		// const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW  = 11;
+		// const unit64_t DIFFICULTY_BLOCKS_COUNT  = 60 + 1
+		// Make sure lag is zero and do not sort timestamps.
+		// CN coins must also deploy the Jagerman MTP Patch. See:
+		// https://github.com/loki-project/loki/pull/26#event-1600444609
+
+		// After startup, timestamps & cumulativeDifficulties vectors should be size N+1.
+		double N = static_cast<double>(CryptoNote::parameters::DIFFICULTY_WINDOW_V3);
+		double T = static_cast<double>(m_difficultyTarget);
+		int64_t FTL = static_cast<int64_t>(blockFutureTimeLimit(blockMajorVersion));
+		
+		double L(0), next_D, ST, D, tSMA, sumD, sumST;
+
+		// For new coins height < N+1, give away first 4 blocks or use smaller N
+		if (timestamps.size() < 4) { return 1; }
+		else if (timestamps.size() < N + 1) { N = timestamps.size() - 1; }
+		else { timestamps.resize(N + 1); cumulativeDifficulties.resize(N + 1); }
+
+		// calculate fast EMA using most recent 2 blocks
+		ST = std::max<double>(-FTL, std::min<double>(timestamps[N] - timestamps[N - 1], 6 * T));
+		//  Most recent solvetime is for previous difficulty, not the most recent one. 
+		D = cumulativeDifficulties[N - 1] - cumulativeDifficulties[N - 2];
+		next_D = ROP(D * 9 / (8 + ST / T / 0.945));
+
+		// Calculate a tempered SMA. Don't shift the difficulties back 1 as in EMA.
+		sumD = cumulativeDifficulties[N] - cumulativeDifficulties[0];
+		sumST = timestamps[N] - timestamps[0];
+		tSMA = ROP(sumD / (0.5*N + 0.5*sumST / T));
+
+		// Do LWMA if the EMA is suspiciously outside +/- 10% boundary from tSMA.
+		if (next_D > tSMA*1.12 || next_D < tSMA / 1.12) {
+			// N is most recently solved block. Don't use size_t for i.
+			for (int64_t i = 1; i <= N; i++) {
+				ST = std::max<double>(-FTL, std::min<double>(timestamps[i] - timestamps[i - 1], 6 * T));
+				L += ST * i;
+			}
+			// 460 =~ (N*(N+1)/2/4) with N=60 to be like BTC's 1/4
+			if (L < T * 460) { L = T * 460; }
+			next_D = ROP(sumD*T*(N + 1)*0.991 / L / 2);
+		}
+		return static_cast<uint64_t>(next_D);
+	}
 
 	bool Currency::checkProofOfWorkV1(cn_pow_hash_v2& hash_ctx, const Block& block, difficulty_type currentDiffic,
 		Crypto::Hash& proofOfWork) const {

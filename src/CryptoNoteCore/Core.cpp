@@ -427,7 +427,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
       }
 
       b.parentBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
-      b.parentBlock.majorVersion = BLOCK_MINOR_VERSION_0;
+      b.parentBlock.minorVersion = BLOCK_MINOR_VERSION_0;
       b.parentBlock.transactionCount = 1;
       TransactionExtraMergeMiningTag mm_tag = boost::value_initialized<decltype(mm_tag)>();
 
