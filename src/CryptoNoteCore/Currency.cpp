@@ -620,9 +620,9 @@ namespace CryptoNote {
 		return next_difficulty;
 	}	
 
-	// Fuzzy EMA difficulty algorithm
+	// Slipstream EMA difficulty algorithm
 	// Copyright (c) 2018 Zawy
-	// EMA & LWMA math by Jacob Eliosoff and Tom Harding.
+	// EMA math by Jacob Eliosoff and Tom Harding.
 	// https://github.com/zawy12/difficulty-algorithms/issues/27
 
 	// Round Off Protection. D must be > 20.
