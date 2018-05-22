@@ -651,7 +651,7 @@ namespace CryptoNote {
 		// Calculate fast EMA using most recent 2 blocks. 
 		// +6xT prevents D dropping too far after attack to prevent on-off attack oscillations.
 		// -FTL prevents maliciously raising D.  ST=solvetime.
-		ST = std::max<double>(-FTL, std::min<double>(timestamps[N] - timestamps[N - 1], 6 * T));
+		ST = std::max(-FTL, std::min(double(timestamps[N] - timestamps[N - 1]), 6 * T));
 		//  Most recent solvetime applies to previous difficulty, not the most recent one. 
 		D = cumulativeDifficulties[N - 1] - cumulativeDifficulties[N - 2];
 		next_D = ROP(D * 9 / (8 + ST / T / 0.945));
@@ -659,13 +659,13 @@ namespace CryptoNote {
 		// Calculate a tempered SMA. Don't shift the difficulties back 1 as in EMA.
 		sumD = cumulativeDifficulties[N] - cumulativeDifficulties[0];
 		sumST = timestamps[N] - timestamps[0];
-		tSMA = ROP(sumD / (0.5*N + 0.5*sumST / T));
+		tSMA = ROP(sumD / (0.5 * N + 0.5 * sumST / T));
 
 		// Do slow EMA if fast EMA is outside +/- 14% from tSMA.
 		if (next_D > tSMA*1.14 || next_D < tSMA / 1.14) {
 			next_D = ROP(D * 28 / (27 + ST / T / 0.98));
 		}
-		return static_cast<uint64_t>(0.9935*next_D);
+		return static_cast<uint64_t>(0.9935 * next_D);
 	}
 
 	bool Currency::checkProofOfWorkV1(cn_pow_hash_v2& hash_ctx, const Block& block, difficulty_type currentDiffic,
