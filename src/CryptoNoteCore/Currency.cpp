@@ -627,15 +627,15 @@ namespace CryptoNote {
 		return next_difficulty;
 	}	
 
-	// Fuzzy EMA difficulty algorithm
+	// Slipstream EMA difficulty algorithm
 	// Copyright (c) 2018 Zawy
-	// EMA & LWMA math by Jacob Eliosoff and Tom Harding.
+	// EMA math by Jacob Eliosoff and Tom Harding.
 	// https://github.com/zawy12/difficulty-algorithms/issues/27
 
 	// Round Off Protection. D must be > 20.
 	double Currency::ROP(double RR) const {
-		if (ceil(RR + 0.01) > ceil(RR - 0.01)) { 
-			RR = ceil(RR + 0.02);
+		if (ceil(RR + 0.01) > ceil(RR)) {
+			RR = ceil(RR + 0.03);
 		}
 		return RR;
 	}
@@ -655,22 +655,21 @@ namespace CryptoNote {
 		// After startup, the following should be the norm.
 		else { timestamps.resize(N + 1); cumulativeDifficulties.resize(N + 1); }
 
-		// Calculate fast EMA using most recent 2 blocks. 
+		// Calculate fast EMA using most recent 2 blocks.
 		// +6xT prevents D dropping too far after attack to prevent on-off attack oscillations.
 		// -FTL prevents maliciously raising D.  ST=solvetime.
-		ST = std::max<double>(-FTL, std::min<double>(timestamps[N] - timestamps[N - 1], 6 * T));
-		//  Most recent solvetime applies to previous difficulty, not the most recent one. 
-		D = cumulativeDifficulties[N - 1] - cumulativeDifficulties[N - 2];
-		next_D = ROP(D * 9 / (8 + ST / T / 0.945));
+		ST = std::max(-FTL, std::min(double(timestamps[N] - timestamps[N - 1]), 6 * T));
+		D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
+		next_D = ROP(D * 9 * T / (8 * T + ST * 1.058));
 
-		// Calculate a tempered SMA. Don't shift the difficulties back 1 as in EMA.
+		// Calculate a 50% tempered SMA. 
 		sumD = cumulativeDifficulties[N] - cumulativeDifficulties[0];
 		sumST = timestamps[N] - timestamps[0];
-		tSMA = ROP(sumD / (0.5*N + 0.5*sumST / T));
+		tSMA = ROP(sumD * 2 * T / (N*T + sumST));
 
-		// Do slow EMA if fast EMA is outside +/- 14% from tSMA.
-		if (next_D > tSMA*1.14 || next_D < tSMA / 1.14) {
-			next_D = ROP(D * 28 / (27 + ST / T / 0.98));
+		// Do slow EMA if fast EMA is outside +/- 14% from tSMA. 0.877 = 1/1.14.
+		if (next_D > tSMA*1.14 || next_D < tSMA*0.877) {
+			next_D = ROP(D * 28 * T / (27 * T + ST * 1.02));
 		}
 		return static_cast<uint64_t>(0.9935*next_D);
 	}
