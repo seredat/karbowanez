@@ -170,7 +170,7 @@ namespace CryptoNote {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx);
      //check if the mixin is not too large
-	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc);
+	 bool check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc);
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
 

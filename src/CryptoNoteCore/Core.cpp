@@ -254,7 +254,7 @@ bool core::check_tx_mixin(const Transaction& tx) {
   return true;
 }
 
-bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc) {
+bool core::check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc) {
 	uint64_t inputs_amount = 0;
 	if (!get_inputs_money_amount(tx, inputs_amount)) {
 		tvc.m_verification_failed = true;
@@ -274,7 +274,14 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	getObjectHash(tx, h, blobSize);
 	const uint64_t fee = inputs_amount - outputs_amount;
 	bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize);
-	if (!isFusionTransaction && fee < m_currency.minimumFee()) {
+	Crypto::Hash blockHash;
+	uint32_t blockHeight;
+	if (!getBlockContainingTx(txHash, blockHash, blockHeight)) {
+		blockHeight = get_current_blockchain_height() - 1;
+	}
+
+	if ((!isFusionTransaction && fee < getMinimalFeeForHeight(blockHeight)) ||
+		(tx.unlockTime < m_currency.transactionSpendableAge() && fee < getMinimalFeeForHeight(blockHeight))) {
 		logger(DEBUGGING) << "transaction fee is not enough: " << m_currency.formatAmount(fee) <<
 			", minimum fee: " << m_currency.formatAmount(m_currency.minimumFee());
 		tvc.m_verification_failed = true;
@@ -1097,11 +1104,11 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
 
 	  if (blobSize > m_currency.maxTransactionSizeLimit()) {
 		  logger(INFO) << "Transaction verification failed: too big size " << blobSize << " of transaction " << txHash << ", rejected";
-		  tvc.m_verifivation_failed = true;
+		  tvc.m_verification_failed = true;
 		  return false;
 	  }
 
-	  if (!check_tx_fee(tx, blobSize, tvc)) {
+	  if (!check_tx_fee(tx, txHash, blobSize, tvc)) {
 		  tvc.m_verification_failed = true;
 		  return false;
 	  }
