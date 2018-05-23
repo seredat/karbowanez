@@ -441,7 +441,7 @@ bool RpcServer::on_send_raw_tx(const COMMAND_RPC_SEND_RAW_TX::request& req, COMM
     return true;
   }
 
-  if (tvc.m_verifivation_failed)
+  if (tvc.m_verification_failed)
   {
     logger(INFO) << "[on_send_raw_tx]: tx verification failed";
     res.status = "Failed";
