@@ -281,7 +281,7 @@ bool core::check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_
 	}
 
 	if ((!isFusionTransaction && fee < getMinimalFeeForHeight(blockHeight)) ||
-		(tx.unlockTime < m_currency.transactionSpendableAge() && fee < getMinimalFeeForHeight(blockHeight))) {
+		(tx.unlockTime < m_currency.transactionSpendableAge() && fee < getMinimalFeeForHeight(blockHeight) && blobSize > m_currency.fusionTxMaxSize())) {
 		logger(DEBUGGING) << "transaction fee is not enough: " << m_currency.formatAmount(fee) <<
 			", minimum fee: " << m_currency.formatAmount(m_currency.minimumFee());
 		tvc.m_verification_failed = true;
