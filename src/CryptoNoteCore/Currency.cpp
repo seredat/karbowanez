@@ -413,20 +413,15 @@ namespace CryptoNote {
 	// Copyright (c) 2017-2018 Zawy 
 	// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
 	// Moore's law application by Sergey Kozlov
-	uint64_t Currency::getMinimalFee(std::vector<uint64_t> timestamps, 
-		std::vector<difficulty_type> cumulativeDifficulties, uint64_t rewardPerBlock, uint32_t height) const {
-		sort(timestamps.begin(), timestamps.end());
-		sort(cumulativeDifficulties.begin(), cumulativeDifficulties.end());
 
+	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
 		const uint64_t avgRefDifficulty = UINT64_C(7500000000);
 		const uint64_t avgRefReward = UINT64_C(21598000000000);
 		const uint32_t blockConst = UINT32_C(156300);
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
 		const double gauge = double(0.01);
 
-		uint64_t minimumFee(0), dailyDifficulty, low, high;
-		low = mul128(cumulativeDifficulties.back() - cumulativeDifficulties.front(), m_difficultyTarget, &high);
-		dailyDifficulty = low / (m_difficultyTarget / 2 * m_expectedNumberOfBlocksPerDay + (timestamps.back() - timestamps.front()) / 2);
+		uint64_t minimumFee(0);
 		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
 		double minFee = gauge * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
 		if (minFee == 0 || !std::isfinite(minFee))
@@ -443,6 +438,16 @@ namespace CryptoNote {
 		parseAmount(feeString, minimumFee);
 
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
+	}
+
+	uint64_t Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
+		sort(timestamps.begin(), timestamps.end());
+		sort(difficulties.begin(), difficulties.end());
+		uint64_t Difficulty, low, high, days;
+		low = mul128(difficulties.back() - difficulties.front(), m_difficultyTarget, &high);
+		assert(timestamps.back() - timestamps.front() != 0);
+		uint64_t ST = timestamps.back() - timestamps.front();
+		return low / ((m_difficultyTarget / 2 * ST / m_difficultyTarget + ST / 2));
 	}
 
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
