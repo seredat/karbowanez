@@ -62,6 +62,17 @@ public:
   size_t difficultyWindow() const { return m_difficultyWindow; }
   size_t difficultyLag() const { return m_difficultyLag; }
   size_t difficultyCut() const { return m_difficultyCut; }
+  size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+      return difficultyBlocksCount3() + 1;
+    }
+    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+      return difficultyBlocksCount2();
+    }
+    else {
+      return difficultyBlocksCount();
+    }
+  };
   size_t difficultyBlocksCount() const { return m_difficultyWindow + m_difficultyLag; }
   size_t difficultyBlocksCount2() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V2; }
   size_t difficultyBlocksCount3() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V3; }
