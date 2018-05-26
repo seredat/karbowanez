@@ -504,7 +504,7 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   } else {
     return false;
   }
-  const int cn_variant = b.majorVersion >= 4 ? b.majorVersion - 3 : 0;
+  const int cn_variant = b.majorVersion >= BLOCK_MAJOR_VERSION_3 ? b.majorVersion - 2 : 0;
   cn_slow_hash(context, bd.data(), bd.size(), res, cn_variant);
   return true;
 }
