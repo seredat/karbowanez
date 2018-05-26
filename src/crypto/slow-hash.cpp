@@ -19,7 +19,7 @@
 
 #include "hash.h"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <Windows.h>
 #else
 #include <sys/mman.h>

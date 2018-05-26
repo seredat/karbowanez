@@ -22,7 +22,7 @@
 
 #include "CryptoNoteConfig.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
 #include <shlobj.h>
 #include <strsafe.h>
