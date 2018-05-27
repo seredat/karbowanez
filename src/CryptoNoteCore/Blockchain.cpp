@@ -755,7 +755,9 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / window;
 	rewards.shrink_to_fit();
 
-	return m_currency.getMinimalFee(timestamps, cumulative_difficulties, lastAvgReward, height);
+	uint64_t avgDifficulty = m_currency.getAvgDifficultyForPeriod(timestamps, cumulative_difficulties);
+
+	return m_currency.getMinimalFee(avgDifficulty, lastAvgReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
