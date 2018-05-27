@@ -423,20 +423,10 @@ namespace CryptoNote {
 
 		uint64_t minimumFee(0);
 		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
-		double minFee = gauge * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
+		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
 		if (minFee == 0 || !std::isfinite(minFee))
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
-		
-		// round fee to 3 digits after leading zeroes
-		int digits = 3;
-		double scale = pow(10., floor(log10(fabs(minFee))) + (1 - digits));
-		double roundedFee = ceil(minFee / scale) * scale;
-
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(12) << roundedFee;
-		std::string feeString = ss.str();
-		parseAmount(feeString, minimumFee);
-
+		minimumFee = static_cast<uint64_t>(minFee);
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
