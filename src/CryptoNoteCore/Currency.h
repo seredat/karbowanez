@@ -81,9 +81,9 @@ public:
   uint64_t coin() const { return m_coin; }
 
   uint64_t minimumFee() const { return m_mininumFee; }
-  uint64_t getMinimalFee(uint64_t dailyDifficulty, uint64_t reward, uint32_t height) const;
+  uint64_t getMinimalFee(difficulty_type dailyDifficulty, uint64_t reward, uint32_t height) const;
   uint64_t defaultDustThreshold() const { return m_defaultDustThreshold; }
-  uint64_t getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const;
+  difficulty_type getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const;
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
   size_t difficultyWindow() const { return m_difficultyWindow; }
   size_t difficultyLag() const { return m_difficultyLag; }
@@ -137,11 +137,11 @@ public:
   const Block& genesisBlock() const { return m_genesisBlock; }
   const Crypto::Hash& genesisBlockHash() const { return m_genesisBlockHash; }
 
-  bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+  bool getBlockReward(difficulty_type difficulty, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
     uint64_t& reward, int64_t& emissionChange) const;
   size_t maxBlockCumulativeSize(uint64_t height) const;
 
-  bool constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+  bool constructMinerTx(difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
     uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce = BinaryArray(), size_t maxOuts = 1) const;
 
   bool isFusionTransaction(const Transaction& transaction) const;

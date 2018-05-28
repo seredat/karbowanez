@@ -147,7 +147,7 @@ namespace CryptoNote {
 		}
 	}
 
-	bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+	bool Currency::getBlockReward(difficulty_type difficulty, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
 		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 		// assert(alreadyGeneratedCoins <= m_moneySupply);
 		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
@@ -187,7 +187,7 @@ namespace CryptoNote {
 		return maxSize;
 	}
 
-	bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+	bool Currency::constructMinerTx(difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
 		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
 		tx.inputs.clear();
@@ -207,7 +207,7 @@ namespace CryptoNote {
 
 		uint64_t blockReward;
 		int64_t emissionChange;
-		if (!getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+		if (!getBlockReward(difficulty, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
 			logger(INFO) << "Block is too big";
 			return false;
 		}
@@ -418,7 +418,7 @@ namespace CryptoNote {
 	// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
 	// Moore's law application by Sergey Kozlov
 
-	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
+	uint64_t Currency::getMinimalFee(difficulty_type dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
 		const uint64_t avgRefDifficulty = UINT64_C(7500000000);
 		const uint64_t avgRefReward = UINT64_C(21598000000000);
 		const uint32_t blockConst = UINT32_C(156300);
@@ -434,7 +434,7 @@ namespace CryptoNote {
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
-	uint64_t Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
+	difficulty_type Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
 		sort(timestamps.begin(), timestamps.end());
 		sort(difficulties.begin(), difficulties.end());
 		uint64_t Difficulty, low, high, days;
@@ -785,7 +785,7 @@ namespace CryptoNote {
 	Transaction CurrencyBuilder::generateGenesisTransaction() {
 		CryptoNote::Transaction tx;
 		CryptoNote::AccountPublicAddress ac = boost::value_initialized<CryptoNote::AccountPublicAddress>();
-		m_currency.constructMinerTx(1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
+		m_currency.constructMinerTx(1, 1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
 		return tx;
 	}
 	CurrencyBuilder& CurrencyBuilder::emissionSpeedFactor(unsigned int val) {

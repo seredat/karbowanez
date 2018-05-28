@@ -746,27 +746,27 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
 }
 
 uint64_t Blockchain::getMinimalFee(uint32_t height) {
-	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
-	std::vector<uint64_t> rewards;
-	size_t window = std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
-	if (window == 0) {
-		++window;
-	}
-	size_t offset = height - window;
-	if (offset == 0) {
-		++offset;
-	}
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  std::vector<uint64_t> rewards;
+  size_t window = std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+  if (window == 0) {
+	  ++window;
+  }
+  size_t offset = height - window;
+  if (offset == 0) {
+    ++offset;
+  }
+  
+  difficulty_type avgDifficulty = getAvgDifficultyForHeight(height, window);
+  uint64_t lastAvgReward = 0;
+  rewards.reserve(window);
+  for (; offset < height; offset++) {
+    rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
+  }
+  lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / window;
+  rewards.shrink_to_fit();
 
-	uint64_t avgDifficulty = getAvgDifficultyForHeight(height, window);
-	uint64_t lastAvgReward = 0;
-	rewards.reserve(window);
-	for (; offset < height; offset++) {
-		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
-	}
-	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / window;
-	rewards.shrink_to_fit();
-
-	return m_currency.getMinimalFee(avgDifficulty, lastAvgReward, height);
+  return m_currency.getMinimalFee(avgDifficulty, lastAvgReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
@@ -996,7 +996,8 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  if (!m_currency.getBlockReward(blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+  difficulty_type avgDifficulty = getAvgDifficultyForHeight(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  if (!m_currency.getBlockReward(avgDifficulty, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
     logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
     return false;
   }

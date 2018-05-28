@@ -121,8 +121,8 @@ namespace CryptoNote {
     bool getBlockIdsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<Crypto::Hash>& hashes, uint32_t& blocksNumberWithinTimestamps);
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
     bool isBlockInMainChain(const Crypto::Hash& blockId);
-    bool isInCheckpointZone(const uint32_t height);
-    uint64_t getAvgDifficultyForHeight(uint32_t height, size_t window);
+	bool isInCheckpointZone(const uint32_t height);
+	difficulty_type getAvgDifficultyForHeight(uint32_t height, size_t window);
 
     template<class visitor_t> bool scanOutputKeysForIndexes(const KeyInput& tx_in_to_key, visitor_t& vis, uint32_t* pmax_related_block_height = NULL);
 
