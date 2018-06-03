@@ -34,12 +34,29 @@
 
 using namespace Common;
 
+namespace {
+
+const uint32_t WALLET_SERIALIZATION_VERSION = 2;
+
+bool verifyKeys(const Crypto::SecretKey& sec, const Crypto::PublicKey& expected_pub) {
+  Crypto::PublicKey pub;
+  bool r = Crypto::secret_key_to_public_key(sec, pub);
+  return r && expected_pub == pub;
+}
+
+void throwIfKeysMissmatch(const Crypto::SecretKey& sec, const Crypto::PublicKey& expected_pub) {
+  if (!verifyKeys(sec, expected_pub))
+    throw std::system_error(make_error_code(CryptoNote::error::WRONG_PASSWORD));
+}
+
+}
+
 namespace CryptoNote {
 
 WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account, WalletUserTransactionsCache& transactionsCache) :
   account(account),
   transactionsCache(transactionsCache),
-  walletSerializationVersion(1)
+  walletSerializationVersion(WALLET_SERIALIZATION_VERSION)
 {
 }
 
@@ -139,7 +156,11 @@ void WalletLegacySerializer::deserialize(std::istream& stream, const std::string
   serializer(detailsSaved, "has_details");
 
   if (detailsSaved) {
-    serializer(transactionsCache, "details");
+    if (version == 1) {
+      transactionsCache.deserializeLegacyV1(serializer);
+    } else {
+      serializer(transactionsCache, "details");
+    }
   }
 
   serializer.binary(cache, "cache");

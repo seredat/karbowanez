@@ -710,10 +710,7 @@ std::vector<Transaction> core::getPoolTransactions() {
 }
 
 std::list<CryptoNote::tx_memory_pool::TransactionDetails> core::getMemoryPool() const {
-  //std::list<CryptoNote::tx_memory_pool::TransactionDetails> txs;
-  //m_mempool.getMemoryPool(txs);
-  //return txs;
-	return m_mempool.getMemoryPool();
+  return m_mempool.getMemoryPool();
 }
 
 std::vector<Crypto::Hash> core::buildSparseChain() {
@@ -746,6 +743,14 @@ bool core::getBlockByHash(const Crypto::Hash &h, Block &blk) {
 
 bool core::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockHeight(blockId, blockHeight);
+}
+
+uint64_t core::coinsEmittedAtHeight(uint64_t height) {
+  return m_blockchain.coinsEmittedAtHeight(height);
+}
+
+uint64_t core::difficultyAtHeight(uint64_t height) {
+  return m_blockchain.difficultyAtHeight(height);
 }
 
 //void core::get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid) {
@@ -1098,6 +1103,22 @@ uint64_t core::getTotalGeneratedAmount() {
   return m_blockchain.getCoinsInCirculation();
 }
 
+uint64_t core::fullDepositAmount() const {
+  return m_blockchain.fullDepositAmount();
+}
+
+uint64_t core::depositAmountAtHeight(size_t height) const {
+  return m_blockchain.depositAmountAtHeight(height);
+}
+
+uint64_t core::fullDepositInterest() const {
+  return m_blockchain.fullDepositInterest();
+}
+
+uint64_t core::depositInterestAtHeight(size_t height) const {
+  return m_blockchain.depositInterestAtHeight(height);
+}
+
 bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock) {
   if (!check_tx_syntax(tx)) {
     logger(INFO) << "WRONG TRANSACTION BLOB, Failed to check tx " << txHash << " syntax, rejected";
@@ -1108,22 +1129,22 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
   // is in checkpoint zone
   if (!m_blockchain.isInCheckpointZone(get_current_blockchain_height())) {
 
-	  if (blobSize > m_currency.maxTransactionSizeLimit()) {
-		  logger(INFO) << "Transaction verification failed: too big size " << blobSize << " of transaction " << txHash << ", rejected";
-		  tvc.m_verification_failed = true;
-		  return false;
-	  }
+    if (blobSize > m_currency.maxTransactionSizeLimit()) {
+      logger(INFO) << "Transaction verification failed: too big size " << blobSize << " of transaction " << txHash << ", rejected";
+      tvc.m_verification_failed = true;
+      return false;
+    }
 
-	  if (!check_tx_fee(tx, txHash, blobSize, tvc)) {
-		  tvc.m_verification_failed = true;
-		  return false;
-	  }
+    if (!check_tx_fee(tx, txHash, blobSize, tvc)) {
+      tvc.m_verification_failed = true;
+      return false;
+    }
 
-	  if (!check_tx_mixin(tx)) {
-		  logger(INFO) << "Transaction verification failed: mixin count for transaction " << txHash << " is too large, rejected";
-		  tvc.m_verification_failed = true;
-		  return false;
-	  }
+    if (!check_tx_mixin(tx)) {
+      logger(INFO) << "Transaction verification failed: mixin count for transaction " << txHash << " is too large, rejected";
+      tvc.m_verification_failed = true;
+      return false;
+    }
   }
 
   if (!check_tx_semantic(tx, keptByBlock)) {

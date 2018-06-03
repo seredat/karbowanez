@@ -380,9 +380,10 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   else {
 	  res.fee_address = m_fee_address;
   }
-
   res.min_tx_fee = m_core.getMinimalFee();
   res.readable_tx_fee = m_core.currency().formatAmount(m_core.getMinimalFee());
+  res.full_deposit_amount = m_core.fullDepositAmount();
+  res.full_deposit_interest = m_core.fullDepositInterest();
 
   res.status = CORE_RPC_STATUS_OK;
   return true;

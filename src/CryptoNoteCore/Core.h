@@ -88,15 +88,15 @@ namespace CryptoNote {
      virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) override;
      virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock) override;
      virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
-	 virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
-	 virtual uint64_t getMinimalFee() override;
+     virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
+     virtual uint64_t getMinimalFee() override;
      
      virtual bool addMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
      virtual bool removeMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
 
      uint32_t get_current_blockchain_height();
 	 
-	 uint8_t getCurrentBlockMajorVersion();
+     uint8_t getCurrentBlockMajorVersion();
 
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
@@ -145,7 +145,7 @@ namespace CryptoNote {
      void print_blockchain(uint32_t start_index, uint32_t end_index);
      void print_blockchain_index();
      std::string print_pool(bool short_format);
-	 std::list<CryptoNote::tx_memory_pool::TransactionDetails> getMemoryPool() const;
+     std::list<CryptoNote::tx_memory_pool::TransactionDetails> getMemoryPool() const;
      void print_blockchain_outs(const std::string& file);
      virtual bool getPoolChanges(const Crypto::Hash& tailBlockId, const std::vector<Crypto::Hash>& knownTxsIds,
                                  std::vector<Transaction>& addedTxs, std::vector<Crypto::Hash>& deletedTxsIds) override;
@@ -156,7 +156,13 @@ namespace CryptoNote {
 
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
-	 bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
+     bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
+	 uint64_t fullDepositAmount() const;
+     uint64_t fullDepositInterest() const;
+     uint64_t depositAmountAtHeight(size_t height) const;
+     uint64_t depositInterestAtHeight(size_t height) const;
+     uint64_t coinsEmittedAtHeight(uint64_t height);
+     uint64_t difficultyAtHeight(uint64_t height);
 
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
@@ -170,7 +176,7 @@ namespace CryptoNote {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx);
      //check if the mixin is not too large
-	 bool check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc);
+     bool check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc);
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
 

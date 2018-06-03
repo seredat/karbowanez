@@ -206,6 +206,9 @@ public:
     logger(INFO) << operation << "multi-signature outputs...";
     s(m_bs.m_multisignatureOutputs, "multisig_outputs");
 
+    logger(INFO) << operation << "deposit index...";
+    s(m_bs.m_depositIndex, "deposit_index");
+
     auto dur = std::chrono::steady_clock::now() - start;
 
     logger(INFO) << "Serialization time: " << std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << "ms";
@@ -348,7 +351,7 @@ bool Blockchain::removeObserver(IBlockchainStorageObserver* observer) {
 }
 
 bool Blockchain::checkTransactionInputs(const CryptoNote::Transaction& tx, BlockInfo& maxUsedBlock) {
-  return checkTransactionInputs(tx, maxUsedBlock.height, maxUsedBlock.id);
+  return checkTransactionInputs(tx, maxUsedBlock.height, maxUsedBlock.id) && check_tx_outputs(tx);
 }
 
 bool Blockchain::checkTransactionInputs(const CryptoNote::Transaction& tx, BlockInfo& maxUsedBlock, BlockInfo& lastFailed) {
@@ -543,6 +546,7 @@ void Blockchain::rebuildCache() {
     const BlockEntry& block = m_blocks[b];
     Crypto::Hash blockHash = get_block_hash(block.bl);
     m_blockIndex.push(blockHash);
+    uint64_t interest = 0;
     for (uint16_t t = 0; t < block.transactions.size(); ++t) {
       const TransactionEntry& transaction = block.transactions[t];
       Crypto::Hash transactionHash = getObjectHash(transaction.tx);
@@ -569,7 +573,10 @@ void Blockchain::rebuildCache() {
           m_multisignatureOutputs[out.amount].push_back(usage);
         }
       }
+
+      interest += m_currency.calculateTotalTransactionInterest(transaction.tx);
     }
+    pushToDepositIndex(block, interest);
   }
 
   std::chrono::duration<double> duration = std::chrono::steady_clock::now() - timePoint;
@@ -778,6 +785,22 @@ uint64_t Blockchain::getCoinsInCirculation() {
   }
 }
 
+uint64_t Blockchain::coinsEmittedAtHeight(uint64_t height) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  const auto& block = m_blocks[height];
+  return block.already_generated_coins;
+}
+
+difficulty_type Blockchain::difficultyAtHeight(uint64_t height) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  const auto& current = m_blocks[height];
+  if (height < 1) { 
+    return current.cumulative_difficulty;
+  }
+  const auto& previous = m_blocks[height - 1];
+  return current.cumulative_difficulty - previous.cumulative_difficulty;
+}
+
 uint8_t Blockchain::getBlockMajorVersionForHeight(uint32_t height) const {
   if (height > m_upgradeDetectorV5.upgradeHeight()) {
     return m_upgradeDetectorV5.targetVersion();
@@ -972,6 +995,11 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
       << "coinbase transaction transaction have wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
       << height + m_currency.minedMoneyUnlockWindow();
+    return false;
+  }
+
+  if (!check_outs_valid(b.baseTransaction)) {
+    logger(INFO, BRIGHT_RED) << "miner transaction have invalid outputs";
     return false;
   }
 
@@ -1371,13 +1399,13 @@ bool Blockchain::getRandomOutsByAmount(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_
     size_t up_index_limit = find_end_of_allowed_index(amount_outs);
     if (!(up_index_limit <= amount_outs.size())) { logger(ERROR, BRIGHT_RED) << "internal error: find_end_of_allowed_index returned wrong index=" << up_index_limit << ", with amount_outs.size = " << amount_outs.size(); return false; }
 
-	if(amount_outs.size() > req.outs_count)
+    if(amount_outs.size() > req.outs_count)
     {
       std::set<size_t> used;
       size_t try_count = 0;
       for(uint64_t j = 0; j != req.outs_count && try_count < up_index_limit;)
       {
-	    // triangular distribution over [a,b) with a=0, mode c=b=up_index_limit
+        // triangular distribution over [a,b) with a=0, mode c=b=up_index_limit
         uint64_t r = Crypto::rand<uint64_t>() % ((uint64_t)1 << 53);
         double frac = std::sqrt((double)r / ((uint64_t)1 << 53));
         size_t i = (size_t)(frac*up_index_limit);
@@ -1706,6 +1734,30 @@ uint64_t Blockchain::get_adjusted_time() {
   return time(NULL);
 }
 
+bool Blockchain::check_tx_outputs(const Transaction& tx) const {
+  for (TransactionOutput out : tx.outputs) {
+    if (out.target.type() == typeid(MultisignatureOutput)) {
+      if (tx.version < TRANSACTION_VERSION_2) {
+        logger(INFO, BRIGHT_WHITE) << getObjectHash(tx) << " contains multisignature output but have verion " << tx.version;
+        return false;
+      } else {
+        const auto& multisignatureOutput = ::boost::get<MultisignatureOutput>(out.target);
+        if (multisignatureOutput.term != 0) {
+          if (multisignatureOutput.term < m_currency.depositMinTerm() || multisignatureOutput.term > m_currency.depositMaxTerm()) {
+            logger(INFO, BRIGHT_WHITE) << getObjectHash(tx) << " multisignature output has invalid term: " << multisignatureOutput.term;
+            return false;
+          } else if (out.amount < m_currency.depositMinAmount()) {
+            logger(INFO, BRIGHT_WHITE) << getObjectHash(tx) << " multisignature output is a deposit output, but it has too small amount: " << out.amount;
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 bool Blockchain::check_block_timestamp_main(const Block& b) {
   if (b.timestamp > get_adjusted_time() + m_currency.blockFutureTimeLimit(b.majorVersion)) {
     logger(INFO, BRIGHT_WHITE) <<
@@ -1751,7 +1803,7 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
   uint32_t height = get_block_height(b);
   const uint8_t expectedBlockVersion = getBlockMajorVersionForHeight(height);
   if (b.majorVersion != expectedBlockVersion) {
-    logger(TRACE) << "Block " << blockHash << " has wrong major version: " << static_cast<int>(b.majorVersion) <<
+    logger(DEBUGGING) << "Block " << blockHash << " has wrong major version: " << static_cast<int>(b.majorVersion) <<
       ", at height " << height << " expected version is " << static_cast<int>(expectedBlockVersion);
     return false;
   }
@@ -1980,6 +2032,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   size_t coinbase_blob_size = getObjectBinarySize(blockData.baseTransaction);
   size_t cumulative_block_size = coinbase_blob_size;
   uint64_t fee_summary = 0;
+  uint64_t interestSummary = 0;
   for (size_t i = 0; i < transactions.size(); ++i) {
     const Crypto::Hash& tx_id = blockData.transactionHashes[i];
     block.transactions.resize(block.transactions.size() + 1);
@@ -1987,11 +2040,27 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     uint64_t fee = 0;
     block.transactions.back().tx = transactions[i];
 
-    blob_size = toBinaryArray(block.transactions.back().tx).size();
-    fee = getInputAmount(block.transactions.back().tx) - getOutputAmount(block.transactions.back().tx);
-    if (!checkTransactionInputs(block.transactions.back().tx)) {
-      logger(INFO, BRIGHT_WHITE) <<
-        "Block " << blockHash << " has at least one transaction with wrong inputs: " << tx_id;
+    blob_size = toBinaryArray(transactions[i]).size();
+    fee = m_currency.getTransactionAllInputsAmount(transactions[i]) - getOutputAmount(transactions[i]);
+
+    bool isTransactionValid = true;
+    if (block.bl.majorVersion == BLOCK_MAJOR_VERSION_1 && transactions[i].version > TRANSACTION_VERSION_1) {
+      isTransactionValid = false;
+      logger(INFO, BRIGHT_WHITE) << "Block " << blockHash << " can't contain transaction " << tx_id << " because it has invalid version " << transactions[i].version;
+    }
+
+    if (!checkTransactionInputs(transactions[i])) {
+      isTransactionValid = false;
+      logger(INFO, BRIGHT_WHITE) << "Block " << blockHash << " has at least one transaction with wrong inputs: " << tx_id;
+    }
+
+    if (!check_tx_outputs(transactions[i])) {
+      isTransactionValid = false;
+      logger(INFO, BRIGHT_WHITE) << "Transaction " << tx_id << " has at least one invalid output";
+    }
+
+    if (!isTransactionValid) {
+      logger(INFO, BRIGHT_WHITE) << "Block " << blockHash << " has at least one invalid transaction: " << tx_id;
       bvc.m_verification_failed = true;
 
       block.transactions.pop_back();
@@ -2004,6 +2073,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
 
     cumulative_block_size += blob_size;
     fee_summary += fee;
+    interestSummary += m_currency.calculateTotalTransactionInterest(transactions[i]);
   }
 
   if (!checkCumulativeBlockSize(blockHash, cumulative_block_size, m_blocks.size())) {
@@ -2024,12 +2094,13 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   block.height = static_cast<uint32_t>(m_blocks.size());
   block.block_cumulative_size = cumulative_block_size;
   block.cumulative_difficulty = currentDifficulty;
-  block.already_generated_coins = already_generated_coins + emissionChange;
+  block.already_generated_coins = already_generated_coins + emissionChange + interestSummary;
   if (m_blocks.size() > 0) {
     block.cumulative_difficulty += m_blocks.back().cumulative_difficulty;
   }
 
   pushBlock(block);
+  pushToDepositIndex(block, interestSummary);
 
   auto block_processing_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - blockProcessingStart).count();
 
@@ -2050,6 +2121,49 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   update_next_comulative_size_limit();
 
   return true;
+}
+
+uint64_t Blockchain::fullDepositAmount() const {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  return m_depositIndex.fullDepositAmount();
+}
+
+uint64_t Blockchain::depositAmountAtHeight(size_t height) const {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  return m_depositIndex.depositAmountAtHeight(static_cast<DepositIndex::DepositHeight>(height));
+}
+
+uint64_t Blockchain::fullDepositInterest() const {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  return m_depositIndex.fullInterestAmount();
+}
+
+uint64_t Blockchain::depositInterestAtHeight(size_t height) const {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  return m_depositIndex.depositInterestAtHeight(static_cast<DepositIndex::DepositHeight>(height));
+}
+
+void Blockchain::pushToDepositIndex(const BlockEntry& block, uint64_t interest) {
+  int64_t deposit = 0;
+  for (const auto& tx : block.transactions) {
+    for (const auto& in : tx.tx.inputs) {
+      if (in.type() == typeid(MultisignatureInput)) {
+        auto& multisign = boost::get<MultisignatureInput>(in);
+        if (multisign.term > 0) {
+          deposit -= multisign.amount;
+        }
+      }
+    }
+    for (const auto& out : tx.tx.outputs) {
+      if (out.target.type() == typeid(MultisignatureOutput)) {
+        auto& multisign = boost::get<MultisignatureOutput>(out.target);
+        if (multisign.term > 0) {
+          deposit += out.amount;
+        }
+      }
+    }
+  }
+  m_depositIndex.pushBlock(deposit, interest);
 }
 
 bool Blockchain::pushBlock(BlockEntry& block) {
@@ -2294,6 +2408,16 @@ bool Blockchain::validateInput(const MultisignatureInput& input, const Crypto::H
     return false;
   }
 
+  if (input.term != output.term) {
+    logger(DEBUGGING) << "Transaction << " << transactionHash << " contains multisignature input with invalid term.";
+    return false;
+  }
+
+  if (output.term != 0 && outputIndex.transactionIndex.block + output.term > getCurrentBlockchainHeight()) {
+    logger(DEBUGGING) << "Transaction << " << transactionHash << " contains multisignature input that spends locked deposit output";
+    return false;
+  }
+
   size_t inputSignatureIndex = 0;
   size_t outputKeyIndex = 0;
   while (inputSignatureIndex < input.signatureCount) {
@@ -2350,6 +2474,7 @@ void Blockchain::removeLastBlock() {
   m_timestampIndex.remove(m_blocks.back().bl.timestamp, blockHash);
   m_generatedTransactionsIndex.remove(m_blocks.back().bl);
 
+  m_depositIndex.popBlock();
   m_blocks.pop_back();
   m_blockIndex.pop();
 

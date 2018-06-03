@@ -27,6 +27,7 @@
 
 namespace CryptoNote {
 class core;
+class Currency;
 class NodeServer;
 }
 
@@ -55,6 +56,7 @@ private:
   std::string get_commands_str();
   bool print_block_by_height(uint32_t height);
   bool print_block_by_hash(const std::string& arg);
+  uint64_t calculatePercent(const CryptoNote::Currency& currency, uint64_t value, uint64_t total);
 
   bool exit(const std::vector<std::string>& args);
   bool help(const std::vector<std::string>& args);
@@ -76,6 +78,7 @@ private:
   bool stop_mining(const std::vector<std::string>& args);
   bool print_diff(const std::vector<std::string>& args);
   bool print_ban(const std::vector<std::string>& args);
+  bool print_stat(const std::vector<std::string>& args);
   bool ban(const std::vector<std::string>& args);
   bool unban(const std::vector<std::string>& args);
 };

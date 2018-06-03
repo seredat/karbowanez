@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017 XDN-project developers
+// Copyright (c) 2018 Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -52,6 +54,13 @@ public:
    * for the same \a transactionHash.
    */
   virtual void onTransactionDeleted(ITransfersSubscription* object, const Crypto::Hash& transactionHash) {}
+
+  /**
+  * \note this method MUST be called after appropriate onTransactionUpdated has been called
+  */
+  virtual void onTransfersUnlocked(ITransfersSubscription* object, const std::vector<TransactionOutputInformation>& unlockedTransfers) {}
+
+  virtual void onTransfersLocked(ITransfersSubscription* object, const std::vector<TransactionOutputInformation>& lockedTransfers) {}
 };
 
 class ITransfersSubscription : public IObservable < ITransfersObserver > {

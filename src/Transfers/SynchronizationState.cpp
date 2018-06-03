@@ -79,9 +79,9 @@ SynchronizationState::CheckResult SynchronizationState::checkInterval(const Bloc
     return result;
   }
 
+  result.newBlockHeight = static_cast<uint32_t>(m_blockchain.size());
   if (intervalEnd > m_blockchain.size()) {
     result.hasNewBlocks = true;
-    result.newBlockHeight = static_cast<uint32_t>(m_blockchain.size());
   }
 
   return result;

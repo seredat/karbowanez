@@ -118,7 +118,7 @@ public:
   virtual size_t addInput(const AccountKeys& senderKeys, const TransactionTypes::InputKeyInfo& info, KeyPair& ephKeys) = 0;
 
   virtual size_t addOutput(uint64_t amount, const AccountPublicAddress& to) = 0;
-  virtual size_t addOutput(uint64_t amount, const std::vector<AccountPublicAddress>& to, uint32_t requiredSignatures) = 0;
+  virtual size_t addOutput(uint64_t amount, const std::vector<AccountPublicAddress>& to, uint32_t requiredSignatures, uint32_t term = 0) = 0;
   virtual size_t addOutput(uint64_t amount, const KeyOutput& out) = 0;
   virtual size_t addOutput(uint64_t amount, const MultisignatureOutput& out) = 0;
 

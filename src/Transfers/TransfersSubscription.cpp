@@ -31,21 +31,33 @@ SynchronizationStart TransfersSubscription::getSyncStart() {
 }
 
 void TransfersSubscription::onBlockchainDetach(uint32_t height) {
-  std::vector<Hash> deletedTransactions = transfers.detach(height);
+  std::vector<Hash> deletedTransactions;
+  std::vector<TransactionOutputInformation> lockedTransfers;
+  transfers.detach(height, deletedTransactions, lockedTransfers);
   for (auto& hash : deletedTransactions) {
     m_observerManager.notify(&ITransfersObserver::onTransactionDeleted, this, hash);
+  }
+
+  if (!lockedTransfers.empty()) {
+    m_observerManager.notify(&ITransfersObserver::onTransfersLocked, this, lockedTransfers);
   }
 }
 
 void TransfersSubscription::onError(const std::error_code& ec, uint32_t height) {
   if (height != WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT) {
-  transfers.detach(height);
+    onBlockchainDetach(height);
   }
   m_observerManager.notify(&ITransfersObserver::onError, this, height, ec);
 }
 
 bool TransfersSubscription::advanceHeight(uint32_t height) {
-  return transfers.advanceHeight(height);
+  std::vector<TransactionOutputInformation> unlockedTransfers = transfers.advanceHeight(height);
+
+  if (!unlockedTransfers.empty()) {
+    m_observerManager.notify(&ITransfersObserver::onTransfersUnlocked, this, unlockedTransfers);
+  }
+
+  return true;
 }
 
 const AccountKeys& TransfersSubscription::getKeys() const {
@@ -54,9 +66,14 @@ const AccountKeys& TransfersSubscription::getKeys() const {
 
 bool TransfersSubscription::addTransaction(const TransactionBlockInfo& blockInfo, const ITransactionReader& tx,
                                            const std::vector<TransactionOutputInformationIn>& transfersList) {
-  bool added = transfers.addTransaction(blockInfo, tx, transfersList);
+  std::vector<TransactionOutputInformation> unlockedTransfers;
+  bool added = transfers.addTransaction(blockInfo, tx, transfersList, &unlockedTransfers);
   if (added) {
     m_observerManager.notify(&ITransfersObserver::onTransactionUpdated, this, tx.getTransactionHash());
+  }
+
+  if (!unlockedTransfers.empty()) {
+	  m_observerManager.notify(&ITransfersObserver::onTransfersUnlocked, this, unlockedTransfers);
   }
 
   return added;

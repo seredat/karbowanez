@@ -38,6 +38,7 @@ struct MultisignatureInput {
   uint64_t amount;
   uint8_t signatureCount;
   uint32_t outputIndex;
+  uint32_t term;
 };
 
 struct KeyOutput {
@@ -47,6 +48,7 @@ struct KeyOutput {
 struct MultisignatureOutput {
   std::vector<Crypto::PublicKey> keys;
   uint8_t requiredSignatureCount;
+  uint32_t term;
 };
 
 typedef boost::variant<BaseInput, KeyInput, MultisignatureInput> TransactionInput;

@@ -67,6 +67,16 @@ const size_t   DIFFICULTY_CUT                                = 60;  // timestamp
 const size_t   DIFFICULTY_LAG                                = 15;  // !!!
 static_assert(2 * DIFFICULTY_CUT <= DIFFICULTY_WINDOW - 2, "Bad DIFFICULTY_WINDOW or DIFFICULTY_CUT");
 
+const uint64_t DEPOSIT_MIN_AMOUNT                            = 150 * COIN;
+const uint32_t DEPOSIT_MIN_TERM                              = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;
+const uint32_t DEPOSIT_MAX_TERM                              = 30 * DEPOSIT_MIN_TERM;
+const uint64_t DEPOSIT_MIN_TOTAL_RATE_FACTOR                 = 0;
+const uint64_t DEPOSIT_MAX_TOTAL_RATE                        = 3;
+static_assert(DEPOSIT_MIN_TERM > 0, "Bad DEPOSIT_MIN_TERM");
+static_assert(DEPOSIT_MIN_TERM <= DEPOSIT_MAX_TERM, "Bad DEPOSIT_MAX_TERM");
+static_assert(DEPOSIT_MIN_TERM * DEPOSIT_MAX_TOTAL_RATE > DEPOSIT_MIN_TOTAL_RATE_FACTOR, "Bad DEPOSIT_MIN_TOTAL_RATE_FACTOR or DEPOSIT_MAX_TOTAL_RATE");
+
+
 const size_t   MAX_BLOCK_SIZE_INITIAL                        = 1000000;
 const uint64_t MAX_BLOCK_SIZE_GROWTH_SPEED_NUMERATOR         = 100 * 1024;
 const uint64_t MAX_BLOCK_SIZE_GROWTH_SPEED_DENOMINATOR       = 365 * 24 * 60 * 60 / DIFFICULTY_TARGET;
@@ -105,6 +115,8 @@ const char     CRYPTONOTE_NAME[]                             = "karbowanec";
 const char     GENESIS_COINBASE_TX_HEX[]                     = "010a01ff0001fac484c69cd608029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101f904925cc23f86f9f3565188862275dc556a9bdfb6aec22c5aca7f0177c45ba8";
 
 const uint8_t  CURRENT_TRANSACTION_VERSION                   =  1;
+const uint8_t  TRANSACTION_VERSION_1                         =  1;
+const uint8_t  TRANSACTION_VERSION_2                         =  2;
 const uint8_t  BLOCK_MAJOR_VERSION_1                         =  1;
 const uint8_t  BLOCK_MAJOR_VERSION_2                         =  2;
 const uint8_t  BLOCK_MAJOR_VERSION_3                         =  3;

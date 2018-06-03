@@ -572,8 +572,8 @@ BlockchainSynchronizer::UpdateConsumersResult BlockchainSynchronizer::updateCons
       kv.second->detach(result.detachHeight);
     }
 
+	uint32_t startOffset = result.newBlockHeight - interval.startHeight;
     if (result.hasNewBlocks) {
-      uint32_t startOffset = result.newBlockHeight - interval.startHeight;
       // update consumer
       uint32_t blockCount = static_cast<uint32_t>(blocks.size()) - startOffset;
       m_logger(DEBUGGING) << "Adding blocks to consumer, consumer " << kv.first << ", start index " << result.newBlockHeight << ", count " << blockCount;

@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017 XDN-project developers
+// Copyright (c) 2018 Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -29,9 +31,15 @@ class ISerializer;
 struct UnconfirmedTransferDetails;
 struct WalletLegacyTransaction;
 struct WalletLegacyTransfer;
+struct DepositInfo;
+struct Deposit;
+struct UnconfirmedSpentDepositDetails;
 
 void serialize(UnconfirmedTransferDetails& utd, ISerializer& serializer);
+void serialize(UnconfirmedSpentDepositDetails& details, ISerializer& serializer);
 void serialize(WalletLegacyTransaction& txi, ISerializer& serializer);
 void serialize(WalletLegacyTransfer& tr, ISerializer& serializer);
+void serialize(DepositInfo& depositInfo, ISerializer& serializer);
+void serialize(Deposit& deposit, ISerializer& serializer);
 
 }

@@ -55,8 +55,11 @@ struct TransactionOutputInformation {
   Crypto::PublicKey transactionPublicKey;
 
   union {
-    Crypto::PublicKey outputKey;         // Type: Key 
-    uint32_t requiredSignatures; // Type: Multisignature
+    Crypto::PublicKey outputKey;         // Type: Key
+    struct {
+       uint32_t requiredSignatures;      // Type: Multisignature
+       uint32_t term;
+    };
   };
 };
 
@@ -79,6 +82,7 @@ public:
     // output type
     IncludeTypeKey = 0x100,
     IncludeTypeMultisignature = 0x200,
+    IncludeTypeDeposit = 0x400,
     // combinations
     IncludeStateAll = 0xff,
     IncludeTypeAll = 0xff00,
@@ -93,6 +97,13 @@ public:
     IncludeDefault = IncludeKeyUnlocked
   };
 
+  enum class TransferState : uint32_t {
+    TransferUnconfirmed,
+    TransferLocked,
+    TransferAvailable,
+    TransferSpent
+  };
+
   virtual size_t transfersCount() const = 0;
   virtual size_t transactionsCount() const = 0;
   virtual uint64_t balance(uint32_t flags = IncludeDefault) const = 0;
@@ -104,6 +115,7 @@ public:
   virtual std::vector<TransactionOutputInformation> getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const = 0;
   virtual void getUnconfirmedTransactions(std::vector<Crypto::Hash>& transactions) const = 0;
   virtual std::vector<TransactionSpentOutputInformation> getSpentOutputs() const = 0;
+  virtual bool getTransfer(const Crypto::Hash& transactionHash, uint32_t outputInTransaction, TransactionOutputInformation& transfer, TransferState& transferState) const = 0;
 };
 
 }

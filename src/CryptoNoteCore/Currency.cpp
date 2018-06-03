@@ -196,6 +196,95 @@ namespace CryptoNote {
 		return true;
 	}
 
+	uint64_t Currency::calculateInterest(uint64_t amount, uint32_t term) const {
+		assert(m_depositMinTerm <= term && term <= m_depositMaxTerm);
+		assert(static_cast<uint64_t>(term)* m_depositMaxTotalRate > m_depositMinTotalRateFactor);
+
+		uint64_t a = static_cast<uint64_t>(term) * m_depositMaxTotalRate - m_depositMinTotalRateFactor;
+		uint64_t bHi;
+		uint64_t bLo = mul128(amount, a, &bHi);
+
+		uint64_t interestHi;
+		uint64_t interestLo;
+		assert(std::numeric_limits<uint32_t>::max() / 100 > m_depositMaxTerm);
+		div128_32(bHi, bLo, static_cast<uint32_t>(100 * m_depositMaxTerm), &interestHi, &interestLo);
+		assert(interestHi == 0);
+
+		return interestLo;
+	}
+
+	uint64_t Currency::calculateTotalTransactionInterest(const Transaction& tx) const {
+		uint64_t interest = 0;
+		for (const TransactionInput& input : tx.inputs) {
+			if (input.type() == typeid(MultisignatureInput)) {
+				const MultisignatureInput& multisignatureInput = boost::get<MultisignatureInput>(input);
+				if (multisignatureInput.term != 0) {
+					interest += calculateInterest(multisignatureInput.amount, multisignatureInput.term);
+				}
+			}
+		}
+
+		return interest;
+	}
+
+	uint64_t Currency::getTransactionInputAmount(const TransactionInput& in) const {
+		if (in.type() == typeid(KeyInput)) {
+			return boost::get<KeyInput>(in).amount;
+		}
+		else if (in.type() == typeid(MultisignatureInput)) {
+			const MultisignatureInput& multisignatureInput = boost::get<MultisignatureInput>(in);
+			if (multisignatureInput.term == 0) {
+				return multisignatureInput.amount;
+			}
+			else {
+				return multisignatureInput.amount + calculateInterest(multisignatureInput.amount, multisignatureInput.term);
+			}
+		}
+		else if (in.type() == typeid(BaseInput)) {
+			return 0;
+		}
+		else {
+			assert(false);
+			return 0;
+		}
+	}
+
+	uint64_t Currency::getTransactionAllInputsAmount(const Transaction& tx) const {
+		uint64_t amount = 0;
+		for (const auto& in : tx.inputs) {
+			amount += getTransactionInputAmount(in);
+		}
+		return amount;
+	}
+
+	bool Currency::getTransactionFee(const Transaction& tx, uint64_t & fee) const {
+		uint64_t amount_in = 0;
+		uint64_t amount_out = 0;
+
+		for (const auto& in : tx.inputs) {
+			amount_in += getTransactionInputAmount(in);
+		}
+
+		for (const auto& o : tx.outputs) {
+			amount_out += o.amount;
+		}
+
+		if (amount_in < amount_out) {
+			return false;
+		}
+
+		fee = amount_in - amount_out;
+		return true;
+	}
+
+	uint64_t Currency::getTransactionFee(const Transaction& tx) const {
+		uint64_t r = 0;
+		if (!getTransactionFee(tx, r)) {
+			r = 0;
+		}
+		return r;
+	}
+
 	size_t Currency::maxBlockCumulativeSize(uint64_t height) const {
 		assert(height <= std::numeric_limits<uint64_t>::max() / m_maxBlockSizeGrowthSpeedNumerator);
 		size_t maxSize = static_cast<size_t>(m_maxBlockSizeInitial +
@@ -278,7 +367,7 @@ namespace CryptoNote {
 			return false;
 		}
 
-		tx.version = CURRENT_TRANSACTION_VERSION;
+		tx.version = TRANSACTION_VERSION_1;
 		//lock
 		tx.unlockTime = height + m_minedMoneyUnlockWindow;
 		tx.inputs.push_back(in);
@@ -767,6 +856,12 @@ namespace CryptoNote {
 		difficultyWindow(parameters::DIFFICULTY_WINDOW);
 		difficultyLag(parameters::DIFFICULTY_LAG);
 		difficultyCut(parameters::DIFFICULTY_CUT);
+
+		depositMinAmount(parameters::DEPOSIT_MIN_AMOUNT);
+		depositMinTerm(parameters::DEPOSIT_MIN_TERM);
+		depositMaxTerm(parameters::DEPOSIT_MAX_TERM);
+		depositMinTotalRateFactor(parameters::DEPOSIT_MIN_TOTAL_RATE_FACTOR);
+		depositMaxTotalRate(parameters::DEPOSIT_MAX_TOTAL_RATE);
 
 		maxBlockSizeInitial(parameters::MAX_BLOCK_SIZE_INITIAL);
 		maxBlockSizeGrowthSpeedNumerator(parameters::MAX_BLOCK_SIZE_GROWTH_SPEED_NUMERATOR);

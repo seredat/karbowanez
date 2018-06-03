@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017 XDN-project developers
+// Copyright (c) 2018 Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -34,6 +36,7 @@ class WalletRequest
 {
 public:
   typedef std::function<void(std::deque<std::shared_ptr<WalletLegacyEvent>>& events, boost::optional<std::shared_ptr<WalletRequest> >& nextRequest, std::error_code ec)> Callback;
+//typedef std::function<void(std::deque<std::shared_ptr<WalletLegacyEvent>>&, std::shared_ptr<WalletRequest>&, std::error_code)> Callback;  
 
   virtual ~WalletRequest() {};
 
@@ -73,6 +76,22 @@ public:
 
 private:
   CryptoNote::Transaction m_tx;
+  Callback m_cb;
+};
+
+class WalletRelayDepositTransactionRequest final: public WalletRequest
+{
+public:
+  WalletRelayDepositTransactionRequest(const Transaction& tx, Callback cb) : m_tx(tx), m_cb(cb) {}
+  virtual ~WalletRelayDepositTransactionRequest() {}
+
+  virtual void perform(INode& node, std::function<void (WalletRequest::Callback, std::error_code)> cb)
+  {
+    node.relayTransaction(m_tx, std::bind(cb, m_cb, std::placeholders::_1));
+  }
+
+private:
+  Transaction m_tx;
   Callback m_cb;
 };
 
