@@ -994,7 +994,21 @@ void TransfersContainer::load(std::istream& in) {
   m_transfersUnlockJobs = std::move(transfersUnlockJobs);
 
   // Repair the container if it was broken while handling addTransaction() in previous version of the code
-  repair();
+  // repair();
+}
+
+void TransfersContainer::rebuildTransfersUnlockJobs(TransfersUnlockMultiIndex& transfersUnlockJobs, const AvailableTransfersMultiIndex& availableTransfers,
+    const SpentTransfersMultiIndex& spentTransfers) {
+
+  for (auto it = availableTransfers.begin(); it != availableTransfers.end(); ++it) {
+    TransferUnlockJob job = makeTransferUnlockJob(*it, static_cast<uint32_t>(m_transactionSpendableAge));
+    transfersUnlockJobs.emplace(std::move(job));
+  }
+
+  for (auto it = spentTransfers.begin(); it != spentTransfers.end(); ++it) {
+    TransferUnlockJob job = makeTransferUnlockJob(*it, static_cast<uint32_t>(m_transactionSpendableAge));
+    transfersUnlockJobs.emplace(std::move(job));
+  }
 }
 
 void TransfersContainer::repair() {
