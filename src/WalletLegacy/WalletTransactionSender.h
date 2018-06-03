@@ -37,32 +37,20 @@ public:
 
   void stop();
 
-  std::shared_ptr<WalletRequest> makeSendRequest(TransactionId& transactionId, 
-                                                 std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-                                                 const std::vector<WalletLegacyTransfer>& transfers,
-                                                 uint64_t fee,
-                                                 const std::string& extra = "",
-                                                 uint64_t mixIn = 0,
-                                                 uint64_t unlockTimestamp = 0);
+  std::shared_ptr<WalletRequest> makeSendRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+      const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0);
   std::shared_ptr<WalletRequest> makeSendDustRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-	  const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0);
-  std::shared_ptr<WalletRequest> makeDepositRequest(TransactionId& transactionId,
-                                                    std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-                                                    uint64_t term,
-                                                    uint64_t amount,
-                                                    uint64_t fee,
-                                                    uint64_t mixIn = 0);
-  std::shared_ptr<WalletRequest> makeWithdrawDepositRequest(TransactionId& transactionId,
-                                                            std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-                                                            const std::vector<DepositId>& depositIds,
-                                                            uint64_t fee);
+      const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0);
+  std::shared_ptr<WalletRequest> makeDepositRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+      uint64_t term, uint64_t amount, uint64_t fee, uint64_t mixIn = 0);
+  std::shared_ptr<WalletRequest> makeWithdrawDepositRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+      const std::vector<DepositId>& depositIds, uint64_t fee);
 
 private:
-//std::shared_ptr<WalletRequest> makeGetRandomOutsRequest(std::shared_ptr<SendTransactionContext>&& context, bool isMultisigTransaction);
   std::shared_ptr<WalletRequest> makeGetRandomOutsRequest(std::shared_ptr<SendTransactionContext> context, bool isMultisigTransaction);
   std::shared_ptr<WalletRequest> doSendTransaction(std::shared_ptr<SendTransactionContext> context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events);
-  std::shared_ptr<WalletRequest> doSendMultisigTransaction(std::shared_ptr<SendTransactionContext>&& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events);
-  std::shared_ptr<WalletRequest> doSendDepositWithdrawTransaction(std::shared_ptr<SendTransactionContext>&& context,
+  std::shared_ptr<WalletRequest> doSendMultisigTransaction(std::shared_ptr<SendTransactionContext> context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events);
+  std::shared_ptr<WalletRequest> doSendDepositWithdrawTransaction(std::shared_ptr<SendTransactionContext> context,
                                                                   std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
                                                                   const std::vector<DepositId>& depositIds);
   void sendTransactionRandomOutsByAmount(bool isMultisigTransaction,
@@ -80,11 +68,8 @@ private:
                                                                uint64_t mixIn);
   std::vector<MultisignatureInput> prepareMultisignatureInputs(const std::vector<TransactionOutputInformation>& selectedTransfers);
   bool checkIfEnoughMixins(const std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& outs, uint64_t mixIn);
-  void relayDepositTransactionCallback(std::shared_ptr<SendTransactionContext> context,
-                                       std::vector<DepositId> deposits,
-                                       std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-                                       std::shared_ptr<WalletRequest>& nextRequest,
-                                       std::error_code ec);
+  void relayDepositTransactionCallback(std::shared_ptr<SendTransactionContext> context, std::vector<DepositId> deposits, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+                                       boost::optional<std::shared_ptr<WalletRequest> >& nextRequest, std::error_code ec);
   void prepareInputs(const std::vector<TransactionOutputInformation>& selectedTransfers, std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& outs,
       std::vector<TransactionSourceEntry>& sources, uint64_t mixIn);
   void splitDestinations(TransferId firstTransferId, size_t transfersCount, const TransactionDestinationEntry& changeDts,

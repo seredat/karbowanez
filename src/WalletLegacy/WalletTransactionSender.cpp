@@ -382,7 +382,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendTransaction(std::s
   return std::shared_ptr<WalletRequest>();
 }
 
-std::shared_ptr<WalletRequest> WalletTransactionSender::doSendMultisigTransaction(std::shared_ptr<SendTransactionContext>&& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events) {
+std::shared_ptr<WalletRequest> WalletTransactionSender::doSendMultisigTransaction(std::shared_ptr<SendTransactionContext> context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events) {
   if (m_isStoping) {
     events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
     return std::shared_ptr<WalletRequest>();
@@ -392,7 +392,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendMultisigTransactio
     //TODO decompose this method
     WalletLegacyTransaction& transactionInfo = m_transactionsCache.getTransaction(context->transactionId);
 
-    std::shared_ptr<ITransaction> transaction = createTransaction();
+    std::unique_ptr<ITransaction> transaction = createTransaction();
 
     uint64_t totalAmount = std::abs(transactionInfo.totalAmount);
     std::vector<TransactionTypes::InputKeyInfo> inputs = prepareKeyInputs(context->selectedTransfers, context->outs, context->mixIn);
@@ -443,8 +443,8 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendMultisigTransactio
 
     std::vector<DepositId> deposits {depositId};
 
-	return std::make_shared<WalletRelayDepositTransactionRequest>(lowlevelTransaction, std::bind(&WalletTransactionSender::relayDepositTransactionCallback, this, context,
-		  deposits, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	return std::make_shared<WalletRelayTransactionRequest>(lowlevelTransaction,
+		std::bind(&WalletTransactionSender::relayDepositTransactionCallback, this, context, deposits, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
   } catch(std::system_error& ec) {
     events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, ec.code()));
@@ -455,7 +455,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendMultisigTransactio
   return std::shared_ptr<WalletRequest>();
 }
 
-std::shared_ptr<WalletRequest> WalletTransactionSender::doSendDepositWithdrawTransaction(std::shared_ptr<SendTransactionContext>&& context,
+std::shared_ptr<WalletRequest> WalletTransactionSender::doSendDepositWithdrawTransaction(std::shared_ptr<SendTransactionContext> context,
   std::deque<std::shared_ptr<WalletLegacyEvent>>& events, const std::vector<DepositId>& depositIds) {
   if (m_isStoping) {
     events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
@@ -465,7 +465,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendDepositWithdrawTra
   try {
     WalletLegacyTransaction& transactionInfo = m_transactionsCache.getTransaction(context->transactionId);
 
-    std::shared_ptr<ITransaction> transaction = createTransaction();
+    std::unique_ptr<ITransaction> transaction = createTransaction();
     std::vector<MultisignatureInput> inputs = prepareMultisignatureInputs(context->selectedTransfers);
 
     std::vector<uint64_t> outputAmounts = splitAmount(context->foundMoney - transactionInfo.fee, context->dustPolicy.dustThreshold);
@@ -499,7 +499,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendDepositWithdrawTra
     unconfirmed.transactionId = context->transactionId;
     m_transactionsCache.addDepositSpendingTransaction(transaction->getTransactionHash(), unconfirmed);
 
-	return std::make_shared<WalletRelayDepositTransactionRequest>(lowlevelTransaction,
+	return std::make_shared<WalletRelayTransactionRequest>(lowlevelTransaction,
 		std::bind(&WalletTransactionSender::relayDepositTransactionCallback, this, context, depositIds, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
   } catch(std::system_error& ec) {
@@ -520,11 +520,8 @@ void WalletTransactionSender::relayTransactionCallback(std::shared_ptr<SendTrans
   events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, ec));
 }
 
-void WalletTransactionSender::relayDepositTransactionCallback(std::shared_ptr<SendTransactionContext> context,
-                                                              std::vector<DepositId> deposits,
-                                                              std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-                                                              std::shared_ptr<WalletRequest>& nextRequest,
-                                                              std::error_code ec) {
+void WalletTransactionSender::relayDepositTransactionCallback(std::shared_ptr<SendTransactionContext> context, std::vector<DepositId> deposits, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+                                                              boost::optional<std::shared_ptr<WalletRequest> >& nextRequest, std::error_code ec) {
   if (m_isStoping) {
     return;
   }
