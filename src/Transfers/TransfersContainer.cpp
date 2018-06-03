@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017, XDN-project developers
+// Copyright (c) 2017-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -994,7 +996,7 @@ void TransfersContainer::load(std::istream& in) {
   m_transfersUnlockJobs = std::move(transfersUnlockJobs);
 
   // Repair the container if it was broken while handling addTransaction() in previous version of the code
-  // repair();
+  repair();
 }
 
 void TransfersContainer::rebuildTransfersUnlockJobs(TransfersUnlockMultiIndex& transfersUnlockJobs, const AvailableTransfersMultiIndex& availableTransfers,

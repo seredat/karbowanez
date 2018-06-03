@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
 // Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2014-2017, XDN-project developers
 // Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
