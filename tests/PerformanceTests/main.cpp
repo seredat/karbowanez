@@ -70,7 +70,7 @@ int main(int argc, char** argv)
   TEST_PERFORMANCE0(test_derive_public_key);
   TEST_PERFORMANCE0(test_derive_secret_key);
 
-  TEST_PERFORMANCE0(test_cn_slow_hash);
+  //TEST_PERFORMANCE0(test_cn_slow_hash);
 
   std::cout << "Tests finished. Elapsed time: " << timer.elapsed_ms() / 1000 << " sec" << std::endl;
 
