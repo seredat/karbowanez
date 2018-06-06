@@ -544,8 +544,8 @@ namespace CryptoNote {
 			N = timestamps.size() - 1;
 		}
 		else if (timestamps.size() > N + 1) {
-			timestamps.resize(N + 1);
-			cumulativeDifficulties.resize(N + 1);
+			timestamps.erase(timestamps.begin(), timestamps.end() - N - 1);
+			cumulativeDifficulties.erase(cumulativeDifficulties.begin(), cumulativeDifficulties.end() - N - 1);
 		}
 
 		// To get an average solvetime to within +/- ~0.1%, use an adjustment factor.
