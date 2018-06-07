@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, XDN developers
+// Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
 //
 // All rights reserved.
@@ -124,6 +125,8 @@ namespace CryptoNote
 	bool payment_id(const std::vector<std::string> &args);
 	bool change_password(const std::vector<std::string> &args);
 	bool sweep_dust(const std::vector<std::string> &args);
+	bool sign(const std::vector<std::string> &args);
+	bool verify(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
 	std::string resolveAlias(const std::string& aliasUrl);

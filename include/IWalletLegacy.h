@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2016, The Monero Project
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -24,6 +26,7 @@
 #include <system_error>
 #include "CryptoNote.h"
 #include "CryptoTypes.h"
+#include "CryptoNote.h"
 
 namespace CryptoNote {
 
@@ -118,6 +121,9 @@ public:
 
   virtual void getAccountKeys(AccountKeys& keys) = 0;
   virtual bool getSeed(std::string& electrum_words) = 0;
+
+  virtual std::string sign(const std::string &data) = 0;
+  virtual bool verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
 };
 
 }

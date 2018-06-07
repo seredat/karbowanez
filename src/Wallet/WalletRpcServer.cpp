@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, XDN developers
+// Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
 //
 // This file is part of Bytecoin.
@@ -139,6 +140,8 @@ void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, C
 			{ "query_key"      , makeMemberMethod(&wallet_rpc_server::on_query_key)		  },
 			{ "reset"		   , makeMemberMethod(&wallet_rpc_server::on_reset)			  },
 			{ "get_paymentid"  , makeMemberMethod(&wallet_rpc_server::on_gen_paymentid)	  },
+			{ "sign"		   , makeMemberMethod(&wallet_rpc_server::on_sign)			  },
+			{ "verify"		   , makeMemberMethod(&wallet_rpc_server::on_verify)		  },
 		};
 
 		auto it = s_methods.find(jsonRequest.getMethod());
@@ -462,11 +465,10 @@ bool wallet_rpc_server::on_stop_wallet(const wallet_rpc::COMMAND_RPC_STOP::reque
 	wallet_rpc_server::send_stop_signal();
 	return true;
 }
-//------------------------------------------------------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------------------------------------------------------
 bool wallet_rpc_server::on_gen_paymentid(const wallet_rpc::COMMAND_RPC_GEN_PAYMENT_ID::request& req,
-	wallet_rpc::COMMAND_RPC_GEN_PAYMENT_ID::response& res)
-{
+	wallet_rpc::COMMAND_RPC_GEN_PAYMENT_ID::response& res) {
 	std::string pid;
 	try {
 		pid = Common::podToHex(Crypto::rand<Crypto::Hash>());
@@ -476,6 +478,33 @@ bool wallet_rpc_server::on_gen_paymentid(const wallet_rpc::COMMAND_RPC_GEN_PAYME
 	}
 	res.payment_id = pid;
 	return true;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------
+bool wallet_rpc_server::on_sign(const wallet_rpc::COMMAND_RPC_SIGN::request& req, wallet_rpc::COMMAND_RPC_SIGN::response& res)
+{
+    res.signature = m_wallet.sign(req.data);
+    return true;
+}
+//------------------------------------------------------------------------------------------------------------------------------
+bool wallet_rpc_server::on_verify(const wallet_rpc::COMMAND_RPC_VERIFY::request& req, wallet_rpc::COMMAND_RPC_VERIFY::response& res)
+{
+    CryptoNote::AccountPublicAddress address;
+	if (!m_currency.parseAccountAddressString(req.address, address)) {
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_ADDRESS, std::string("Failed to parse address"));
+	}
+	const size_t header_len = strlen("SigV1");
+	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "SigV1") {
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature header check error"));
+	}
+	std::string decoded;
+	Crypto::Signature s;
+	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(s) != decoded.size()) {
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature decoding error"));
+		return false;
+	}
+    res.good = m_wallet.verify(req.data, address, req.signature);
+    return true;
 }
 
 } //Tools

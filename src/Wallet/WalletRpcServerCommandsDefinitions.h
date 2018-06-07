@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2016-2018, Karbo developers
 //
 // This file is part of Bytecoin.
@@ -294,6 +295,56 @@ using CryptoNote::ISerializer;
 			void serialize(ISerializer& s)
 			{
 				KV_MEMBER(payment_id)
+			}
+		};
+	};
+
+	struct COMMAND_RPC_SIGN
+	{
+		struct request
+		{
+			std::string data;
+ 
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(data);
+			}
+		};
+
+		struct response
+		{
+			std::string signature;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(signature);
+			}
+		};
+	};
+
+	struct COMMAND_RPC_VERIFY
+	{
+		struct request
+		{
+			std::string data;
+			std::string address;
+			std::string signature;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(data);
+				KV_MEMBER(address);
+				KV_MEMBER(signature);
+			}
+		};
+
+		struct response
+		{
+			bool good;
+ 
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(good);
 			}
 		};
 	};
