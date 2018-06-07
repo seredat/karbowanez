@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2016, The Forknote developers
-// Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2018, The TurtleCoin developers
+// Copyright (c) 2016-2018, The Karbo developers
+//
 // This file is part of Bytecoin.
 //
 // Bytecoin is free software: you can redistribute it and/or modify
@@ -65,6 +67,7 @@ namespace
   const command_line::arg_descriptor<std::string> arg_set_fee_address = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
   const command_line::arg_descriptor<bool>        arg_testnet_on  = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
     "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
+  const command_line::arg_descriptor<std::string> arg_load_checkpoints = { "load-checkpoints", "<filename> Load checkpoints from csv file.", "" };
 }
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
@@ -127,6 +130,7 @@ int main(int argc, char* argv[])
 	command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
 	command_line::add_arg(desc_cmd_sett, arg_enable_blockchain_indexes);
 	command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
+	command_line::add_arg(desc_cmd_sett, arg_load_checkpoints);
 
     RpcServerConfig::initOptions(desc_cmd_sett);
     CoreConfig::initOptions(desc_cmd_sett);
@@ -216,6 +220,17 @@ int main(int argc, char* argv[])
     CryptoNote::Checkpoints checkpoints(logManager);
     for (const auto& cp : CryptoNote::CHECKPOINTS) {
       checkpoints.add_checkpoint(cp.height, cp.blockId);
+    }
+
+	bool use_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
+
+	if (use_checkpoints && !testnet_mode) {
+      logger(INFO) << "Loading Checkpoints from file...";
+      std::string checkpoints_file = command_line::get_arg(vm, arg_load_checkpoints);
+      bool results = checkpoints.load_checkpoints_from_file(checkpoints_file);
+      if (!results) {
+        throw std::runtime_error("Failed to load checkpoints");
+      }
     }
 
     if (!testnet_mode) {
