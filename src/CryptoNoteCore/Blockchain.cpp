@@ -2401,7 +2401,7 @@ bool Blockchain::storeBlockchainIndices() {
   logger(INFO, BRIGHT_WHITE) << "Saving blockchain indices...";
   BlockchainIndicesSerializer ser(*this, getTailId(), logger.getLogger());
 
-  if (!storeToBinaryFile(ser, appendPath(m_config_folder, m_currency.blockchinIndicesFileName()))) {
+  if (!storeToBinaryFile(ser, appendPath(m_config_folder, m_currency.blockchainIndicesFileName()))) {
     logger(ERROR, BRIGHT_RED) << "Failed to save blockchain indices";
     return false;
   }
@@ -2415,7 +2415,7 @@ bool Blockchain::loadBlockchainIndices() {
   logger(INFO, BRIGHT_WHITE) << "Loading blockchain indices for BlockchainExplorer...";
   BlockchainIndicesSerializer loader(*this, get_block_hash(m_blocks.back().bl), logger.getLogger());
 
-  loadFromBinaryFile(loader, appendPath(m_config_folder, m_currency.blockchinIndicesFileName()));
+  loadFromBinaryFile(loader, appendPath(m_config_folder, m_currency.blockchainIndicesFileName()));
 
   if (!loader.loaded()) {
     logger(WARNING, BRIGHT_YELLOW) << "No actual blockchain indices for BlockchainExplorer found, rebuilding...";

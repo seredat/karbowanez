@@ -105,7 +105,7 @@ public:
   const std::string& blocksCacheFileName() const { return m_blocksCacheFileName; }
   const std::string& blockIndexesFileName() const { return m_blockIndexesFileName; }
   const std::string& txPoolFileName() const { return m_txPoolFileName; }
-  const std::string& blockchinIndicesFileName() const { return m_blockchinIndicesFileName; }
+  const std::string& blockchainIndicesFileName() const { return m_blockchainIndicesFileName; }
 
   bool isTestnet() const { return m_testnet; }
 
@@ -143,6 +143,8 @@ public:
   bool checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
 
   size_t getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) const;
+
+  static const std::vector<uint64_t> PRETTY_AMOUNTS;
 
 private:
   Currency(Logging::ILogger& log) : logger(log, "currency") {
@@ -207,9 +209,7 @@ private:
   std::string m_blocksCacheFileName;
   std::string m_blockIndexesFileName;
   std::string m_txPoolFileName;
-  std::string m_blockchinIndicesFileName;
-
-  static const std::vector<uint64_t> PRETTY_AMOUNTS;
+  std::string m_blockchainIndicesFileName;
 
   bool m_testnet;
 
@@ -286,7 +286,7 @@ public:
   CurrencyBuilder& blocksCacheFileName(const std::string& val) { m_currency.m_blocksCacheFileName = val; return *this; }
   CurrencyBuilder& blockIndexesFileName(const std::string& val) { m_currency.m_blockIndexesFileName = val; return *this; }
   CurrencyBuilder& txPoolFileName(const std::string& val) { m_currency.m_txPoolFileName = val; return *this; }
-  CurrencyBuilder& blockchinIndicesFileName(const std::string& val) { m_currency.m_blockchinIndicesFileName = val; return *this; }
+  CurrencyBuilder& blockchainIndicesFileName(const std::string& val) { m_currency.m_blockchainIndicesFileName = val; return *this; }
   
   CurrencyBuilder& testnet(bool val) { m_currency.m_testnet = val; return *this; }
 
