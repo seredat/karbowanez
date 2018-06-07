@@ -381,6 +381,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
 	  res.fee_address = m_fee_address;
   }
   res.status = CORE_RPC_STATUS_OK;
+  res.start_time = m_core.getStartTime();
   return true;
 }
 
