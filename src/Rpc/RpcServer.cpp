@@ -374,14 +374,9 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.last_known_block_index = std::max(static_cast<uint32_t>(1), m_protocolQuery.getObservedHeight()) - 1;
   res.top_block_hash = Common::podToHex(m_core.getBlockIdByHeight(m_core.get_current_blockchain_height() - 1));
   res.version = PROJECT_VERSION_LONG;
-  if (m_fee_address.empty()) {
-	  res.fee_address = "";
-  }
-  else {
-	  res.fee_address = m_fee_address;
-  }
+  res.fee_address = m_fee_address.empty() ? std::string() : m_fee_address;
+  res.start_time = (uint64_t)m_core.getStartTime();
   res.status = CORE_RPC_STATUS_OK;
-  res.start_time = m_core.getStartTime();
   return true;
 }
 
