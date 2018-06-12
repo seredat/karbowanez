@@ -231,6 +231,10 @@ int main(int argc, char* argv[])
       checkpoints.add_checkpoint(cp.height, cp.blockId);
     }
 
+#ifndef __ANDROID__
+	checkpoints.load_checkpoints_from_dns();
+#endif
+
 	bool use_checkpoints = !command_line::get_arg(vm, arg_load_checkpoints).empty();
 
 	if (use_checkpoints && !testnet_mode) {

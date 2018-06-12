@@ -127,7 +127,6 @@ namespace CryptoNote
 
 #ifndef __ANDROID__
 	std::string resolveAlias(const std::string& aliasUrl);
-	bool fetch_dns_txt(const std::string domain, std::string &record);
 #endif
 
     bool ask_wallet_create_if_needed();
