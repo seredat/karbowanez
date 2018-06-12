@@ -164,26 +164,24 @@ bool Checkpoints::load_checkpoints_from_dns()
   }
 
   for (const auto& record : records) {
-	  uint32_t height;
-	  Crypto::Hash hash = NULL_HASH;
-	  std::stringstream ss;
+    uint32_t height;
+    Crypto::Hash hash = NULL_HASH;
+    std::stringstream ss;
+    int del = record.find_first_of(':');
+    std::string height_str = record.substr(0, del), hash_str = record.substr(del + 1, 64);
+    ss.str(height_str);
+    ss >> height;
+    char c;
+    if ((ss.fail() || ss.get(c)) || !Common::podFromHex(hash_str, hash)) {
+      logger(Logging::INFO) << "Failed to parse DNS checkpoint record: " << record;
+      continue;
+    }
 
-	  int del = record.find_first_of(':');
-	  std::string height_str = record.substr(0, del), hash_str = record.substr(del + 1, 64);
-	  ss = std::stringstream(height_str);
-      ss >> height;
-	  char c;
-	  if ((ss.fail() || ss.get(c)) || !Common::podFromHex(hash_str, hash)) {
-		  logger(Logging::INFO) << "Failed to parse DNS checkpoint record: " << record;
-		  continue;
-	  }
-
-	  if (!(0 == m_points.count(height))) {
-		  logger(DEBUGGING) << "Checkpoint already exists for height: " << height << ". Ignoring DNS checkpoint.";
-	  }
-	  else {
-		  add_checkpoint(height, hash_str);
-	  }
+    if (!(0 == m_points.count(height))) {
+      logger(DEBUGGING) << "Checkpoint already exists for height: " << height << ". Ignoring DNS checkpoint.";
+    } else {
+      add_checkpoint(height, hash_str);
+    }
   }
 
   return true;
