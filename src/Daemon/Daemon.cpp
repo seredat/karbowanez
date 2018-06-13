@@ -134,11 +134,11 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_console);
     command_line::add_arg(desc_cmd_sett, arg_restricted_rpc);
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
-    command_line::add_arg(desc_cmd_sett, arg_enable_cors);
-    command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
-    command_line::add_arg(desc_cmd_sett, arg_enable_blockchain_indexes);
-    command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
-    command_line::add_arg(desc_cmd_sett, arg_load_checkpoints);
+	command_line::add_arg(desc_cmd_sett, arg_enable_cors);
+	command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
+	command_line::add_arg(desc_cmd_sett, arg_enable_blockchain_indexes);
+	command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
+	command_line::add_arg(desc_cmd_sett, arg_load_checkpoints);
 
     RpcServerConfig::initOptions(desc_cmd_sett);
     CoreConfig::initOptions(desc_cmd_sett);
