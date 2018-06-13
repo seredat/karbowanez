@@ -45,6 +45,9 @@
 #include "Wallet/WalletErrors.h"
 #include "Wallet/WalletUtils.h"
 #include "WalletServiceErrorCategory.h"
+#include "ITransfersContainer.h"
+
+using namespace CryptoNote;
 
 namespace PaymentService {
 
@@ -675,8 +678,8 @@ std::error_code WalletService::getTransactions(const std::vector<std::string>& a
 
 	std::vector<TransactionsInBlockRpcInfo> txs = getRpcTransactions(blockHash, blockCount, transactionFilter);
 	for (TransactionsInBlockRpcInfo& b : txs){
-		for (TransactionRpcInfo& t : b.transactions){
-			t.confirmations = wallet.getBlockCount() - t.blockIndex;
+		for (TransactionRpcInfo& t : b.transactions) {
+			t.confirmations = (t.blockIndex != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX ? wallet.getBlockCount() - t.blockIndex : 0);
 		}
 	}
 	transactions = txs;
@@ -705,8 +708,8 @@ std::error_code WalletService::getTransactions(const std::vector<std::string>& a
 
 	std::vector<TransactionsInBlockRpcInfo> txs = getRpcTransactions(firstBlockIndex, blockCount, transactionFilter);
 	for (TransactionsInBlockRpcInfo& b : txs){
-		for (TransactionRpcInfo& t : b.transactions){
-			t.confirmations = wallet.getBlockCount() - t.blockIndex;
+		for (TransactionRpcInfo& t : b.transactions) {
+			t.confirmations = (t.blockIndex != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX ? wallet.getBlockCount() - t.blockIndex : 0);
 		}
 	}
 	transactions = txs;
@@ -734,7 +737,7 @@ std::error_code WalletService::getTransaction(const std::string& transactionHash
     }
 
 	TransactionRpcInfo tempTrans = convertTransactionWithTransfersToTransactionRpcInfo(transactionWithTransfers);
-	tempTrans.confirmations = wallet.getBlockCount() - transactionWithTransfers.transaction.blockHeight;
+	tempTrans.confirmations = (transactionWithTransfers.transaction.blockHeight != UNCONFIRMED_TRANSACTION_GLOBAL_OUTPUT_INDEX ? wallet.getBlockCount() - transactionWithTransfers.transaction.blockHeight : 0);
 	transaction = tempTrans;
 
   } catch (std::system_error& x) {

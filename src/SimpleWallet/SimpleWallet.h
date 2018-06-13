@@ -55,6 +55,9 @@
 #include <System/Ipv4Address.h>
 
 std::string remote_fee_address;
+namespace{
+	Tools::PasswordContainer pwd_container;
+}
 
 namespace CryptoNote
 {
@@ -120,10 +123,10 @@ namespace CryptoNote
     bool set_log(const std::vector<std::string> &args);
 	bool payment_id(const std::vector<std::string> &args);
 	bool change_password(const std::vector<std::string> &args);
+	bool sweep_dust(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
 	std::string resolveAlias(const std::string& aliasUrl);
-	bool fetch_dns_txt(const std::string domain, std::string &record);
 #endif
 
     bool ask_wallet_create_if_needed();
@@ -207,7 +210,6 @@ namespace CryptoNote
     Logging::LoggerManager& m_logManager;
     System::Dispatcher& m_dispatcher;
     Logging::LoggerRef logger;
-    Tools::PasswordContainer pwd_container;
 
     std::unique_ptr<CryptoNote::NodeRpcProxy> m_node;
     std::unique_ptr<CryptoNote::IWalletLegacy> m_wallet;

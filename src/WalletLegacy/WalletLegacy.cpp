@@ -253,7 +253,7 @@ void WalletLegacy::initAndLoad(std::istream& source, const std::string& password
 void WalletLegacy::initSync() {
   AccountSubscription sub;
   sub.keys = reinterpret_cast<const AccountKeys&>(m_account.getAccountKeys());
-  sub.transactionSpendableAge = 1;
+  sub.transactionSpendableAge = CryptoNote::parameters::CRYPTONOTE_TX_SPENDABLE_AGE;
   sub.syncStart.height = 0;
   sub.syncStart.timestamp = m_account.get_createtime() - ACCOUNT_CREATE_TIME_ACCURACY;
   
@@ -465,6 +465,27 @@ uint64_t WalletLegacy::pendingBalance() {
   return m_transferDetails->balance(ITransfersContainer::IncludeKeyNotUnlocked) + change;
 }
 
+uint64_t WalletLegacy::dustBalance() {
+	std::unique_lock<std::mutex> lock(m_cacheMutex);
+	throwIfNotInitialised();
+
+	std::vector<TransactionOutputInformation> outputs;
+	m_transferDetails->getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
+
+	uint64_t money = 0;
+	
+	for (size_t i = 0; i < outputs.size(); ++i) {
+		const auto& out = outputs[i];
+		if (!m_transactionsCache.isUsed(out)) {
+			if (out.amount < m_currency.defaultDustThreshold() && !is_valid_decomposed_amount(out.amount)) {
+				money += out.amount;
+			}
+		}
+	}
+
+	return money;
+}
+
 size_t WalletLegacy::getTransactionCount() {
   std::unique_lock<std::mutex> lock(m_cacheMutex);
   throwIfNotInitialised();
@@ -527,6 +548,35 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
   }
 
   return txId;
+}
+
+TransactionId WalletLegacy::sendDustTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+	std::vector<WalletLegacyTransfer> transfers;
+	transfers.push_back(transfer);
+	throwIfNotInitialised();
+
+	return sendDustTransaction(transfers, fee, extra, mixIn, unlockTimestamp);
+}
+
+TransactionId WalletLegacy::sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+	TransactionId txId = 0;
+	std::shared_ptr<WalletRequest> request;
+	std::deque<std::shared_ptr<WalletLegacyEvent>> events;
+	throwIfNotInitialised();
+
+	{
+		std::unique_lock<std::mutex> lock(m_cacheMutex);
+		request = m_sender->makeSendDustRequest(txId, events, transfers, fee, extra, mixIn, unlockTimestamp);
+	}
+
+	notifyClients(events);
+
+	if (request) {
+		m_asyncContextCounter.addAsyncContext();
+		request->perform(m_node, std::bind(&WalletLegacy::sendTransactionCallback, this, std::placeholders::_1, std::placeholders::_2));
+	}
+
+	return txId;
 }
 
 void WalletLegacy::sendTransactionCallback(WalletRequest::Callback callback, std::error_code ec) {

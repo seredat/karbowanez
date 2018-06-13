@@ -81,7 +81,7 @@ namespace CryptoNote {
 			m_blocksCacheFileName = "testnet_" + m_blocksCacheFileName;
 			m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
 			m_txPoolFileName = "testnet_" + m_txPoolFileName;
-			m_blockchinIndicesFileName = "testnet_" + m_blockchinIndicesFileName;
+			m_blockchainIndicesFileName = "testnet_" + m_blockchainIndicesFileName;
 		}
 
 		return true;
@@ -533,39 +533,42 @@ namespace CryptoNote {
 		// N = int(45 * (600 / T) ^ 0.3));
 
 		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
-		const size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V3 - 1;
+		size_t N = CryptoNote::parameters::DIFFICULTY_WINDOW_V3;
 
-		if (timestamps.size() > N + 1) {
-			timestamps.resize(N + 1);
-			cumulativeDifficulties.resize(N + 1);
-		}
-		size_t n = timestamps.size();
-		assert(n == cumulativeDifficulties.size());
-		assert(n <= CryptoNote::parameters::DIFFICULTY_WINDOW_V3);
-		if (n <= 1)
+		// return a difficulty of 1 for first 3 blocks if it's the start of the chain
+		if (timestamps.size() < 4) {
 			return 1;
+		}
+		// otherwise, use a smaller N if the start of the chain is less than N+1
+		else if (timestamps.size() < N + 1) {
+			N = timestamps.size() - 1;
+		}
+		else if (timestamps.size() > N + 1) {
+			timestamps.erase(timestamps.begin(), timestamps.end() - N - 1);
+			cumulativeDifficulties.erase(cumulativeDifficulties.begin(), cumulativeDifficulties.end() - N - 1);
+		}
 
 		// To get an average solvetime to within +/- ~0.1%, use an adjustment factor.
-		const double_t adjust = 0.998;
+		const double adjust = 0.998;
 		// The divisor k normalizes LWMA.
-		const double_t k = N * (N + 1) / 2;
+		const double k = N * (N + 1) / 2;
 
-		double_t LWMA(0), sum_inverse_D(0), harmonic_mean_D(0), nextDifficulty(0);
+		double LWMA(0), sum_inverse_D(0), harmonic_mean_D(0), nextDifficulty(0);
 		int64_t solveTime(0);
 		uint64_t difficulty(0), next_difficulty(0);
 
 		// Loop through N most recent blocks.
-		for (int64_t i = 1; i <= N; i++) {
+		for (size_t i = 1; i <= N; i++) {
 			solveTime = static_cast<int64_t>(timestamps[i]) - static_cast<int64_t>(timestamps[i - 1]);
 			solveTime = std::min<int64_t>((T * 7), std::max<int64_t>(solveTime, (-6 * T)));
 			difficulty = cumulativeDifficulties[i] - cumulativeDifficulties[i - 1];
-			LWMA += solveTime * i / k;
-			sum_inverse_D += 1 / static_cast<double_t>(difficulty);
+			LWMA += (int64_t)(solveTime * i) / k;
+			sum_inverse_D += 1 / static_cast<double>(difficulty);
 		}
 
 		// Keep LWMA sane in case something unforeseen occurs.
 		if (static_cast<int64_t>(boost::math::round(LWMA)) < T / 20)
-			LWMA = static_cast<double_t>(T / 20);
+			LWMA = static_cast<double>(T) / 20;
 
 		harmonic_mean_D = N / sum_inverse_D * adjust;
 		nextDifficulty = harmonic_mean_D * T / LWMA;
@@ -577,7 +580,7 @@ namespace CryptoNote {
 		}
 
 		return next_difficulty;
-	}
+	}	
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
 		Crypto::Hash& proofOfWork) const {
@@ -676,6 +679,7 @@ namespace CryptoNote {
 		maxTxSize(parameters::CRYPTONOTE_MAX_TX_SIZE);
 		publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
 		minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+		transactionSpendableAge(parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
 
 		timestampCheckWindow(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW);
 		blockFutureTimeLimit(parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT);
@@ -723,7 +727,7 @@ namespace CryptoNote {
 		blocksCacheFileName(parameters::CRYPTONOTE_BLOCKSCACHE_FILENAME);
 		blockIndexesFileName(parameters::CRYPTONOTE_BLOCKINDEXES_FILENAME);
 		txPoolFileName(parameters::CRYPTONOTE_POOLDATA_FILENAME);
-		blockchinIndicesFileName(parameters::CRYPTONOTE_BLOCKCHAIN_INDICES_FILENAME);
+		blockchainIndicesFileName(parameters::CRYPTONOTE_BLOCKCHAIN_INDICES_FILENAME);
 
 		testnet(false);
 	}

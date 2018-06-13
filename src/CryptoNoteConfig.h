@@ -31,8 +31,8 @@ const size_t   CRYPTONOTE_MAX_BLOCK_BLOB_SIZE                = 500000000;
 const size_t   CRYPTONOTE_MAX_TX_SIZE                        = 1000000000;
 const uint64_t CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX       = 111; // addresses start with "K"
 const size_t   CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW          = 10;
+const size_t   CRYPTONOTE_TX_SPENDABLE_AGE                   = 6;
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT            = DIFFICULTY_TARGET * 7;
-
 const size_t   BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW             = 60;
 
 // MONEY_SUPPLY - total number coins to be generated
@@ -56,7 +56,7 @@ const uint64_t MAX_TX_MIXIN_SIZE                             = 20;
 const uint64_t EXPECTED_NUMBER_OF_BLOCKS_PER_DAY             = 24 * 60 * 60 / DIFFICULTY_TARGET;
 const size_t   DIFFICULTY_WINDOW                             = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY; // blocks
 const size_t   DIFFICULTY_WINDOW_V2                          = 17;  // blocks
-const size_t   DIFFICULTY_WINDOW_V3                          = 60 + 1; // blocks (add one to compensate off-by-one in difficulty calculation)
+const size_t   DIFFICULTY_WINDOW_V3                          = 60;  // blocks
 const size_t   DIFFICULTY_CUT                                = 60;  // timestamps to cut after sorting
 const size_t   DIFFICULTY_LAG                                = 15;  // !!!
 static_assert(2 * DIFFICULTY_CUT <= DIFFICULTY_WINDOW - 2, "Bad DIFFICULTY_WINDOW or DIFFICULTY_CUT");
@@ -163,7 +163,10 @@ const std::initializer_list<CheckpointData> CHECKPOINTS = {
   {214860,	"6084a42b411bcef34a66b48eea9af2f6cdfc12be548a7c423bf2ea927a23b0cf" },
   {216245,	"3af4f447f9f6d9cdf89794f1393708843c8dc14164c809d5233f1546fec3b338" },
   {216341,	"157aeca8472f07207cd0652e7bdfbccf99606d7304ca11dbfcc946f1b2747837" },
-  {216394,	"1c42ca7b1cd3763028939b8f2d9e4f2f12d9dc261545fcd6adbe32d11678a823" }
+  {216394,	"1c42ca7b1cd3763028939b8f2d9e4f2f12d9dc261545fcd6adbe32d11678a823" },
+  {216592,	"8061aab9e88e7a3f4181a0579d31a4c0560231d91f2b9e84828ae71208f634c6" },
+  {217000,	"1a1b6866c5a725070cd7afb0ad93bd879e1619211248903a990a162ac0c58400" },
+  {231000,	"a88c3b29ad95a7a7e06ab71ac668604889fd5710365d9687857b0c7f143543a4" }
 };
 
 } // CryptoNote

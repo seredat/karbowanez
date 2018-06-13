@@ -39,6 +39,7 @@ public:
   size_t maxTxSize() const { return m_maxTxSize; }
   uint64_t publicAddressBase58Prefix() const { return m_publicAddressBase58Prefix; }
   size_t minedMoneyUnlockWindow() const { return m_minedMoneyUnlockWindow; }
+  size_t transactionSpendableAge() const { return m_transactionSpendableAge; }
 
   size_t timestampCheckWindow() const { return m_timestampCheckWindow; }
   uint64_t blockFutureTimeLimit() const { return m_blockFutureTimeLimit; }
@@ -62,6 +63,17 @@ public:
   size_t difficultyWindow() const { return m_difficultyWindow; }
   size_t difficultyLag() const { return m_difficultyLag; }
   size_t difficultyCut() const { return m_difficultyCut; }
+  size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+      return difficultyBlocksCount3() + 1;
+    }
+    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
+      return difficultyBlocksCount2();
+    }
+    else {
+      return difficultyBlocksCount();
+    }
+  };
   size_t difficultyBlocksCount() const { return m_difficultyWindow + m_difficultyLag; }
   size_t difficultyBlocksCount2() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V2; }
   size_t difficultyBlocksCount3() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V3; }
@@ -93,7 +105,7 @@ public:
   const std::string& blocksCacheFileName() const { return m_blocksCacheFileName; }
   const std::string& blockIndexesFileName() const { return m_blockIndexesFileName; }
   const std::string& txPoolFileName() const { return m_txPoolFileName; }
-  const std::string& blockchinIndicesFileName() const { return m_blockchinIndicesFileName; }
+  const std::string& blockchainIndicesFileName() const { return m_blockchainIndicesFileName; }
 
   bool isTestnet() const { return m_testnet; }
 
@@ -132,6 +144,8 @@ public:
 
   size_t getApproximateMaximumInputCount(size_t transactionSize, size_t outputCount, size_t mixinCount) const;
 
+  static const std::vector<uint64_t> PRETTY_AMOUNTS;
+
 private:
   Currency(Logging::ILogger& log) : logger(log, "currency") {
   }
@@ -146,6 +160,7 @@ private:
   size_t m_maxTxSize;
   uint64_t m_publicAddressBase58Prefix;
   size_t m_minedMoneyUnlockWindow;
+  size_t m_transactionSpendableAge;
 
   size_t m_timestampCheckWindow;
   uint64_t m_blockFutureTimeLimit;
@@ -194,9 +209,7 @@ private:
   std::string m_blocksCacheFileName;
   std::string m_blockIndexesFileName;
   std::string m_txPoolFileName;
-  std::string m_blockchinIndicesFileName;
-
-  static const std::vector<uint64_t> PRETTY_AMOUNTS;
+  std::string m_blockchainIndicesFileName;
 
   bool m_testnet;
 
@@ -225,6 +238,7 @@ public:
   CurrencyBuilder& maxTxSize(size_t val) { m_currency.m_maxTxSize = val; return *this; }
   CurrencyBuilder& publicAddressBase58Prefix(uint64_t val) { m_currency.m_publicAddressBase58Prefix = val; return *this; }
   CurrencyBuilder& minedMoneyUnlockWindow(size_t val) { m_currency.m_minedMoneyUnlockWindow = val; return *this; }
+  CurrencyBuilder& transactionSpendableAge(size_t val) { m_currency.m_transactionSpendableAge = val; return *this; }
 
   CurrencyBuilder& timestampCheckWindow(size_t val) { m_currency.m_timestampCheckWindow = val; return *this; }
   CurrencyBuilder& blockFutureTimeLimit(uint64_t val) { m_currency.m_blockFutureTimeLimit = val; return *this; }
@@ -272,7 +286,7 @@ public:
   CurrencyBuilder& blocksCacheFileName(const std::string& val) { m_currency.m_blocksCacheFileName = val; return *this; }
   CurrencyBuilder& blockIndexesFileName(const std::string& val) { m_currency.m_blockIndexesFileName = val; return *this; }
   CurrencyBuilder& txPoolFileName(const std::string& val) { m_currency.m_txPoolFileName = val; return *this; }
-  CurrencyBuilder& blockchinIndicesFileName(const std::string& val) { m_currency.m_blockchinIndicesFileName = val; return *this; }
+  CurrencyBuilder& blockchainIndicesFileName(const std::string& val) { m_currency.m_blockchainIndicesFileName = val; return *this; }
   
   CurrencyBuilder& testnet(bool val) { m_currency.m_testnet = val; return *this; }
 

@@ -71,6 +71,10 @@ using CryptoNote::ISerializer;
 			uint64_t unlock_time;
 			std::string payment_id;
 
+			request() :fee(0),
+					   mixin(0),
+					   unlock_time(0){}
+
 			void serialize(ISerializer& s)
 			{
 				KV_MEMBER(destinations)

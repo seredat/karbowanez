@@ -19,7 +19,7 @@
 
 #include "hash.h"
 
-#if defined(WIN32)
+#ifdef _WIN32
 #include <Windows.h>
 #else
 #include <sys/mman.h>
@@ -33,7 +33,7 @@ namespace Crypto {
     MAP_SIZE = SLOW_HASH_CONTEXT_SIZE + ((-SLOW_HASH_CONTEXT_SIZE) & 0xfff)
   };
 
-#if defined(WIN32)
+#ifdef _WIN32
 
   cn_context::cn_context() {
     data = VirtualAlloc(nullptr, MAP_SIZE, MEM_COMMIT, PAGE_READWRITE);

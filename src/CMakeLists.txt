@@ -57,10 +57,16 @@ add_library(JsonRpcServer ${JsonRpcServer})
 add_library(Mnemonics ${Mnemonics})
 add_library(Service ${Service})
 
+if(WIN32)
+add_executable(Daemon ${Daemon} karbo.rc)
+add_executable(SimpleWallet ${SimpleWallet} karbo.rc)
+add_executable(PaymentGateService ${PaymentGateService} karbo.rc)
+else()
+add_executable(Daemon ${Daemon} )
+add_executable(SimpleWallet ${SimpleWallet} )
+add_executable(PaymentGateService ${PaymentGateService} )
+endif()
 add_executable(ConnectivityTool ${ConnectivityTool})
-add_executable(Daemon ${Daemon})
-add_executable(SimpleWallet ${SimpleWallet})
-add_executable(PaymentGateService ${PaymentGateService})
 add_executable(Miner ${Miner})
 
 if (MSVC)
@@ -75,6 +81,8 @@ target_link_libraries(Miner CryptoNoteCore Rpc System Http Logging Common Crypto
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR APPLE AND NOT ANDROID)
   target_link_libraries(SimpleWallet -lresolv)
+  target_link_libraries(Daemon -lresolv)
+  target_link_libraries(PaymentGateService -lresolv)
 endif ()
 
 add_dependencies(Rpc version)

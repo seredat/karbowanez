@@ -126,7 +126,8 @@ void HttpServer::acceptLoop() {
       HttpRequest req;
       HttpResponse resp;
 	  resp.addHeader("Access-Control-Allow-Origin", "*");
-
+	  resp.addHeader("content-type", "application/json");
+	
       parser.receiveRequest(stream, req);
 				if (authenticate(req)) {
 					processRequest(req, resp);
@@ -152,23 +153,27 @@ void HttpServer::acceptLoop() {
   }
 }
 
-	bool HttpServer::authenticate(const HttpRequest& request) const {
-		if (!m_credentials.empty()) {
-			auto headerIt = request.getHeaders().find("authorization");
-			if (headerIt == request.getHeaders().end()) {
-				return false;
-			}
-
-			if (headerIt->second.substr(0, 6) != "Basic ") {
-				return false;
-			}
-
-			if (headerIt->second.substr(6) != m_credentials) {
-				return false;
-			}
+bool HttpServer::authenticate(const HttpRequest& request) const {
+	if (!m_credentials.empty()) {
+		auto headerIt = request.getHeaders().find("authorization");
+		if (headerIt == request.getHeaders().end()) {
+			return false;
 		}
 
-		return true;
+		if (headerIt->second.substr(0, 6) != "Basic ") {
+			return false;
+		}
+
+		if (headerIt->second.substr(6) != m_credentials) {
+			return false;
+		}
 	}
+
+	return true;
+}
+
+size_t HttpServer::get_connections_count() const {
+	return m_connections.size();
+}
 
 }
