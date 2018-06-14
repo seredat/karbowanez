@@ -147,6 +147,7 @@ private:
 
   std::atomic<uint64_t> m_lastNotifiedActualBalance;
   std::atomic<uint64_t> m_lastNotifiedPendingBalance;
+  std::atomic<uint64_t> m_lastNotifiedUnmixableBalance;
 
   BlockchainSynchronizer m_blockchainSync;
   TransfersSyncronizer m_transfersSync;
