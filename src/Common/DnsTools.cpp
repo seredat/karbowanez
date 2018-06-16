@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo. If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
-
 #include <condition_variable>
 #include <future>
 #include <memory>
