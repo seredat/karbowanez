@@ -274,6 +274,8 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t height;
 	std::string top_block_hash;
     uint64_t difficulty;
+    uint64_t min_tx_fee;
+    std::string readable_tx_fee;
     uint64_t tx_count;
     uint64_t tx_pool_size;
     uint64_t alt_blocks_count;
@@ -292,6 +294,8 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(height)
 	  KV_MEMBER(top_block_hash)
       KV_MEMBER(difficulty)
+	  KV_MEMBER(min_tx_fee)
+      KV_MEMBER(readable_tx_fee)
       KV_MEMBER(tx_count)
       KV_MEMBER(tx_pool_size)
       KV_MEMBER(alt_blocks_count)
@@ -519,6 +523,7 @@ struct f_block_short_response {
   uint64_t tx_count;
   uint64_t cumul_size;
   difficulty_type difficulty;
+  uint64_t min_tx_fee;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(timestamp)
@@ -526,7 +531,8 @@ struct f_block_short_response {
     KV_MEMBER(hash)
     KV_MEMBER(cumul_size)
     KV_MEMBER(tx_count)
-	KV_MEMBER(difficulty)
+    KV_MEMBER(difficulty)
+	KV_MEMBER(min_tx_fee)
   }
 };
 

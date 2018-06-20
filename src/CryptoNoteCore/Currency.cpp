@@ -410,6 +410,36 @@ namespace CryptoNote {
 		return Common::fromString(strAmount, amount);
 	}
 
+	// Copyright (c) 2017-2018 Zawy 
+	// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
+	// Moore's law application by Sergey Kozlov
+
+	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
+		const uint64_t avgRefDifficulty = UINT64_C(7500000000);
+		const uint64_t avgRefReward = UINT64_C(21598000000000);
+		const uint32_t blockConst = UINT32_C(156300);
+		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
+		const double gauge = double(0.01);
+
+		uint64_t minimumFee(0);
+		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
+		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
+		if (minFee == 0 || !std::isfinite(minFee))
+			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
+		minimumFee = static_cast<uint64_t>(minFee);
+		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
+	}
+
+	uint64_t Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
+		sort(timestamps.begin(), timestamps.end());
+		sort(difficulties.begin(), difficulties.end());
+		uint64_t Difficulty, low, high, days;
+		low = mul128(difficulties.back() - difficulties.front(), m_difficultyTarget, &high);
+		assert(timestamps.back() - timestamps.front() != 0);
+		uint64_t ST = timestamps.back() - timestamps.front();
+		return low / ((m_difficultyTarget / 2 * ST / m_difficultyTarget + ST / 2));
+	}
+
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
@@ -713,6 +743,7 @@ namespace CryptoNote {
 		publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
 		minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
 		transactionSpendableAge(parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
+		expectedNumberOfBlocksPerDay(parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY);
 
 		timestampCheckWindow(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW);
 		timestampCheckWindow_v1(parameters::BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW_V1);

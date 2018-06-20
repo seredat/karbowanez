@@ -19,6 +19,7 @@
 #include "Blockchain.h"
 
 #include <algorithm>
+#include <numeric>
 #include <cstdio>
 #include <cmath>
 #include <boost/foreach.hpp>
@@ -714,9 +715,50 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
+difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  std::vector<uint64_t> timestamps;
+  std::vector<difficulty_type> cumulative_difficulties;
+  size_t offset;
+  offset = height - std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), window)));
+  if (offset == 0) {
+    ++offset;
+  }
+  timestamps.push_back(m_blocks[offset].bl.timestamp);
+  cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
+  timestamps.push_back(m_blocks[height].bl.timestamp);
+  cumulative_difficulties.push_back(m_blocks[height].cumulative_difficulty);
+
+  return m_currency.getAvgDifficultyForPeriod(timestamps, cumulative_difficulties);
+}
+
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
   assert(height < m_blocks.size());
   return m_blocks[height].bl.timestamp;
+}
+
+uint64_t Blockchain::getMinimalFee(uint32_t height) {
+	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+	std::vector<uint64_t> rewards;
+	size_t window = std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+	if (window == 0) {
+		++window;
+	}
+	size_t offset = height - window;
+	if (offset == 0) {
+		++offset;
+	}
+
+	uint64_t avgDifficulty = getAvgDifficultyForHeight(height, window);
+	uint64_t lastAvgReward = 0;
+	rewards.reserve(window);
+	for (; offset < height; offset++) {
+		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
+	}
+	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / window;
+	rewards.shrink_to_fit();
+
+	return m_currency.getMinimalFee(avgDifficulty, lastAvgReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
