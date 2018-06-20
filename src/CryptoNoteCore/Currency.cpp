@@ -412,7 +412,10 @@ namespace CryptoNote {
 
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
-		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
+			return nextDifficultyV4(blockMajorVersion, timestamps, cumulativeDifficulties);
+		}
+		else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
 			return nextDifficultyV3(timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
@@ -583,7 +586,33 @@ namespace CryptoNote {
 		}
 
 		return next_difficulty;
-	}	
+	}
+
+	difficulty_type Currency::nextDifficultyV4(uint8_t blockMajorVersion,
+		std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties) const {
+
+		// LWMA-2 difficulty algorithm 
+		// Copyright (c) 2017-2018 Zawy, MIT License
+		// https://github.com/zawy12/difficulty-algorithms/issues/3
+		// See commented version below for required config file changes.
+
+		int64_t  T = static_cast<int64_t>(m_difficultyTarget);
+		int64_t  N = difficultyBlocksCount3();
+		int64_t  FTL = timestampCheckWindow(blockMajorVersion); // FTL=3xT
+		int64_t  L(0), ST, sum_3_ST(0), next_D, prev_D;
+
+		for (int64_t i = 1; i <= N; i++) {
+			ST = std::max(-FTL, std::min((int64_t)(timestamps[i]) - (int64_t)(timestamps[i - 1]), 6 * T));
+			L += ST * i;
+			if (i > N - 3) { sum_3_ST += ST; }
+		}
+		next_D = ((cumulativeDifficulties[N] - cumulativeDifficulties[0])*T*(N + 1) * 99) / (100 * 2 * L);
+
+		prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
+		if (sum_3_ST < (8 * T) / 10) { next_D = (prev_D * 110) / 100; }
+
+		return static_cast<uint64_t>(next_D);
+	}
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
 		Crypto::Hash& proofOfWork) const {
