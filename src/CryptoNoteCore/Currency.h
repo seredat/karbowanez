@@ -70,6 +70,7 @@ public:
   size_t blockGrantedFullRewardZone() const { return m_blockGrantedFullRewardZone; }
   size_t blockGrantedFullRewardZoneByBlockVersion(uint8_t blockMajorVersion) const;
   size_t minerTxBlobReservedSize() const { return m_minerTxBlobReservedSize; }
+  uint64_t maxTransactionSizeLimit() const { return m_maxTransactionSizeLimit; }
 
   size_t numberOfDecimalPlaces() const { return m_numberOfDecimalPlaces; }
   uint64_t coin() const { return m_coin; }
@@ -193,6 +194,7 @@ private:
   size_t m_rewardBlocksWindow;
   size_t m_blockGrantedFullRewardZone;
   size_t m_minerTxBlobReservedSize;
+  uint64_t m_maxTransactionSizeLimit;
 
   size_t m_numberOfDecimalPlaces;
   uint64_t m_coin;
@@ -274,6 +276,7 @@ public:
   CurrencyBuilder& rewardBlocksWindow(size_t val) { m_currency.m_rewardBlocksWindow = val; return *this; }
   CurrencyBuilder& blockGrantedFullRewardZone(size_t val) { m_currency.m_blockGrantedFullRewardZone = val; return *this; }
   CurrencyBuilder& minerTxBlobReservedSize(size_t val) { m_currency.m_minerTxBlobReservedSize = val; return *this; }
+  CurrencyBuilder& maxTransactionSizeLimit(uint64_t val) { m_currency.m_maxTransactionSizeLimit = val; return *this; }
 
   CurrencyBuilder& numberOfDecimalPlaces(size_t val);
 
