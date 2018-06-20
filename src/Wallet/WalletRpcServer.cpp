@@ -98,7 +98,7 @@ bool wallet_rpc_server::handle_command_line(const boost::program_options::variab
 	m_bind_ip	  = command_line::get_arg(vm, arg_rpc_bind_ip);
 	m_port		  = command_line::get_arg(vm, arg_rpc_bind_port);
 	m_rpcUser	  = command_line::get_arg(vm, arg_rpc_user);
-	m_rpcPassword = command_line::get_arg(vm, arg_rpc_password);  
+	m_rpcPassword = command_line::get_arg(vm, arg_rpc_password);
 	return true;
 }
 //------------------------------------------------------------------------------------------------------------------------------

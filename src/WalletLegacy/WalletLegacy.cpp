@@ -709,6 +709,13 @@ void WalletLegacy::notifyIfBalanceChanged() {
     m_observerManager.notify(&IWalletLegacyObserver::pendingBalanceUpdated, pending);
   }
 
+  auto dust = dustBalance();
+  auto prevDust = m_lastNotifiedUnmixableBalance.exchange(dust);
+
+  if (prevDust != dust) {
+    m_observerManager.notify(&IWalletLegacyObserver::unmixableBalanceUpdated, dust);
+  }
+
 }
 
 void WalletLegacy::getAccountKeys(AccountKeys& keys) {

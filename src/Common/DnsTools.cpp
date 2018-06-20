@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo. If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
-
 #include <condition_variable>
 #include <future>
 #include <memory>
@@ -32,8 +30,8 @@
 #ifdef _WIN32
 #include <Windows.h>
 #include <io.h>
-#include <crtdbg.h>
-#include <winsock2.h>
+//#include <crtdbg.h>
+//#include <winsock2.h>
 #include <windns.h>
 #include <Rpc.h>
 #else
@@ -53,7 +51,7 @@ namespace Common {
 
 	bool fetch_dns_txt(const std::string domain, std::vector<std::string>&records) {
 
-#ifdef WIN32
+#ifdef _WIN32
 		using namespace std;
 
 #pragma comment(lib, "Ws2_32.lib")
@@ -88,7 +86,7 @@ namespace Common {
 			}
 		}
 		DnsRecordListFree(pDnsRecord, DnsFreeRecordListDeep);
-# else
+#else
 		using namespace std;
 
 		res_init();
