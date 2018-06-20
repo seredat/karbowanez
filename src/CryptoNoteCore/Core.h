@@ -96,6 +96,7 @@ namespace CryptoNote {
 	 virtual std::time_t getStartTime() const;
 	 
      uint32_t get_current_blockchain_height();
+	 uint8_t getCurrentBlockMajorVersion();
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;
