@@ -759,6 +759,9 @@ namespace CryptoNote {
 		minerTxBlobReservedSize(parameters::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
 		maxTransactionSizeLimit(parameters::MAX_TRANSACTION_SIZE_LIMIT);
 
+		minMixin(parameters::MIN_TX_MIXIN_SIZE);
+		maxMixin(parameters::MAX_TX_MIXIN_SIZE);
+
 		numberOfDecimalPlaces(parameters::CRYPTONOTE_DISPLAY_DECIMAL_POINT);
 
 		mininumFee(parameters::MINIMUM_FEE);

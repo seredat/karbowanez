@@ -73,6 +73,9 @@ public:
   size_t minerTxBlobReservedSize() const { return m_minerTxBlobReservedSize; }
   uint64_t maxTransactionSizeLimit() const { return m_maxTransactionSizeLimit; }
 
+  size_t minMixin() const { return m_minMixin; }
+  size_t maxMixin() const { return m_maxMixin; }
+
   size_t numberOfDecimalPlaces() const { return m_numberOfDecimalPlaces; }
   uint64_t coin() const { return m_coin; }
 
@@ -202,6 +205,9 @@ private:
   size_t m_numberOfDecimalPlaces;
   uint64_t m_coin;
 
+  size_t m_minMixin;
+  size_t m_maxMixin;
+
   uint64_t m_mininumFee;
   uint64_t m_defaultDustThreshold;
 
@@ -281,6 +287,9 @@ public:
   CurrencyBuilder& blockGrantedFullRewardZone(size_t val) { m_currency.m_blockGrantedFullRewardZone = val; return *this; }
   CurrencyBuilder& minerTxBlobReservedSize(size_t val) { m_currency.m_minerTxBlobReservedSize = val; return *this; }
   CurrencyBuilder& maxTransactionSizeLimit(uint64_t val) { m_currency.m_maxTransactionSizeLimit = val; return *this; }
+
+  CurrencyBuilder& minMixin(size_t val) { m_currency.m_minMixin = val; return *this; }
+  CurrencyBuilder& maxMixin(size_t val) { m_currency.m_maxMixin = val; return *this; }
 
   CurrencyBuilder& numberOfDecimalPlaces(size_t val);
 

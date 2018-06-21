@@ -89,16 +89,17 @@ namespace CryptoNote {
      virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) override;
      virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock) override;
      virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
-	 virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
-	 virtual uint64_t getMinimalFee() override;
+     virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
+     virtual uint64_t getMinimalFee() override;
      
      virtual bool addMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
      virtual bool removeMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
 
-	 virtual std::time_t getStartTime() const;
+     virtual std::time_t getStartTime() const;
 	 
      uint32_t get_current_blockchain_height();
-	 uint8_t getCurrentBlockMajorVersion();
+     uint8_t getCurrentBlockMajorVersion();
+
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;
@@ -157,7 +158,8 @@ namespace CryptoNote {
 
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
-	 uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
+     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
+     bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
 
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
