@@ -92,9 +92,9 @@ std::string DaemonCommandsHandler::get_mining_speed(uint32_t hr) {
 float DaemonCommandsHandler::get_sync_percentage(uint64_t height, uint64_t target_height) {
   target_height = target_height ? target_height < height ? height : target_height : height;
   float pc = 100.0f * height / target_height;
-  if (height < target_height && pc > 99.9f)
+  if (height < target_height && pc > 99.9f){
     return 99.9f; // to avoid 100% when not fully synced
-
+  }
     return pc;
 }
 
