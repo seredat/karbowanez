@@ -606,10 +606,10 @@ namespace CryptoNote {
 			L += ST * i;
 			if (i > N - 3) { sum_3_ST += ST; }
 		}
-		next_D = ((int64_t)(cumulativeDifficulties[N] - cumulativeDifficulties[0])*T*(N + 1) * 99) / (100 * 2 * L);
+		next_D = (static_cast<int64_t>(cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N + 1) * 99) / (100 * 2 * L);
 
 		prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
-		next_D = std::max<int64_t>((prev_D * 70) / 100, std::min<int64_t>(next_D, static_cast<int64_t>((prev_D * 107) / 100)));
+		next_D = std::max<int64_t>((prev_D * 70) / 100, std::min(next_D, (prev_D * 107) / 100));
 		if (sum_3_ST < (8 * T) / 10) { next_D = (prev_D * 110) / 100; }
 
 		return static_cast<uint64_t>(next_D);
