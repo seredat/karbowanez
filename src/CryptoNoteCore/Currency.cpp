@@ -603,7 +603,8 @@ namespace CryptoNote {
 		uint64_t next_D, prev_D;
 
 		for (int64_t i = 1; i <= N; i++) {
-			L += std::max(-FTL, std::min((int64_t)(timestamps[i]) - (int64_t)(timestamps[i - 1]), 6 * T)) * i;
+			ST = std::max(-FTL, std::min((int64_t)(timestamps[i]) - (int64_t)(timestamps[i - 1]), 6 * T));
+			L += ST * i;
 			if (i > N - 3) { sum_3_ST += ST; }
 		}
 		int64_t clamp_increase = (T * N * (N + 1) * 99) / int64_t(100.0 * 2.0 * 2.5);
