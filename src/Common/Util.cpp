@@ -318,10 +318,16 @@ std::string get_nix_version_display_string()
       pathRet = "/";
     else
       pathRet = pszHome;
-#ifdef MAC_OSX
-    // Mac
-    pathRet /= "Library/Application Support";
-    config_folder =  (pathRet + "/" + CryptoNote::CRYPTONOTE_NAME);
+#ifdef __APPLE__
+	// Mac
+	std::string old_config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
+	std::string pathRet2 = (pathRet + "/" + "Library/Application Support");
+	config_folder = (pathRet2 + "/" + CryptoNote::CRYPTONOTE_NAME);
+	// move to correct location
+	boost::filesystem::path old_path(old_config_folder);
+	if (boost::filesystem::is_directory(old_path)) {
+		boost::filesystem::rename(old_path, config_folder);
+  }
 #else
     // Unix
     config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
