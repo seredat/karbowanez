@@ -310,9 +310,17 @@ int main(int argc, char* argv[])
 
     logger(INFO) << "Starting core rpc server on address " << rpcConfig.getBindAddress();
     rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
-	rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
-	rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
-	rpcServer.setFeeAddress(command_line::get_arg(vm, arg_set_fee_address));
+    rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
+    rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
+    if (command_line::has_arg(vm, arg_set_fee_address)) {
+      AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+      std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
+      if (!currency.parseAccountAddressString(addr_str, acc)) {
+        logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
+        //return 1;
+      }
+      rpcServer.setFeeAddress(addr_str);
+    }
     logger(INFO) << "Core rpc server started ok";
 
     Tools::SignalHandler::install([&dch, &p2psrv] {

@@ -42,7 +42,7 @@ public:
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool restrictRPC(const bool is_resctricted);
   bool enableCors(const std::string domain);
-  bool setFeeAddress(const std::string fee_address);
+  bool setFeeAddress(const std::string& fee_address);
 
 private:
 
