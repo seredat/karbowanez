@@ -805,6 +805,24 @@ bool Blockchain::rollback_blockchain_switching(std::list<Block> &original_chain,
   return true;
 }
 
+//------------------------------------------------------------------
+// Calculate ln(p) of Poisson distribution
+// Original idea : https://stackoverflow.com/questions/30156803/implementing-poisson-distribution-in-c
+// Using logarithms avoids dealing with very large (k!) and very small (p < 10^-44) numbers
+// lam     - lambda parameter - in our case, how many blocks, on average, you would expect to see in the interval
+// k       - k parameter - in our case, how many blocks we have actually seen
+//           !!! k must not be zero
+// return  - ln(p)
+double calc_poisson_ln(double lam, uint64_t k)
+{
+  double logx = -lam + k * log(lam);
+  do
+  {
+    logx -= log(k); // This can be tabulated
+  } while (--k > 0);
+  return logx;
+}
+
 bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::iterator>& alt_chain, bool discard_disconnected_chain) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
@@ -818,6 +836,71 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
   if (!(m_blocks.size() > split_height)) {
     logger(ERROR, BRIGHT_RED) << "switch_to_alternative_blockchain: blockchain size is lower than split height";
     return false;
+  }
+
+  // For longer reorgs, check if the timestamps are probable - if they aren't the diff algo has failed
+  // This check is meant to detect an offline bypass of timestamp < time() + ftl check
+  // It doesn't need to be very strict as it synergises with the median check
+  if (alt_chain.size() >= CryptoNote::parameters::POISSON_CHECK_TRIGGER)
+  {
+	  uint64_t alt_chain_size = alt_chain.size();
+	  uint64_t high_timestamp = alt_chain.back()->second.bl.timestamp;
+	  Crypto::Hash low_block = alt_chain.front()->second.bl.previousBlockHash;
+
+	  //Make sure that the high_timestamp is really highest
+	  for (const blocks_ext_by_hash::iterator &it : alt_chain)
+	  {
+		  if (high_timestamp < it->second.bl.timestamp)
+			  high_timestamp = it->second.bl.timestamp;
+	  }
+
+	  uint64_t block_ftl = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
+	  // This would fail later anyway
+	  if (high_timestamp > get_adjusted_time() + block_ftl)
+	  {
+		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! timestamp: " << high_timestamp << " limit: " << get_adjusted_time() + block_ftl;
+		  return false;
+	  }
+
+	  logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
+
+	  uint64_t failed_checks = 0, i = 1;
+	  constexpr Crypto::Hash zero_hash = { 0 };
+	  for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
+	  {
+		  // This means we reached the genesis block
+		  if (low_block == zero_hash)
+			  break;
+
+		  Block blk;
+		  getBlockByHash(low_block, blk);
+
+		  uint64_t low_timestamp = blk.timestamp;
+		  low_block = blk.previousBlockHash;
+
+		  if (low_timestamp >= high_timestamp)
+		  {
+			  logger(INFO) << "Skipping check at depth " << i << " due to tampered timestamp on main chain.";
+			  failed_checks++;
+			  continue;
+		  }
+
+		  double lam = double(high_timestamp - low_timestamp) / double(CryptoNote::parameters::DIFFICULTY_TARGET);
+		  if (calc_poisson_ln(lam, alt_chain_size + i) < CryptoNote::parameters::POISSON_LOG_P_REJECT)
+		  {
+			  logger(INFO) << "Poisson check at depth " << i << " failed! delta_t: " << (high_timestamp - low_timestamp) << " size: " << alt_chain_size + i;
+			  failed_checks++;
+		  }
+	  }
+
+	  i--; //Convert to number of checks
+	  logger(INFO) << "Poisson check result " << failed_checks << " fails out of " << i;
+
+	  if (failed_checks > i / 2)
+	  {
+		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed Poisson check! " << failed_checks << " fails out of " << i << " alt_chain_size: " << alt_chain_size;
+		  return false;
+	  }
   }
 
   //disconnecting old chain
