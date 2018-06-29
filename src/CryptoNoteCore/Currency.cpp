@@ -618,7 +618,6 @@ namespace CryptoNote {
 		return next_difficulty;
 	}
 
-
 	template <typename T>
 	inline T clamp(T lo, T v, T hi)
 	{
@@ -660,7 +659,7 @@ namespace CryptoNote {
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
 		Crypto::Hash& proofOfWork) const {
-		if (BLOCK_MAJOR_VERSION_1 != block.majorVersion) {
+		if (BLOCK_MAJOR_VERSION_2 == block.majorVersion || BLOCK_MAJOR_VERSION_3 == block.majorVersion) {
 			return false;
 		}
 
@@ -715,11 +714,11 @@ namespace CryptoNote {
 	bool Currency::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const {
 		switch (block.majorVersion) {
 		case BLOCK_MAJOR_VERSION_1:
+		case BLOCK_MAJOR_VERSION_4:
 			return checkProofOfWorkV1(context, block, currentDiffic, proofOfWork);
 
 		case BLOCK_MAJOR_VERSION_2:
 		case BLOCK_MAJOR_VERSION_3:
-		case BLOCK_MAJOR_VERSION_4:
 			return checkProofOfWorkV2(context, block, currentDiffic, proofOfWork);
 		}
 

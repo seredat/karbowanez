@@ -1755,7 +1755,7 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
 }
 
 bool Blockchain::checkParentBlockSize(const Block& b, const Crypto::Hash& blockHash) {
-  if (b.majorVersion >= BLOCK_MAJOR_VERSION_2) {
+  if (b.majorVersion == BLOCK_MAJOR_VERSION_2 || b.majorVersion == BLOCK_MAJOR_VERSION_3) {
     auto serializer = makeParentBlockSerializer(b, false, false);
     size_t parentBlockSize;
     if (!getObjectBinarySize(serializer, parentBlockSize)) {
