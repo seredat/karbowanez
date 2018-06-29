@@ -42,7 +42,9 @@ public:
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool restrictRPC(const bool is_resctricted);
   bool enableCors(const std::string domain);
-  bool setFeeAddress(const std::string& fee_address);
+  bool setFeeAddress(const std::string& fee_address, const AccountPublicAddress& fee_acc);
+  bool setViewKey(const std::string& view_key);
+  bool masternode_check_incoming_tx(const BinaryArray& tx_blob);
 
 private:
 
@@ -109,6 +111,8 @@ private:
   bool m_restricted_rpc;
   std::string m_cors_domain;
   std::string m_fee_address;
+  Crypto::SecretKey m_view_key = NULL_SECRET_KEY;
+  AccountPublicAddress m_fee_acc;
 };
 
 }
