@@ -153,6 +153,7 @@ std::vector<uint32_t> Checkpoints::getCheckpointHeights() const {
 
   return checkpointHeights;
 }
+#ifndef __ANDROID__
 //---------------------------------------------------------------------------
 bool Checkpoints::load_checkpoints_from_dns()
 {
@@ -186,5 +187,5 @@ bool Checkpoints::load_checkpoints_from_dns()
 
   return true;
 }
-
+#endif
 }
