@@ -25,11 +25,7 @@
 
 // CryptoNote
 #include "Common/StringTools.h"
-#ifdef __linux__ 
-#include "CryptoNoteCore/TransactionUtils.cpp"
-#else
 #include "CryptoNoteCore/TransactionUtils.h"
-#endif
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/Core.h"
