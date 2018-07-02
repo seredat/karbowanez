@@ -6,14 +6,37 @@ The Karbo (Karbovanets) is cryptocurrency of Ukrainian origin, just like Bitcoin
 
 Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, and Boost 1.55.
 
+On Apple or Linux and can't get readline installed? Run cmake with `cmake .. -DFORCE_READLINE=FALSE` to disable readline support.
+
+Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, GNU Readline, and Boost 1.55 or later.
+
 You may download them from:
 
-* http://gcc.gnu.org/
-* http://www.cmake.org/
-* http://www.boost.org/
-* Alternatively, it may be possible to install them using a package manager.
+- http://gcc.gnu.org/
+- http://www.cmake.org/
+- http://www.boost.org/
+- https://tiswww.case.edu/php/chet/readline/rltop.html (Mac + Linux only)
 
-To build, change to a directory where this file is located, and run `make`. The resulting executables can be found in `build/release/src`.
+Alternatively, it may be possible to install them using a package manager.
+
+To build, change to a directory where this file is located, and run `make`.
+
+or
+
+Run these commands:
+```
+cd ~
+sudo apt-get install build-essential git cmake libboost-all-dev libreadline-dev
+git clone https://github.com/seredat/karbowanec.git 
+cd karbowanec
+mkdir build
+cd build
+cmake ..
+cd ..
+make
+```
+
+ The resulting executables can be found in `build/release/src`.
 
 **Advanced options:**
 
@@ -38,6 +61,19 @@ cmake -G "Visual Studio 12 Win64" ..
 
 And then do Build.
 Good luck!
+
+
+### On Apple:
+
+`brew install git cmake boost rocksdb readline`
+`brew link --force readline`
+`git clone https://github.com/seredat/karbowanec.git`
+`cd karbowanec`
+`mkdir build`
+`cd build`
+`cmake ..`
+`make`
+
 
 ### Building for Android on Linux
 

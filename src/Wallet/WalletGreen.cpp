@@ -35,6 +35,7 @@
 
 #include "ITransaction.h"
 
+#include "Common/Base58.h"
 #include "Common/ScopeExit.h"
 #include "Common/ShuffleGenerator.h"
 #include "Common/StdInputStream.h"
@@ -2062,7 +2063,7 @@ void WalletGreen::sendTransaction(const CryptoNote::Transaction& cryptoNoteTrans
 size_t WalletGreen::validateSaveAndSendTransaction(const ITransactionReader& transaction, const std::vector<WalletTransfer>& destinations, bool isFusion, bool send) {
   BinaryArray transactionData = transaction.getTransactionData();
 
-  if (transactionData.size() > m_upperTransactionSizeLimit) {
+  if (transactionData.size() > getMaxTxSize()) {
     m_logger(ERROR, BRIGHT_RED) << "Transaction is too big. Transaction hash " << transaction.getTransactionHash() <<
       ", size " << transactionData.size() << ", size limit " << m_upperTransactionSizeLimit;
     throw std::system_error(make_error_code(error::TRANSACTION_SIZE_TOO_BIG));
@@ -3372,5 +3373,132 @@ void WalletGreen::deleteFromUncommitedTransactions(const std::vector<size_t>& de
     m_uncommitedTransactions.erase(transactionId);
   }
 }
+
+/* The blockchain events are sent to us from the blockchain synchronizer,
+   but they appear to not get executed on the dispatcher until the synchronizer
+   stops. After some investigation, it appears that we need to run this
+   archaic line of code to run other code on the dispatcher? */
+void WalletGreen::updateInternalCache() {
+    System::RemoteContext<void> updateInternalBC(m_dispatcher, [this] () {});
+    updateInternalBC.get();
+}
+
+/* The formula for the block size is as follows. Calculate the
+   maxBlockCumulativeSize. This is equal to:
+   100,000 + ((height * 102,400) / 1,051,200)
+   At a block height of 400k, this gives us a size of 138,964.
+   The constants this calculation arise from can be seen below, or in
+   src/CryptoNoteCore/Currency.cpp::maxBlockCumulativeSize(). Call this value
+   x.
+   Next, calculate the median size of the last 100 blocks. Take the max of
+   this value, and 100,000. Multiply this value by 1.25. Call this value y.
+   Finally, return the minimum of x and y.
+   Or, in short: min(140k (slowly rising), 1.25 * max(100k, median(last 100 blocks size)))
+   Block size will always be 125k or greater (Assuming non testnet)
+   To get the max transaction size, remove 600 from this value, for the
+   reserved miner transaction.
+   We are going to ignore the median(last 100 blocks size), as it is possible
+   for a transaction to be valid for inclusion in a block when it is submitted,
+   but not when it actually comes to be mined, for example if the median
+   block size suddenly decreases. This gives a bit of a lower cap of max
+   tx sizes, but prevents anything getting stuck in the pool.
+*/
+size_t WalletGreen::getMaxTxSize()
+{
+    uint32_t currentHeight = m_node.getLastKnownBlockHeight();
+
+    size_t growth = (currentHeight * CryptoNote
+                                   ::parameters
+                                   ::MAX_BLOCK_SIZE_GROWTH_SPEED_NUMERATOR) /
+
+                    CryptoNote
+                  ::parameters
+                  ::MAX_BLOCK_SIZE_GROWTH_SPEED_DENOMINATOR;
+
+    size_t x = CryptoNote::parameters::MAX_BLOCK_SIZE_INITIAL + growth;
+
+    size_t y = 125000;
+
+    return std::min(x, y) - CryptoNote::parameters
+                                      ::CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
+}
+
+bool WalletGreen::txIsTooLarge(const TransactionParameters& sendingTransaction)
+{
+  return getTxSize(sendingTransaction) > getMaxTxSize();
+}
+
+size_t WalletGreen::getTxSize(const TransactionParameters &sendingTransaction)
+{
+  System::EventLock lk(m_readyEvent);
+
+  throwIfNotInitialized();
+  throwIfTrackingMode();
+  throwIfStopped();
+
+  CryptoNote::AccountPublicAddress changeDestination = getChangeDestination(sendingTransaction.changeDestination, sendingTransaction.sourceAddresses);
+
+  std::vector<WalletOuts> wallets;
+  if (!sendingTransaction.sourceAddresses.empty()) {
+    wallets = pickWallets(sendingTransaction.sourceAddresses);
+  } else {
+    wallets = pickWalletsWithMoney();
+  }
+
+  PreparedTransaction preparedTransaction;
+  prepareTransaction(
+    std::move(wallets),
+    sendingTransaction.destinations,
+    sendingTransaction.fee,
+    sendingTransaction.mixIn,
+    sendingTransaction.extra,
+    sendingTransaction.unlockTimestamp,
+    sendingTransaction.donation,
+    changeDestination,
+    preparedTransaction);
+
+  BinaryArray transactionData = preparedTransaction.transaction->getTransactionData();
+  return transactionData.size();
+}
+
+void WalletGreen::clearCacheAndShutdown()
+{
+  if (m_walletsContainer.size() != 0) {
+    m_synchronizer.unsubscribeConsumerNotifications(m_viewPublicKey, this);
+  }
+
+  stopBlockchainSynchronizer();
+  m_blockchainSynchronizer.removeObserver(this);
+
+  clearCaches(true, true);
+
+  m_walletsContainer.clear();
+
+  shutdown();
+}
+
+void WalletGreen::createViewWallet(const std::string &password,
+                                   const std::string address,
+                                   const Crypto::SecretKey &viewSecretKey,
+                                   const std::string &path)
+{
+    CryptoNote::AccountPublicAddress publicKeys;
+    uint64_t prefix;
+
+    std::string data;
+
+    if (!(Tools::Base58::decode_addr(address, prefix, data) &&
+          fromBinaryArray(publicKeys, asBinaryArray(data)) &&
+          // ::serialization::parse_binary(data, adr) &&
+          check_key(publicKeys.spendPublicKey) &&
+          check_key(publicKeys.viewPublicKey)))
+    {
+        throw std::runtime_error("Failed to parse address!");
+    }
+
+    initializeWithViewKey(path, password, viewSecretKey);
+    createAddress(publicKeys.spendPublicKey);
+}
+
 
 } //namespace CryptoNote
