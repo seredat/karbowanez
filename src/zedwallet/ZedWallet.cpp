@@ -256,7 +256,7 @@ Maybe<std::shared_ptr<WalletInfo>> handleAction(CryptoNote::WalletGreen &wallet,
     {
         return openWallet(wallet, config);
     }
-    else if (action == Import)
+    else if (action == KeyImport)
     {
         return Just<std::shared_ptr<WalletInfo>>(importWallet(wallet));
     }
@@ -267,6 +267,10 @@ Maybe<std::shared_ptr<WalletInfo>> handleAction(CryptoNote::WalletGreen &wallet,
     else if (action == ViewWallet)
     {
         return Just<std::shared_ptr<WalletInfo>>(createViewWallet(wallet));
+    }
+    else if (action == GUIImport)
+    {
+        return Just<std::shared_ptr<WalletInfo>>(importGUIWallet(wallet));
     }
     else
     {
@@ -293,13 +297,17 @@ Action getAction(Config &config)
                   << "\t[" << InformationMsg("O") << "] - "
                   << "Open a wallet already on your system"
                   << std::endl
+
+                  << "\t[" << InformationMsg("I") << "] - "
+                  << "Import your wallet using a GUI Private Key"
+                  << std::endl
                   
                   << "\t[" << InformationMsg("S") << "] - "
                   << "Regenerate your wallet using a seed phrase of words"
                   << std::endl
                   
-                  << "\t[" << InformationMsg("I") << "] - "
-                  << "Import your wallet using a View Key and Spend Key"
+                  << "\t[" << InformationMsg("P") << "] - "
+                  << "Import your wallet using a Private View and Spend Key"
                   << std::endl
 
                   << "\t[" << InformationMsg("V") << "] - "
@@ -321,9 +329,9 @@ Action getAction(Config &config)
         {
             return Generate;
         }
-        else if (c == 'i')
+        else if (c == 'p')
         {
-            return Import;
+            return KeyImport;
         }
         else if (c == 's')
         {
@@ -332,6 +340,10 @@ Action getAction(Config &config)
         else if (c == 'v')
         {
             return ViewWallet;
+        }
+        else if (c == 'i')
+        {
+            return GUIImport;
         }
         else
         {

@@ -22,6 +22,8 @@ std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen
 
 std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet);
 
+std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet);
+
 Crypto::SecretKey getPrivateKey(std::string outputMsg);
 
 std::string getNewWalletFileName();

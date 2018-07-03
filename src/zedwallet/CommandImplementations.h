@@ -33,3 +33,5 @@ void printOutgoingTransfer(CryptoNote::WalletTransaction t,
 
 void printIncomingTransfer(CryptoNote::WalletTransaction t,
                            CryptoNote::INode &node);
+
+std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet);

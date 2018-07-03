@@ -7,7 +7,7 @@
 #include <zedwallet/ColouredMsg.h>
 #include <zedwallet/Types.h>
 
-enum Action {Open, Generate, Import, SeedImport, ViewWallet};
+enum Action {Open, Generate, GUIImport, KeyImport, SeedImport, ViewWallet};
 
 Action getAction(Config &config);
 

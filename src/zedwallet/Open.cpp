@@ -9,6 +9,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <Common/Base58.h>
+
 #include <CryptoNoteCore/Account.h>
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 
@@ -70,6 +72,63 @@ std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet)
         = getPrivateKey("Private View Key: ");
 
     return importFromKeys(wallet, privateSpendKey, privateViewKey);
+}
+
+std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
+{
+    const int privateKeyLen = 186;
+
+    std::string guiPrivateKey;
+
+    uint64_t addressPrefix;
+    std::string data;
+    CryptoNote::AccountKeys keys;
+
+    while (true)
+    {
+        std::cout << "GUI Private Key: ";
+        std::getline(std::cin, guiPrivateKey);
+        boost::algorithm::trim(guiPrivateKey);
+
+        if (guiPrivateKey.length() != privateKeyLen)
+        {
+            std::cout << WarningMsg("Invalid GUI Private Key, should be ")
+                      << WarningMsg(std::to_string(privateKeyLen))
+                      << WarningMsg(" characters! Try again.")
+                      << std::endl;
+
+            continue;
+        }
+
+        if (!Tools::Base58::decode_addr(guiPrivateKey, addressPrefix, data)
+          || data.size() != sizeof(keys))
+        {
+            std::cout << WarningMsg("Failed to decode GUI Private Key!")
+                      << WarningMsg("Ensure you have entered it correctly.")
+                      << std::endl;
+
+            continue;
+        }
+
+        if (addressPrefix != 
+            CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX)
+        {
+            std::cout << WarningMsg("Invalid GUI Private Key, it should begin ")
+                      << WarningMsg("with ")
+                      << WarningMsg(WalletConfig::addressPrefix)
+                      << WarningMsg("! Try again.")
+                      << std::endl;
+
+            continue;
+        }
+
+        break;
+    }
+
+    /* Copy the keys into the struct */
+    std::memcpy(&keys, data.data(), sizeof(keys));
+
+    return importFromKeys(wallet, keys.spendSecretKey, keys.viewSecretKey);
 }
 
 std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen

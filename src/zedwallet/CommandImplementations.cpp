@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <initializer_list>
+#include <Common/Base58.h>
 #include <Common/StringTools.h>
 
 #include <CryptoNoteCore/Account.h>
@@ -54,9 +55,35 @@ void exportKeys(std::shared_ptr<WalletInfo> &walletInfo)
     printPrivateKeys(walletInfo->wallet, walletInfo->viewWallet);
 }
 
+std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet)
+{
+    auto viewKey = wallet.getViewKey();
+    auto spendKey = wallet.getAddressSpendKey(0);
+
+    CryptoNote::AccountPublicAddress addr
+    {
+        spendKey.publicKey,
+        viewKey.publicKey,
+    };
+
+    CryptoNote::AccountKeys keys
+    {
+        addr,
+        spendKey.secretKey,
+        viewKey.secretKey,
+    };
+
+    return Tools::Base58::encode_addr
+    (
+        CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
+        std::string(reinterpret_cast<char*>(&keys), sizeof(keys))
+    );
+}
+
 void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
 {
-    const Crypto::SecretKey privateViewKey = wallet.getViewKey().secretKey;
+    auto privateViewKey = wallet.getViewKey().secretKey;
+    auto privateSpendKey = wallet.getAddressSpendKey(0).secretKey;
 
     if (viewWallet)
     {
@@ -67,8 +94,6 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
         return;
     }
 
-    Crypto::SecretKey privateSpendKey = wallet.getAddressSpendKey(0).secretKey;
-
     Crypto::SecretKey derivedPrivateViewKey;
 
     CryptoNote::AccountBase::generateViewFromSpend(privateSpendKey,
@@ -77,12 +102,16 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
     const bool deterministicPrivateKeys
              = derivedPrivateViewKey == privateViewKey;
 
-    std::cout << SuccessMsg("Private spend key:")
-              << std::endl
-              << SuccessMsg(Common::podToHex(privateSpendKey))
-              << std::endl
-              << std::endl
-              << SuccessMsg("Private view key:")
+    if (!viewWallet)
+    {
+        std::cout << SuccessMsg("Private spend key:")
+                  << std::endl
+                  << SuccessMsg(Common::podToHex(privateSpendKey))
+                  << std::endl
+                  << std::endl;
+    }
+
+    std::cout << SuccessMsg("Private view key:")
               << std::endl
               << SuccessMsg(Common::podToHex(privateViewKey))
               << std::endl;
@@ -99,6 +128,15 @@ void printPrivateKeys(CryptoNote::WalletGreen &wallet, bool viewWallet)
                   << SuccessMsg("Mnemonic seed:")
                   << std::endl
                   << SuccessMsg(mnemonicSeed)
+                  << std::endl;
+    }
+
+    if (!viewWallet)
+    {
+        std::cout << std::endl
+                  << SuccessMsg("GUI Importable Private Key:")
+                  << std::endl
+                  << SuccessMsg(getGUIPrivateKey(wallet))
                   << std::endl;
     }
 }
