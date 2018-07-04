@@ -415,14 +415,13 @@ namespace CryptoNote {
 	// Moore's law application by Sergey Kozlov
 
 	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
-		const uint64_t avgRefDifficulty = UINT64_C(7500000000);
-		const uint64_t avgRefReward = UINT64_C(21598000000000);
-		const uint32_t blockConst = UINT32_C(156300);
+		const uint64_t avgRefDifficulty = CryptoNote::parameters::REFERENCE_AVG_DIFFICULTY;
+		const uint64_t avgRefReward = CryptoNote::parameters::REFERENCE_AVG_REWARD;
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
 		const double gauge = double(0.01);
 
 		uint64_t minimumFee(0);
-		double dailyDifficultyMoore = dailyDifficulty / pow(2, std::min(height, height - blockConst) / blocksInTwoYears);
+		double dailyDifficultyMoore = dailyDifficulty / pow(2, height / blocksInTwoYears);
 		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
 		if (minFee == 0 || !std::isfinite(minFee))
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
@@ -655,6 +654,11 @@ namespace CryptoNote {
 		if (sum_3_ST < (8 * T) / 10) { next_D = (prev_D * 110ull) / 100ull; }
 
 		return next_D;
+
+		// minimum limit
+		if (next_D < 100000) {
+			next_D = 100000;
+		}
 	}
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
