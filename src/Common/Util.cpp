@@ -304,9 +304,13 @@ std::string get_nix_version_display_string()
     // Mac: ~/Library/Application Support/CRYPTONOTE_NAME
     // Unix: ~/.CRYPTONOTE_NAME
     std::string config_folder;
-#ifdef WIN32
+
+#ifdef _WIN32
     // Windows
     config_folder = get_special_folder_path(CSIDL_APPDATA, true) + "/" + CryptoNote::CRYPTONOTE_NAME;
+#ifdef USE_LITE_WALLET
+    config_folder = "./";
+#endif
 #else
     std::string pathRet;
     char* pszHome = getenv("HOME");
@@ -314,16 +318,21 @@ std::string get_nix_version_display_string()
       pathRet = "/";
     else
       pathRet = pszHome;
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
-    pathRet /= "Library/Application Support";
-    config_folder =  (pathRet + "/" + CryptoNote::CRYPTONOTE_NAME);
+    std::string old_config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
+    std::string pathRet2 = (pathRet + "/" + "Library/Application Support");
+    config_folder =  (pathRet2 + "/" + CryptoNote::CRYPTONOTE_NAME);
+    // move to correct location
+    boost::filesystem::path old_path(old_config_folder);
+    if (boost::filesystem::is_directory(old_path)) {
+        boost::filesystem::rename(old_path, config_folder);
+    }
 #else
     // Unix
     config_folder = (pathRet + "/." + CryptoNote::CRYPTONOTE_NAME);
 #endif
 #endif
-
     return config_folder;
   }
 

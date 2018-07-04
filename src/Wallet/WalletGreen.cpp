@@ -29,6 +29,9 @@
 
 #include <System/EventLock.h>
 #include <System/RemoteContext.h>
+#ifdef USE_LITE_WALLET
+#include <boost/date_time/posix_time/posix_time.hpp>
+#endif
 
 #include "ITransaction.h"
 
@@ -848,7 +851,19 @@ void WalletGreen::convertAndLoadWalletFile(const std::string& path, std::ifstrea
   prefix->version = WalletSerializerV2::SERIALIZATION_VERSION;
   prefix->nextIv = Crypto::rand<Crypto::chacha8_iv>();
 
+#ifdef USE_LITE_WALLET
+  uint64_t creationTimestamp;
+  for (WalletRecord wallet : m_walletsContainer.get<RandomAccessIndex>()) {
+    boost::posix_time::ptime ts = boost::posix_time::from_time_t(wallet.creationTimestamp);
+    if (!ts.is_not_a_date_time()) {
+      creationTimestamp = wallet.creationTimestamp;
+      break;
+    }
+    creationTimestamp = time(nullptr);
+  }
+#else
   uint64_t creationTimestamp = time(nullptr);
+#endif
   prefix->encryptedViewKeys = encryptKeyPair(m_viewPublicKey, m_viewSecretKey, creationTimestamp);
 
   for (auto spendKeys : m_walletsContainer.get<RandomAccessIndex>()) {

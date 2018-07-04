@@ -80,6 +80,11 @@ endif()
 message(STATUS "BOOST_IGNORE_SYSTEM_PATHS defaults to ${BOOST_IGNORE_SYSTEM_PATHS_DEFAULT}")
 option(BOOST_IGNORE_SYSTEM_PATHS "Ignore boost system paths for local boost installation" ${BOOST_IGNORE_SYSTEM_PATHS_DEFAULT})
 
+option(WITH_LITE_WALLET "Lite wallet specific" OFF)
+
+if(WITH_LITE_WALLET)
+  add_definitions("-DUSE_LITE_WALLET")
+endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # set(CMAKE_CONFIGURATION_TYPES "Debug;Release")
