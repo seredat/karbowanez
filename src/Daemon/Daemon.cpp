@@ -314,16 +314,23 @@ int main(int argc, char* argv[])
     rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
     rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
     rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
-    if (command_line::has_arg(vm, arg_set_fee_address)) {
-      AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-      std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
-      if (!currency.parseAccountAddressString(addr_str, acc)) {
-        logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
-        return 1;
+	if (command_line::has_arg(vm, arg_set_fee_address)) {
+	  std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
+	  if (!addr_str.empty()) {
+        AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+        if (!currency.parseAccountAddressString(addr_str, acc)) {
+          logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
+          return 1;
+        }
+        rpcServer.setFeeAddress(addr_str, acc);
       }
-      rpcServer.setFeeAddress(addr_str, acc);
+	}
+    if (command_line::has_arg(vm, arg_set_view_key)) {
+      std::string vk_str = command_line::get_arg(vm, arg_set_view_key);
+	  if (!vk_str.empty()) {
+        rpcServer.setViewKey(vk_str);
+      }
     }
-	rpcServer.setViewKey(command_line::get_arg(vm, arg_set_view_key));
     logger(INFO) << "Core rpc server started ok";
 
     Tools::SignalHandler::install([&dch, &p2psrv] {
