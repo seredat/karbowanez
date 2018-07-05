@@ -170,7 +170,8 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
 	  { "f_pool_json", { makeMemberMethod(&RpcServer::f_on_pool_json), false } },
 	  { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_mempool_json), false } },
-	  { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::k_on_transactions_by_payment_id), false } }
+	  { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::k_on_transactions_by_payment_id), false } },
+	  { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } }
 
     };
 
@@ -1151,5 +1152,17 @@ bool RpcServer::on_get_block_header_by_height(const COMMAND_RPC_GET_BLOCK_HEADER
   return true;
 }
 
+bool RpcServer::on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request& req, COMMAND_RPC_VALIDATE_ADDRESS::response& res) {
+  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+  bool r = m_core.currency().parseAccountAddressString(req.address, acc);
+  res.isvalid = r;
+  if (r) {
+    res.address = m_core.currency().accountAddressAsString(acc);
+    res.spendPublicKey = Common::podToHex(acc.spendPublicKey);
+    res.viewPublicKey = Common::podToHex(acc.viewPublicKey);
+  }
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
 
 }
