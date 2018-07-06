@@ -111,9 +111,9 @@ namespace CryptoNote {
      }
      virtual bool queryBlocks(const std::vector<Crypto::Hash>& block_ids, uint64_t timestamp,
        uint32_t& start_height, uint32_t& current_height, uint32_t& full_offset, std::vector<BlockFullInfo>& entries) override;
-    virtual bool queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp,
+     virtual bool queryBlocksLite(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp,
       uint32_t& resStartHeight, uint32_t& resCurrentHeight, uint32_t& resFullOffset, std::vector<BlockShortInfo>& entries) override;
-    virtual Crypto::Hash getBlockIdByHeight(uint32_t height) override;
+     virtual Crypto::Hash getBlockIdByHeight(uint32_t height) override;
      void getTransactions(const std::vector<Crypto::Hash>& txs_ids, std::list<Transaction>& txs, std::list<Crypto::Hash>& missed_txs, bool checkTxPool = false) override;
      virtual bool getBlockByHash(const Crypto::Hash &h, Block &blk) override;
      virtual bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) override;
@@ -154,7 +154,7 @@ namespace CryptoNote {
 
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
-	 uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
+     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
 
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
