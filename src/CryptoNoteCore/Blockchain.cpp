@@ -1264,7 +1264,6 @@ bool Blockchain::handleGetObjects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTI
   rsp.current_blockchain_height = getCurrentBlockchainHeight();
   std::list<Block> blocks;
   getBlocks(arg.blocks, blocks, rsp.missed_ids);
-
   for (const auto& bl : blocks) {
     std::list<Crypto::Hash> missed_tx_id;
     std::list<Transaction> txs;

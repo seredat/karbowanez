@@ -134,16 +134,19 @@ namespace CryptoNote {
       std::lock_guard<std::recursive_mutex> lk(m_blockchain_lock);
 
       for (const auto& bl_id : block_ids) {
-        uint32_t height = 0;
-        if (!m_blockIndex.getBlockHeight(bl_id, height)) {
-          missed_bs.push_back(bl_id);
-        } else {
-          if (!(height < m_blocks.size())) { logger(Logging::ERROR, Logging::BRIGHT_RED) << "Internal error: bl_id=" << Common::podToHex(bl_id)
+        try {
+          uint32_t height = 0;
+          if (!m_blockIndex.getBlockHeight(bl_id, height)) {
+            missed_bs.push_back(bl_id);
+          } else {
+            if (!(height < m_blocks.size())) { logger(Logging::ERROR, Logging::BRIGHT_RED) << "Internal error: bl_id=" << Common::podToHex(bl_id)
             << " have index record with offset=" << height << ", bigger then m_blocks.size()=" << m_blocks.size(); return false; }
             blocks.push_back(m_blocks[height].bl);
+          }
+        } catch (const std::exception& e) {
+          return false;
         }
       }
-
       return true;
     }
 
