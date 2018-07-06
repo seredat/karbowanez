@@ -66,6 +66,8 @@ void findMyOutputs(
 
   size_t keyIndex = 0;
   size_t outputCount = tx.getOutputCount();
+ 
+  std::unordered_set<Crypto::PublicKey> public_keys_seen;
 
   for (size_t idx = 0; idx < outputCount; ++idx) {
 
@@ -76,16 +78,30 @@ void findMyOutputs(
       uint64_t amount;
       KeyOutput out;
       tx.getOutput(idx, out, amount);
-      checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
-      ++keyIndex;
 
+      if (public_keys_seen.find(out.key) != public_keys_seen.end())
+      {
+        throw std::runtime_error("The same transaction pubkey is present more than once");
+      }
+      else {
+        public_keys_seen.insert(out.key);
+        checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
+	  }
+	  ++keyIndex;
     } else if (outType == TransactionTypes::OutputType::Multisignature) {
 
       uint64_t amount;
       MultisignatureOutput out;
       tx.getOutput(idx, out, amount);
+
       for (const auto& key : out.keys) {
-        checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
+        if (public_keys_seen.find(key) != public_keys_seen.end())
+        {
+          throw std::runtime_error("The same transaction pubkey is present more than once");
+        } else{
+          public_keys_seen.insert(key);
+          checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
+        }
         ++keyIndex;
       }
     }
