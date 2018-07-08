@@ -418,7 +418,7 @@ namespace CryptoNote {
 		const uint64_t avgRefDifficulty = CryptoNote::parameters::REFERENCE_AVG_DIFFICULTY;
 		const uint64_t avgRefReward = CryptoNote::parameters::REFERENCE_AVG_REWARD;
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
-		const double gauge = double(0.01);
+		const double gauge = double(0.0025);
 
 		uint64_t minimumFee(0);
 		double dailyDifficultyMoore = dailyDifficulty / pow(2, height / blocksInTwoYears);
@@ -642,15 +642,13 @@ namespace CryptoNote {
 			L += ST * i;
 			if (i > N - 3) { sum_3_ST += ST; }
 		}
-		int64_t clamp_increase = (T * N * (N + 1) * 99) / int64_t(100.0 * 2.0 * 2.5);
-		int64_t clamp_decrease = (T * N * (N + 1) * 99) / int64_t(100.0 * 2.0 * 0.2);
-		L = clamp(clamp_increase, L, clamp_decrease); // This guarantees positive L
-
+		
 		next_D = uint64_t((cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N + 1)) / uint64_t(2 * L);
 		next_D = (next_D * 99ull) / 100ull;
 
 		prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
-		next_D = std::max<uint64_t>((prev_D * 70ull) / 100ull, std::min<uint64_t>(next_D, (prev_D * 107ull) / 100ull));
+		next_D = clamp(prev_D * 70ull / 100ull, next_D, prev_D * 107ull / 100ull);
+
 		if (sum_3_ST < (8 * T) / 10) { next_D = (prev_D * 110ull) / 100ull; }
 
 		return next_D;
