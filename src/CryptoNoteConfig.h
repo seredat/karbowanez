@@ -59,7 +59,7 @@ const uint64_t MAXIMUM_FEE                                   = UINT64_C(10000000
 const uint64_t REFERENCE_AVG_DIFFICULTY                      = UINT64_C(100000000000);
 const uint64_t REFERENCE_AVG_REWARD                          = UINT64_C(15000000000000);
 
-const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(100000000);
+const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(0);
 const uint64_t MIN_TX_MIXIN_SIZE                             = 2;
 const uint64_t MAX_TX_MIXIN_SIZE                             = 20;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
