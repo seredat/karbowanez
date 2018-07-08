@@ -647,7 +647,7 @@ namespace CryptoNote {
 		next_D = (next_D * 99ull) / 100ull;
 
 		prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
-		next_D = clamp(prev_D * 67ull / 100ull, next_D, prev_D * 150ull / 100ull);
+		next_D = clamp((uint64_t)(prev_D * 67ull / 100ull), next_D, (uint64_t)(prev_D * 150ull / 100ull));
 		if (sum_3_ST < (8 * T) / 10)
 		{
 			next_D = (prev_D * 110ull) / 100ull;
