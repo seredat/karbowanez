@@ -647,16 +647,18 @@ namespace CryptoNote {
 		next_D = (next_D * 99ull) / 100ull;
 
 		prev_D = cumulativeDifficulties[N] - cumulativeDifficulties[N - 1];
-		next_D = clamp(prev_D * 70ull / 100ull, next_D, prev_D * 107ull / 100ull);
-
-		if (sum_3_ST < (8 * T) / 10) { next_D = (prev_D * 110ull) / 100ull; }
-
-		return next_D;
+		next_D = clamp(prev_D * 67ull / 100ull, next_D, prev_D * 150ull / 100ull);
+		if (sum_3_ST < (8 * T) / 10)
+		{
+			next_D = (prev_D * 110ull) / 100ull;
+		}
 
 		// minimum limit
 		if (next_D < 100000) {
 			next_D = 100000;
 		}
+
+		return next_D;
 	}
 
 	bool Currency::checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic,
