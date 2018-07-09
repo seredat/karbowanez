@@ -56,9 +56,6 @@ const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 12;
 const uint64_t MINIMUM_FEE                                   = UINT64_C(100000000000);
 const uint64_t MAXIMUM_FEE                                   = UINT64_C(100000000000);
 
-const uint64_t REFERENCE_AVG_DIFFICULTY                      = UINT64_C(100000000000);
-const uint64_t REFERENCE_AVG_REWARD                          = UINT64_C(15000000000000);
-
 const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(0);
 const uint64_t MIN_TX_MIXIN_SIZE                             = 2;
 const uint64_t MAX_TX_MIXIN_SIZE                             = 20;

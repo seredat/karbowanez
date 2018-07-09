@@ -414,18 +414,20 @@ namespace CryptoNote {
 	// http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
 	// Moore's law application by Sergey Kozlov
 
-	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint32_t height) const {
-		const uint64_t avgRefDifficulty = CryptoNote::parameters::REFERENCE_AVG_DIFFICULTY;
-		const uint64_t avgRefReward = CryptoNote::parameters::REFERENCE_AVG_REWARD;
+	uint64_t Currency::getMinimalFee(uint64_t dailyDifficulty, uint64_t rewardPerBlock, uint64_t avgHistoricalDifficulty, uint64_t medianHistoricalReward, uint32_t height) const {
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
-		const double gauge = double(0.0025);
-
+		const double gauge = double(0.25);
 		uint64_t minimumFee(0);
 		double dailyDifficultyMoore = dailyDifficulty / pow(2, height / blocksInTwoYears);
-		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgRefDifficulty) / dailyDifficultyMoore * static_cast<double>(rewardPerBlock) / static_cast<double>(avgRefReward);
+		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgHistoricalDifficulty) 
+			/ dailyDifficultyMoore * static_cast<double>(rewardPerBlock) 
+			/ static_cast<double>(medianHistoricalReward);
 		if (minFee == 0 || !std::isfinite(minFee))
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
 		minimumFee = static_cast<uint64_t>(minFee);
+
+		logger(TRACE) << "Avg. Historical Difficulty: " << avgHistoricalDifficulty << ", Avg. Historical Reward: " << medianHistoricalReward << ", Min. Fee: " << formatAmount(minimumFee);
+
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
