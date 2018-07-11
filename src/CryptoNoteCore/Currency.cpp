@@ -431,6 +431,19 @@ namespace CryptoNote {
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
+	uint64_t Currency::roundUpMinFee(uint64_t minimalFee, int digits) const {
+		uint64_t ret(0);
+		std::string minFeeString = formatAmount(minimalFee);
+		double minFee = boost::lexical_cast<double>(minFeeString);
+		double scale = pow(10., floor(log10(fabs(minFee))) + (1 - digits));
+		double roundedFee = ceil(minFee / scale) * scale;
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(12) << roundedFee;
+		std::string roundedFeeString = ss.str();
+		parseAmount(roundedFeeString, ret);
+		return ret;
+	}
+
 	uint64_t Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
 		sort(timestamps.begin(), timestamps.end());
 		sort(difficulties.begin(), difficulties.end());
