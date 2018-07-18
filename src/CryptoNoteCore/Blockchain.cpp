@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
+// Copyright (c) 2018, Ryo Currency Project
 // Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
@@ -838,6 +839,8 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
     return false;
   }
 
+  // Poisson check, courtesy of Ryo Currency Project
+  //
   // For longer reorgs, check if the timestamps are probable - if they aren't the diff algo has failed
   // This check is meant to detect an offline bypass of timestamp < time() + ftl check
   // It doesn't need to be very strict as it synergises with the median check
