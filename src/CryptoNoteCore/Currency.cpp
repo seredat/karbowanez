@@ -444,16 +444,6 @@ namespace CryptoNote {
 		return ret;
 	}
 
-	uint64_t Currency::getAvgDifficultyForPeriod(std::vector<uint64_t> timestamps, std::vector<difficulty_type> difficulties) const {
-		sort(timestamps.begin(), timestamps.end());
-		sort(difficulties.begin(), difficulties.end());
-		uint64_t Difficulty, low, high, days;
-		low = mul128(difficulties.back() - difficulties.front(), m_difficultyTarget, &high);
-		assert(timestamps.back() - timestamps.front() != 0);
-		uint64_t ST = timestamps.back() - timestamps.front();
-		return low / ((m_difficultyTarget / 2 * ST / m_difficultyTarget + ST / 2));
-	}
-
 	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
