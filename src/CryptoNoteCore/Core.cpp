@@ -69,7 +69,7 @@ private:
 core::core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled) :
 m_currency(currency),
 logger(logger, "core"),
-m_mempool(currency, m_blockchain, m_timeProvider, logger, blockchainIndexesEnabled),
+m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
 m_miner(new miner(currency, *this, logger)),
 m_starter_message_showed(false) {
