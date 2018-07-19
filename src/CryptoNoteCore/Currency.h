@@ -56,7 +56,7 @@ public:
   size_t numberOfDecimalPlaces() const { return m_numberOfDecimalPlaces; }
   uint64_t coin() const { return m_coin; }
 
-  uint64_t minimumFee() const { return m_mininumFee; }
+  uint64_t minimumFee() const { return m_minimumFee; }
   uint64_t defaultDustThreshold() const { return m_defaultDustThreshold; }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
@@ -176,7 +176,7 @@ private:
   size_t m_numberOfDecimalPlaces;
   uint64_t m_coin;
 
-  uint64_t m_mininumFee;
+  uint64_t m_minimumFee;
   uint64_t m_defaultDustThreshold;
 
   uint64_t m_difficultyTarget;
@@ -253,7 +253,7 @@ public:
 
   CurrencyBuilder& numberOfDecimalPlaces(size_t val);
 
-  CurrencyBuilder& mininumFee(uint64_t val) { m_currency.m_mininumFee = val; return *this; }
+  CurrencyBuilder& minimumFee(uint64_t val) { m_currency.m_minimumFee = val; return *this; }
   CurrencyBuilder& defaultDustThreshold(uint64_t val) { m_currency.m_defaultDustThreshold = val; return *this; }
 
   CurrencyBuilder& difficultyTarget(uint64_t val) { m_currency.m_difficultyTarget = val; return *this; }

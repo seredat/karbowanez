@@ -807,7 +807,6 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
       size_t minerTxBlobSize = getObjectBinarySize(blk.baseTransaction);
       f_block_short_response block_short;
 
-      block_short.cumul_size = blokBlobSize + tx_cumulative_block_size - minerTxBlobSize;
       block_short.timestamp = blk.timestamp;
       block_short.height = blockHeight;
       block_short.hash = Common::podToHex(blockHash);
