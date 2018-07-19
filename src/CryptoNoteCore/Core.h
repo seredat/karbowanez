@@ -87,7 +87,7 @@ namespace CryptoNote {
      virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) override;
      virtual bool getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOutput& out) override;
      virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) override;
-     virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock) override;
+     virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) override;
      virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
      virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
      virtual uint64_t getMinimalFee() override;
@@ -99,6 +99,7 @@ namespace CryptoNote {
 	 
      uint32_t get_current_blockchain_height();
      uint8_t getCurrentBlockMajorVersion();
+	 uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
 
      bool have_block(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
@@ -173,7 +174,7 @@ namespace CryptoNote {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx);
      //check if the mixin is not too large
-	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc);
+	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height);
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
 

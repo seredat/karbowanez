@@ -110,6 +110,11 @@ uint8_t core::getCurrentBlockMajorVersion() {
   return m_blockchain.getBlockMajorVersionForHeight(m_blockchain.getCurrentBlockchainHeight());
 }
 
+uint8_t core::getBlockMajorVersionForHeight(uint32_t height) {
+  assert(m_blockchain.getCurrentBlockchainHeight() > 0);
+  return m_blockchain.getBlockMajorVersionForHeight(height);
+}
+
 void core::get_blockchain_top(uint32_t& height, Crypto::Hash& top_id) {
   assert(m_blockchain.getCurrentBlockchainHeight() > 0);
   top_id = m_blockchain.getTailId(height);
@@ -184,7 +189,7 @@ size_t core::addChain(const std::vector<const IBlock*>& chain) {
       getObjectHash(tx, txHash, blobSize);
       tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
 
-      if (!handleIncomingTransaction(tx, txHash, blobSize, tvc, true)) {
+      if (!handleIncomingTransaction(tx, txHash, blobSize, tvc, true, get_block_height(block->getBlock()))) {
         logger(ERROR, BRIGHT_RED) << "core::addChain() failed to handle transaction " << txHash << " from block " << blocksCounter << "/" << chain.size();
         allTransactionsAdded = false;
         break;
@@ -231,7 +236,11 @@ bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_contex
   }
   //std::cout << "!"<< tx.inputs.size() << std::endl;
 
-  return handleIncomingTransaction(tx, tx_hash, tx_blob.size(), tvc, keeped_by_block);
+  Crypto::Hash blockId;
+  uint32_t blockHeight;
+  bool ok = getBlockContainingTx(tx_hash, blockId, blockHeight);
+  if (!ok) blockHeight = this->get_current_blockchain_height();
+  return handleIncomingTransaction(tx, tx_hash, tx_blob.size(), tvc, keeped_by_block, blockHeight);
 }
 
 bool core::get_stat_info(core_stat_info& st_inf) {
@@ -262,7 +271,7 @@ bool core::check_tx_mixin(const Transaction& tx) {
   return true;
 }
 
-bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc) {
+bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) {
 	uint64_t inputs_amount = 0;
 	if (!get_inputs_money_amount(tx, inputs_amount)) {
 		tvc.m_verification_failed = true;
@@ -282,9 +291,9 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	getObjectHash(tx, h, blobSize);
 	const uint64_t fee = inputs_amount - outputs_amount;
 	bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize);
-	if (!isFusionTransaction && fee < m_currency.minimumFee()) {
-		logger(DEBUGGING) << "transaction fee is not enough: " << m_currency.formatAmount(fee) <<
-			", minimum fee: " << m_currency.formatAmount(m_currency.minimumFee());
+	if (!isFusionTransaction && (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() : fee < getMinimalFeeForHeight(height))) {
+		logger(DEBUGGING) << "transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
+			m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : getMinimalFeeForHeight(height));
 		tvc.m_verification_failed = true;
 		tvc.m_tx_fee_too_small = true;
 		return false;
@@ -1092,7 +1101,7 @@ uint8_t core::getBlockMajorVersionForHeight(uint32_t height) const {
   return m_blockchain.getBlockMajorVersionForHeight(height);
 }
 
-bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock) {
+bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) {
   if (!check_tx_syntax(tx)) {
     logger(INFO) << "WRONG TRANSACTION BLOB, Failed to check tx " << txHash << " syntax, rejected";
     tvc.m_verification_failed = true;
@@ -1107,7 +1116,7 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
       return false;
     }
   
-    if (!check_tx_fee(tx, blobSize, tvc)) {
+    if (!check_tx_fee(tx, blobSize, tvc, height)) {
       tvc.m_verification_failed = true;
       return false;
     }
