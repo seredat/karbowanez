@@ -40,7 +40,7 @@ public:
   uint64_t publicAddressBase58Prefix() const { return m_publicAddressBase58Prefix; }
   size_t minedMoneyUnlockWindow() const { return m_minedMoneyUnlockWindow; }
   size_t transactionSpendableAge() const { return m_transactionSpendableAge; }
-  size_t expectedNumberOfBlocksPerDay() const { return m_expectedNumberOfBlocksPerDay; }
+  uint64_t expectedNumberOfBlocksPerDay() const { return m_expectedNumberOfBlocksPerDay; }
 
   size_t timestampCheckWindow() const { return m_timestampCheckWindow; }
   size_t timestampCheckWindow(uint8_t blockMajorVersion) const {
@@ -187,7 +187,7 @@ private:
   uint64_t m_publicAddressBase58Prefix;
   size_t m_minedMoneyUnlockWindow;
   size_t m_transactionSpendableAge;
-  size_t m_expectedNumberOfBlocksPerDay;
+  uint64_t m_expectedNumberOfBlocksPerDay;
 
   size_t m_timestampCheckWindow;
   size_t m_timestampCheckWindow_v1;
@@ -273,7 +273,7 @@ public:
   CurrencyBuilder& publicAddressBase58Prefix(uint64_t val) { m_currency.m_publicAddressBase58Prefix = val; return *this; }
   CurrencyBuilder& minedMoneyUnlockWindow(size_t val) { m_currency.m_minedMoneyUnlockWindow = val; return *this; }
   CurrencyBuilder& transactionSpendableAge(size_t val) { m_currency.m_transactionSpendableAge = val; return *this; }
-  CurrencyBuilder& expectedNumberOfBlocksPerDay(size_t val) { m_currency.m_expectedNumberOfBlocksPerDay = val; return *this; }
+  CurrencyBuilder& expectedNumberOfBlocksPerDay(uint64_t val) { m_currency.m_expectedNumberOfBlocksPerDay = val; return *this; }
 
   CurrencyBuilder& timestampCheckWindow(size_t val) { m_currency.m_timestampCheckWindow = val; return *this; }
   CurrencyBuilder& timestampCheckWindow_v1(size_t val) { m_currency.m_timestampCheckWindow_v1 = val; return *this; }
