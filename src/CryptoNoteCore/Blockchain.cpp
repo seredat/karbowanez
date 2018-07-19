@@ -736,7 +736,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	if (height < 3) {
 		height = 3;
 	}
-	size_t window = std::min(height, static_cast<uint32_t>(std::min(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
+	size_t window = std::min(height, static_cast<uint32_t>(std::min<uint32_t>(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay())));
 	if (window == 0) {
 		++window;
 	}
