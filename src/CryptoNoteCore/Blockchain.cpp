@@ -748,6 +748,14 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	// calculate average difficulty for ~last month
 	uint64_t avgDifficultyCurrent = getAvgDifficultyForHeight(height, window * 7 * 4);
 	
+	// historical reference moving average difficulty
+	uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
+
+	/*
+	* Total reward with transaction fees is used as the level of usage metric
+	* to take into account transaction volume and cost of space in blockchain.
+	*/
+
 	// calculate average reward for ~last day
 	uint64_t lastAvgReward = 0;
 	std::vector<uint64_t> rewards;
@@ -757,9 +765,6 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	}
 	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
 	rewards.shrink_to_fit();
-
-	// historical reference moving average difficulty
-	uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
 
 	// historical reference moving median reward
 	std::vector<uint64_t> historicalRewards;
