@@ -757,22 +757,18 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	*/
 
 	// calculate average reward for ~last day
-	uint64_t lastAvgReward = 0;
 	std::vector<uint64_t> rewards;
 	rewards.reserve(window);
 	for (; offset < height; offset++) {
 		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
 	}
-	lastAvgReward = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
+	uint64_t avgRewardCurrent = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
 	rewards.shrink_to_fit();
 
-	// historical reference moving median reward
-	std::vector<uint64_t> historicalRewards;
-	historicalRewards.push_back(get_outs_money_amount(m_blocks[1].bl.baseTransaction));
-	historicalRewards.push_back(get_outs_money_amount(m_blocks[height].bl.baseTransaction));
-	uint64_t medianHistoricalReward = Common::medianValue(historicalRewards);
+	// historical reference moving average reward
+	uint64_t avgRewardHistorical = m_blocks[height].already_generated_coins / height;
 
-	return m_currency.getMinimalFee(avgDifficultyCurrent, lastAvgReward, avgDifficultyHistorical, medianHistoricalReward, height);
+	return m_currency.getMinimalFee(avgDifficultyCurrent, avgRewardCurrent, avgDifficultyHistorical, avgRewardHistorical, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
