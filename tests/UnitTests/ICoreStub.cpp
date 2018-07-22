@@ -340,9 +340,9 @@ std::unique_ptr<CryptoNote::IBlock> ICoreStub::getBlock(const Crypto::Hash& bloc
   return std::unique_ptr<CryptoNote::IBlock>(nullptr);
 }
 
-bool ICoreStub::handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock) {
+bool ICoreStub::handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock, uint32_t height) {
   auto result = transactionPool.emplace(std::make_pair(txHash, tx));
-  tvc.m_verifivation_failed = !poolTxVerificationResult;
+  tvc.m_verification_failed = !poolTxVerificationResult;
   tvc.m_added_to_pool = true;
   tvc.m_should_be_relayed = result.second;
   return poolTxVerificationResult;
@@ -367,3 +367,16 @@ bool ICoreStub::removeMessageQueue(CryptoNote::MessageQueue<CryptoNote::Blockcha
 void ICoreStub::setPoolChangesResult(bool result) {
   poolChangesResult = result;
 }
+
+uint64_t ICoreStub::getMinimalFeeForHeight(uint32_t height) {
+	return 10000000000ULL;
+};
+uint64_t ICoreStub::getMinimalFee() {
+	return 10000000000ULL;
+};
+uint8_t ICoreStub::getBlockMajorVersionForHeight(uint32_t height) {
+	return (uint8_t)4;
+};
+uint8_t ICoreStub::getCurrentBlockMajorVersion() {
+	return (uint8_t)4;
+};

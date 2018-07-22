@@ -140,6 +140,7 @@ namespace Tests {
       std::vector< std::unique_ptr<TestNode> > nodeDaemons;
       System::Dispatcher& m_dispatcher;
       const CryptoNote::Currency& m_currency;
+	  Logging::ConsoleLogger m_logger;
 
       void launchTestnet(size_t count, Topology t = Line);
       void launchTestnetWithInprocNode(size_t count, Topology t = Line);

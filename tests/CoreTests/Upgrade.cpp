@@ -183,9 +183,9 @@ bool gen_upgrade::checkAfterUpgrade(std::vector<test_event_entry>& events, test_
 bool gen_upgrade::check_block_verification_context(const CryptoNote::block_verification_context& bvc, size_t eventIdx, const CryptoNote::Block& /*blk*/) {
   if (m_invalidBlockIndex == eventIdx) {
     m_invalidBlockIndex = 0;
-    return bvc.m_verifivation_failed;
+    return bvc.m_verification_failed;
   } else {
-    return !bvc.m_verifivation_failed;
+    return !bvc.m_verification_failed;
   }
 }
 
