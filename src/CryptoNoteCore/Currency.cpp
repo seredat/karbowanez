@@ -642,6 +642,8 @@ namespace CryptoNote {
 		int64_t  L(0), ST, sum_3_ST(0);
 		uint64_t next_D, prev_D;
 
+		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() <= static_cast<uint64_t>(N + 1));
+
 		for (int64_t i = 1; i <= N; i++) {
 			ST = clamp(-FTL, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
 			L += ST * i;
