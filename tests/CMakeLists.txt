@@ -54,6 +54,16 @@ target_link_libraries(DifficultyTests CryptoNoteCore Serialization Crypto Loggin
 target_link_libraries(HashTargetTests CryptoNoteCore Crypto)
 target_link_libraries(HashTests Crypto)
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR APPLE AND NOT ANDROID)
+  target_link_libraries(CoreTests -lresolv)
+  target_link_libraries(IntegrationTests -lresolv)
+  target_link_libraries(NodeRpcProxyTests -lresolv)
+  target_link_libraries(PerformanceTests -lresolv)
+  target_link_libraries(TransfersTests -lresolv)
+  target_link_libraries(UnitTests -lresolv)
+  target_link_libraries(DifficultyTests -lresolv)
+endif ()
+
 if(NOT MSVC)
   set_property(TARGET gtest gtest_main IntegrationTestLibrary IntegrationTests TestGenerator UnitTests SystemTests HashTargetTests TransfersTests APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-undef -Wno-sign-compare")
 endif()

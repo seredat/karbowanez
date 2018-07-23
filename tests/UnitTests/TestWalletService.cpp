@@ -54,6 +54,7 @@ struct IWalletBaseStub : public CryptoNote::IWallet, public CryptoNote::IFusionM
 
   virtual void initialize(const std::string& path, const std::string& password) override { }
   virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey) override { }
+  virtual void initializeWithViewKeyAndTimestamp(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint64_t& creationTimestamp) override { }
   virtual void load(const std::string& path, const std::string& password, std::string& extra) override { }
   virtual void load(const std::string& path, const std::string& password) override { }
   virtual void shutdown() override { }
@@ -70,6 +71,7 @@ struct IWalletBaseStub : public CryptoNote::IWallet, public CryptoNote::IFusionM
   virtual std::string createAddress() override { return ""; }
   virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, bool reset) override { return ""; }
   virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey) override { return ""; }
+  virtual std::string createAddressWithTimestamp(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) override { return ""; }
   virtual void deleteAddress(const std::string& address) override { }
 
   virtual uint64_t getActualBalance() const override { return 0; }
@@ -206,6 +208,7 @@ struct WalletCreateAddressStub: public IWalletBaseStub {
   virtual std::string createAddress() override { return address; }
   virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, bool reset) override { return address; }
   virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey) override { return address; }
+  virtual std::string createAddressWithTimestamp(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) override { return address; }
 
   std::string address = "correctAddress";
 };
