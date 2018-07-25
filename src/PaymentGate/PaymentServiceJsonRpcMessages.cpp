@@ -48,6 +48,7 @@ void GetStatus::Response::serialize(CryptoNote::ISerializer& serializer) {
   serializer(knownBlockCount, "knownBlockCount");
   serializer(lastBlockHash, "lastBlockHash");
   serializer(peerCount, "peerCount");
+  serializer(minimalFee, "minimalFee");
 }
 
 void ValidateAddress::Request::serialize(CryptoNote::ISerializer& serializer) {
