@@ -25,6 +25,7 @@
 #include <cmath>
 #include <boost/foreach.hpp>
 #include "Common/Math.h"
+#include "Common/int-util.h"
 #include "Common/ShuffleGenerator.h"
 #include "Common/StdInputStream.h"
 #include "Common/StdOutputStream.h"
@@ -806,24 +807,6 @@ bool Blockchain::rollback_blockchain_switching(std::list<Block> &original_chain,
   return true;
 }
 
-//------------------------------------------------------------------
-// Calculate ln(p) of Poisson distribution
-// Original idea : https://stackoverflow.com/questions/30156803/implementing-poisson-distribution-in-c
-// Using logarithms avoids dealing with very large (k!) and very small (p < 10^-44) numbers
-// lam     - lambda parameter - in our case, how many blocks, on average, you would expect to see in the interval
-// k       - k parameter - in our case, how many blocks we have actually seen
-//           !!! k must not be zero
-// return  - ln(p)
-double calc_poisson_ln(double lam, uint64_t k)
-{
-  double logx = -lam + k * log(lam);
-  do
-  {
-    logx -= log(k); // This can be tabulated
-  } while (--k > 0);
-  return logx;
-}
-
 bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::iterator>& alt_chain, bool discard_disconnected_chain) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
@@ -839,8 +822,8 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
     return false;
   }
 
-  // Poisson check, courtesy of Ryo Currency Project
-  //
+  // Poisson check, courtesy of ryo-project
+  // https://github.com/ryo-currency/ryo-writeups/blob/master/poisson-writeup.md
   // For longer reorgs, check if the timestamps are probable - if they aren't the diff algo has failed
   // This check is meant to detect an offline bypass of timestamp < time() + ftl check
   // It doesn't need to be very strict as it synergises with the median check
@@ -861,18 +844,17 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
 	  // This would fail later anyway
 	  if (high_timestamp > get_adjusted_time() + block_ftl)
 	  {
-		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! timestamp: " << high_timestamp << " limit: " << get_adjusted_time() + block_ftl;
+		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! Timestamp: " << high_timestamp << ", limit: " << get_adjusted_time() + block_ftl;
 		  return false;
 	  }
 
 	  logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
 
 	  uint64_t failed_checks = 0, i = 1;
-	  constexpr Crypto::Hash zero_hash = { 0 };
 	  for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
 	  {
 		  // This means we reached the genesis block
-		  if (low_block == zero_hash)
+		  if (low_block == NULL_HASH)
 			  break;
 
 		  Block blk;
