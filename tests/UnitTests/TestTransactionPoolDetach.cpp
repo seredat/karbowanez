@@ -367,8 +367,8 @@ TEST_F(DetachTest, testDetachWithWallet) {
   auto fee = m_currency.minimumFee();
 
   generator.generateEmptyBlocks(5);
-  WalletLegacy Alice(m_currency, m_node);
-  WalletLegacy Bob(m_currency, m_node);
+  WalletLegacy Alice(m_currency, m_node, m_logger);
+  WalletLegacy Bob(m_currency, m_node, m_logger);
 
   CompletionWalletObserver AliceCompleted, BobCompleted;
   AliceCompleted.syncCompleted = std::promise<std::error_code>();
