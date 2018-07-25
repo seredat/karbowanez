@@ -57,6 +57,7 @@ public:
   virtual uint32_t getLocalBlockCount() const override;
   virtual uint32_t getKnownBlockCount() const override;
   virtual uint64_t getLastLocalBlockTimestamp() const override;
+  virtual uint64_t getMinimalFee() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
 
   virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;

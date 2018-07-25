@@ -265,6 +265,8 @@ void NodeRpcProxy::updateBlockchainStatus() {
     }
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
+
+	m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
   }
 
   if (m_connected != m_httpClient->isConnected()) {
@@ -336,6 +338,10 @@ uint32_t NodeRpcProxy::getKnownBlockCount() const {
 uint64_t NodeRpcProxy::getLastLocalBlockTimestamp() const {
   std::lock_guard<std::mutex> lock(m_mutex);
   return lastLocalBlockHeaderInfo.timestamp;
+}
+
+uint64_t NodeRpcProxy::getMinimalFee() const {
+  return m_minimalFee.load(std::memory_order_relaxed);
 }
 
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {

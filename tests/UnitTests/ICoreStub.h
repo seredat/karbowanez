@@ -87,12 +87,16 @@ public:
   virtual bool getPoolTransactionsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<CryptoNote::Transaction>& transactions, uint64_t& transactionsNumberWithinTimestamps) override;
   virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<CryptoNote::Transaction>& transactions) override;
   virtual std::unique_ptr<CryptoNote::IBlock> getBlock(const Crypto::Hash& blockId) override;
-  virtual bool handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock) override;
+  virtual bool handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock, uint32_t height) override;
   virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
 
   virtual bool addMessageQueue(CryptoNote::MessageQueue<CryptoNote::BlockchainMessage>& messageQueuePtr) override;
   virtual bool removeMessageQueue(CryptoNote::MessageQueue<CryptoNote::BlockchainMessage>& messageQueuePtr) override;
-
+  
+  virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
+  virtual uint64_t getMinimalFee() override;
+  virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
+  virtual uint8_t getCurrentBlockMajorVersion() override;
 
   void set_blockchain_top(uint32_t height, const Crypto::Hash& top_id);
   void set_outputs_gindexs(const std::vector<uint32_t>& indexs, bool result);

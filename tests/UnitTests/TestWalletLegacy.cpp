@@ -200,7 +200,7 @@ void WalletLegacyApi::SetUp() {
 void WalletLegacyApi::prepareAliceWallet() {
   decltype(aliceNode) newNode(new INodeTrivialRefreshStub(generator));
 
-  alice.reset(new CryptoNote::WalletLegacy(m_currency, *newNode));
+  alice.reset(new CryptoNote::WalletLegacy(m_currency, *newNode, m_logger));
   aliceNode = newNode;
 
   aliceWalletObserver.reset(new TrivialWalletObserver());
@@ -211,7 +211,7 @@ void WalletLegacyApi::prepareBobWallet() {
   bobNode.reset(new INodeTrivialRefreshStub(generator));
   bobWalletObserver.reset(new TrivialWalletObserver());
 
-  bob.reset(new CryptoNote::WalletLegacy(m_currency, *bobNode));
+  bob.reset(new CryptoNote::WalletLegacy(m_currency, *bobNode, m_logger));
   bob->addObserver(bobWalletObserver.get());
 }
 
@@ -219,7 +219,7 @@ void WalletLegacyApi::prepareCarolWallet() {
   carolNode.reset(new INodeTrivialRefreshStub(generator));
   carolWalletObserver.reset(new TrivialWalletObserver());
 
-  carol.reset(new CryptoNote::WalletLegacy(m_currency, *carolNode));
+  carol.reset(new CryptoNote::WalletLegacy(m_currency, *carolNode, m_logger));
   carol->addObserver(carolWalletObserver.get());
 }
 
@@ -1381,7 +1381,7 @@ TEST_F(WalletLegacyApi, outcommingExternalTransactionTotalAmount) {
   bob->shutdown();
   alice->shutdown();
 
-  CryptoNote::WalletLegacy wallet(m_currency, *aliceNode);
+  CryptoNote::WalletLegacy wallet(m_currency, *aliceNode, m_logger);
 
   ExternalTxChecker externalTransactionObserver(wallet);
   TrivialWalletObserver walletObserver;
@@ -1746,7 +1746,7 @@ TEST_F(WalletLegacyApi, outdatedUnconfirmedTransactionDeletedOnNewBlock) {
   CryptoNote::Currency currency(CryptoNote::CurrencyBuilder(m_logger).mempoolTxLiveTime(TRANSACTION_MEMPOOL_TIME).currency());
   TestBlockchainGenerator blockchainGenerator(currency);
   INodeTrivialRefreshStub node(blockchainGenerator);
-  CryptoNote::WalletLegacy wallet(currency, node);
+  CryptoNote::WalletLegacy wallet(currency, node, m_logger);
   TrivialWalletObserver walletObserver;
   wallet.addObserver(&walletObserver);
 
@@ -1782,7 +1782,7 @@ TEST_F(WalletLegacyApi, outdatedUnconfirmedTransactionDeletedOnLoad) {
   CryptoNote::Currency currency(CryptoNote::CurrencyBuilder(m_logger).mempoolTxLiveTime(TRANSACTION_MEMPOOL_TIME).currency());
   TestBlockchainGenerator blockchainGenerator(currency);
   INodeTrivialRefreshStub node(blockchainGenerator);
-  CryptoNote::WalletLegacy wallet(currency, node);
+  CryptoNote::WalletLegacy wallet(currency, node, m_logger);
   TrivialWalletObserver walletObserver;
   wallet.addObserver(&walletObserver);
 

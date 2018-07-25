@@ -132,6 +132,7 @@ namespace CryptoNote
     bool ask_wallet_create_if_needed();
 
     void printConnectionError() const;
+	uint64_t getMinimalFee();
 
     //---------------- IWalletLegacyObserver -------------------------
     virtual void initCompleted(std::error_code result) override;
