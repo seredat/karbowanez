@@ -210,8 +210,7 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
   std::atomic<bool> stopProcessing(false);
 
   auto pushingThread = std::async(std::launch::async, [&] {
-    uint32_t i = 0;
-    for (uint32_t j = count - 1; j--; ) {
+    for( uint32_t i = 0; i < count && !stopProcessing; ++i) {
       const auto& block = blocks[i].block;
 
       if (!block.is_initialized()) {
@@ -239,7 +238,6 @@ bool TransfersConsumer::onNewBlocks(const CompleteBlock* blocks, uint32_t startH
         inputQueue.push(item);
         ++blockInfo.transactionIndex;
       }
-	  i++;
     }
 
     inputQueue.close();
