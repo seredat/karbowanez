@@ -82,7 +82,9 @@ bool TcpStreambuf::dumpBuffer(bool finalize) {
     } else {
       if(!finalize) {
         size_t front = 0;
-        for (size_t pos = transferred; pos < count; ++pos, ++front) {
+        size_t pos = transferred;
+        for (uint64_t i = count - transferred; i--; ) {
+          ++pos, ++front;
           writeBuf[front] = writeBuf[pos];
         }
 
