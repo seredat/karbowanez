@@ -838,7 +838,8 @@ void WalletGreen::convertAndLoadWalletFile(const std::string& path, std::ifstrea
   boost::filesystem::path tmpPath = boost::filesystem::unique_path(path + ".tmp.%%%%-%%%%");
 
   if (boost::filesystem::exists(bakPath)) {
-    throw std::system_error(make_error_code(std::errc::file_exists), ".backup file already exists");
+	m_logger(INFO) << "Wallet backup already exists! Creating random file name backup.";
+    bakPath = boost::filesystem::unique_path(path + ".%%%%-%%%%" + ".backup");
   }
 
   Tools::ScopeExit tmpFileDeleter([&tmpPath] {
