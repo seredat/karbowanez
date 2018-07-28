@@ -992,6 +992,9 @@ std::error_code WalletService::validateAddress(const std::string& address, bool&
       spendPublicKey = Common::podToHex(acc.spendPublicKey);
       viewPublicKey = Common::podToHex(acc.viewPublicKey);
     }
+    else {
+      isvalid = false;
+    }
   }
   catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while validating address: " << x.what();

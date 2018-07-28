@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/param.h>
+#include <math.h>
 
 #if defined(__ANDROID__)
 #include <byteswap.h>
