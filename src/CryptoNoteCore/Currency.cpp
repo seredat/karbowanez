@@ -279,7 +279,7 @@ namespace CryptoNote {
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (amount < defaultDustThreshold()) {
+			if (amount < UINT64_C(100000000)) {
 				return false;
 			}
 
@@ -288,7 +288,7 @@ namespace CryptoNote {
 
 		std::vector<uint64_t> expectedOutputsAmounts;
 		expectedOutputsAmounts.reserve(outputsAmounts.size());
-		decomposeAmount(inputAmount, defaultDustThreshold(), expectedOutputsAmounts);
+		decomposeAmount(inputAmount, UINT64_C(100000000), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
 		return expectedOutputsAmounts == outputsAmounts;

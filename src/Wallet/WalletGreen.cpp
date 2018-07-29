@@ -2917,10 +2917,10 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint64_t mixin,
 
   const size_t MAX_FUSION_OUTPUT_COUNT = 4;
 
-  if (threshold <= m_currency.defaultDustThreshold()) {
+  if (threshold <= UINT64_C(100000000)) {
     m_logger(ERROR, BRIGHT_RED) << "Fusion transaction threshold is too small. Threshold " << m_currency.formatAmount(threshold) <<
-      ", minimum threshold " << m_currency.formatAmount(m_currency.defaultDustThreshold() + 1);
-    throw std::runtime_error("Threshold must be greater than " + m_currency.formatAmount(m_currency.defaultDustThreshold()));
+      ", minimum threshold " << m_currency.formatAmount(UINT64_C(100000000) + 1);
+    throw std::runtime_error("Threshold must be greater than " + m_currency.formatAmount(UINT64_C(100000000)));
   }
 
   if (m_walletsContainer.get<RandomAccessIndex>().size() == 0) {
