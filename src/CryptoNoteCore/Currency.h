@@ -143,11 +143,11 @@ public:
   bool constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
     uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce = BinaryArray(), size_t maxOuts = 1) const;
 
-  bool isFusionTransaction(const Transaction& transaction) const;
-  bool isFusionTransaction(const Transaction& transaction, size_t size) const;
-  bool isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size) const;
-  bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold) const;
-  bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint8_t& amountPowerOfTen) const;
+  bool isFusionTransaction(const Transaction& transaction, uint32_t height) const;
+  bool isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const;
+  bool isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size, uint32_t height) const;
+  bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint32_t height) const;
+  bool isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint8_t& amountPowerOfTen, uint32_t height) const;
 
   std::string accountAddressAsString(const AccountBase& account) const;
   std::string accountAddressAsString(const AccountPublicAddress& accountPublicAddress) const;

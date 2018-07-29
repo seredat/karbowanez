@@ -142,7 +142,7 @@ namespace CryptoNote {
     }
 
     const uint64_t fee = inputs_amount - outputs_amount;
-    bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize);
+    bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, m_core.get_current_blockchain_height());
     if (!keptByBlock && !isFusionTransaction && (m_core.getCurrentBlockMajorVersion() < BLOCK_MAJOR_VERSION_4
 		? fee < m_currency.minimumFee() : fee < m_core.getMinimalFee())) {
 		logger(INFO) << "transaction fee is not enough: " << m_currency.formatAmount(fee) <<

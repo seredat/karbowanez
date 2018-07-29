@@ -264,7 +264,7 @@ namespace CryptoNote {
 		return true;
 	}
 
-	bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size) const {
+	bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size, uint32_t height) const {
 		if (size > fusionTxMaxSize()) {
 			return false;
 		}
@@ -279,7 +279,7 @@ namespace CryptoNote {
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (amount < UINT64_C(100000000)) {
+			if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
 				return false;
 			}
 
@@ -288,13 +288,13 @@ namespace CryptoNote {
 
 		std::vector<uint64_t> expectedOutputsAmounts;
 		expectedOutputsAmounts.reserve(outputsAmounts.size());
-		decomposeAmount(inputAmount, UINT64_C(100000000), expectedOutputsAmounts);
+		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold(), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
 		return expectedOutputsAmounts == outputsAmounts;
 	}
 
-	bool Currency::isFusionTransaction(const Transaction& transaction, size_t size) const {
+	bool Currency::isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const {
 		assert(getObjectBinarySize(transaction) == size);
 
 		std::vector<uint64_t> outputsAmounts;
@@ -303,24 +303,24 @@ namespace CryptoNote {
 			outputsAmounts.push_back(output.amount);
 		}
 
-		return isFusionTransaction(getInputsAmounts(transaction), outputsAmounts, size);
+		return isFusionTransaction(getInputsAmounts(transaction), outputsAmounts, size, height);
 	}
 
-	bool Currency::isFusionTransaction(const Transaction& transaction) const {
-		return isFusionTransaction(transaction, getObjectBinarySize(transaction));
+	bool Currency::isFusionTransaction(const Transaction& transaction, uint32_t height) const {
+		return isFusionTransaction(transaction, getObjectBinarySize(transaction), height);
 	}
 
-	bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold) const {
+	bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint32_t height) const {
 		uint8_t ignore;
-		return isAmountApplicableInFusionTransactionInput(amount, threshold, ignore);
+		return isAmountApplicableInFusionTransactionInput(amount, threshold, ignore, height);
 	}
 
-	bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint8_t& amountPowerOfTen) const {
+	bool Currency::isAmountApplicableInFusionTransactionInput(uint64_t amount, uint64_t threshold, uint8_t& amountPowerOfTen, uint32_t height) const {
 		if (amount >= threshold) {
 			return false;
 		}
 
-		if (amount < defaultDustThreshold()) {
+		if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
 			return false;
 		}
 
