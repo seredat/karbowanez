@@ -19,6 +19,7 @@
 #include <cstdio>
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "CryptoNoteConfig.h"
 
@@ -325,8 +326,16 @@ std::string get_nix_version_display_string()
     config_folder =  (pathRet2 + "/" + CryptoNote::CRYPTONOTE_NAME);
     // move to correct location
     boost::filesystem::path old_path(old_config_folder);
-    if (boost::filesystem::is_directory(old_path)) {
-        boost::filesystem::rename(old_path, config_folder);
+    if (!boost::filesystem::exists(config_folder) && boost::filesystem::is_directory(old_path)) {
+      if (boost::filesystem::create_directory(config_folder)) {
+        for (const auto& entry : boost::filesystem::recursive_directory_iterator{old_path}) {
+          const auto& path = entry.path();
+          auto rel_path_str = path.string();
+          boost::replace_first(rel_path_str, old_path.string(), "");
+          boost::filesystem::copy(path, config_folder + boost::filesystem::path::preferred_separator + rel_path_str);
+        }
+        boost::filesystem::remove_all(old_path);
+      }
     }
 #else
     // Unix
