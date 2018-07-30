@@ -477,7 +477,7 @@ uint64_t WalletLegacy::dustBalance() {
 	for (size_t i = 0; i < outputs.size(); ++i) {
 		const auto& out = outputs[i];
 		if (!m_transactionsCache.isUsed(out)) {
-			if (out.amount < m_currency.defaultDustThreshold() && !is_valid_decomposed_amount(out.amount)) {
+			if (/*out.amount < m_currency.defaultDustThreshold() &&*/ !is_valid_decomposed_amount(out.amount)) {
 				money += out.amount;
 			}
 		}
