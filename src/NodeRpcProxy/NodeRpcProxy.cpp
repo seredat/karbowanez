@@ -322,6 +322,11 @@ uint32_t NodeRpcProxy::getLastLocalBlockHeight() const {
   return lastLocalBlockHeaderInfo.index;
 }
 
+bool NodeRpcProxy::getBlockByHeight(uint32_t& blockHeight, BlockChain &bc)
+{
+    return false;
+}
+
 uint32_t NodeRpcProxy::getLastKnownBlockHeight() const {
   return m_networkHeight.load(std::memory_order_relaxed);
 }

@@ -57,6 +57,7 @@ public:
 
   virtual void init(const Callback& callback) override;
   virtual bool shutdown() override;
+  virtual bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc) override;
 
   virtual size_t getPeerCount() const override;
   virtual uint32_t getLastLocalBlockHeight() const override;
