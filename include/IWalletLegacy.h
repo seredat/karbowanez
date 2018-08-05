@@ -29,6 +29,11 @@ namespace CryptoNote {
 
 typedef size_t TransactionId;
 typedef size_t TransferId;
+typedef size_t DepositId;
+typedef uint32_t BlockHeight;
+typedef uint32_t BlockHeight2;
+typedef uint32_t TransactionNo;
+typedef uint32_t TransactionNo2;
 
 struct WalletLegacyTransfer {
   std::string address;

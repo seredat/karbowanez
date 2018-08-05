@@ -86,6 +86,8 @@ public:
   virtual bool addObserver(INodeObserver* observer) = 0;
   virtual bool removeObserver(INodeObserver* observer) = 0;
 
+  virtual bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc) = 0;
+
   virtual void init(const Callback& callback) = 0;
   virtual bool shutdown() = 0;
 

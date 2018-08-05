@@ -94,6 +94,24 @@ struct Block : public BlockHeader {
   std::vector<Crypto::Hash> transactionHashes;
 };
 
+struct TransactionEntry {
+    Transaction tx;
+    std::vector<uint32_t> m_global_output_indexes;
+};
+
+struct BlockChain {
+    uint64_t block_cumulative_size;
+//	difficulty_type cumulative_difficulty;
+    uint64_t already_generated_coins;
+//  std::vector<TransactionEntry> m_transactions;
+
+    uint32_t height;
+    uint32_t size;
+    uint32_t transactions;
+    Crypto::Hash hash;
+    Block block;
+};
+
 struct AccountPublicAddress {
   Crypto::PublicKey spendPublicKey;
   Crypto::PublicKey viewPublicKey;

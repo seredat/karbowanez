@@ -26,8 +26,22 @@
 #include "Common/ObserverManager.h"
 #include "BlockchainExplorer/BlockchainExplorerDataBuilder.h"
 
+#include "P2p/P2pProtocolTypes.h"
+
 #include <thread>
 #include <boost/asio.hpp>
+
+#ifndef SQ_BLOCK
+#define SQ_BLOCK 1
+#define SQ_INNOD_GET_TRANSACTION 1
+#define SQ_DOGETBLOCK_TEST 1
+#define SQ_GET_TRANSACTION 1
+#define SQ_GET_POOL_TEST 1
+#endif
+
+#ifndef SQ_ADD_PEER_FRAME
+#define SQ_ADD_PEER_FRAME 1
+#endif
 
 namespace CryptoNote {
 
@@ -50,6 +64,8 @@ public:
 
   virtual bool addObserver(INodeObserver* observer) override;
   virtual bool removeObserver(INodeObserver* observer) override;
+
+  virtual bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc) override;
 
   virtual size_t getPeerCount() const override;
   virtual uint32_t getLastLocalBlockHeight() const override;
@@ -79,6 +95,20 @@ public:
   virtual void getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions, const Callback& callback) override;
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) override;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override;
+
+#if SQ_BLOCK
+  std::error_code doGetBlocks(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks);
+  std::error_code doGetBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<BlockDetails>& blocks);
+  std::error_code doGetBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps);
+#endif
+
+#if SQ_GET_POOL_TEST
+std::error_code GetPoolTransactions(std::vector<TransactionDetails>& transactions);
+#endif
+
+#if SQ_INNOD_GET_TRANSACTION
+  std::error_code doGetTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions);
+#endif
 
 private:
   virtual void peerCountUpdated(size_t count) override;
@@ -113,17 +143,23 @@ private:
   void getOutByMSigGIndexAsync(uint64_t amount, uint32_t gindex, MultisignatureOutput& out, const Callback& callback);
 
   void getBlocksAsync(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks, const Callback& callback);
+#if !(SQ_BLOCK)
   std::error_code doGetBlocks(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks);
+#endif
 
   void getBlocksAsync(const std::vector<Crypto::Hash>& blockHashes, std::vector<BlockDetails>& blocks, const Callback& callback);
+#if !(SQ_BLOCK)
   std::error_code doGetBlocks(const std::vector<Crypto::Hash>& blockHashes, std::vector<BlockDetails>& blocks);
-
+#endif
   void getBlocksAsync(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps, const Callback& callback);
+#if !(SQ_BLOCK)
   std::error_code doGetBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps);
+#endif
 
   void getTransactionsAsync(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions, const Callback& callback);
+#if !(SQ_INNOD_GET_TRANSACTION)
   std::error_code doGetTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions);
-
+#endif
   void getPoolTransactionsAsync(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback);
   std::error_code doGetPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps);
 
