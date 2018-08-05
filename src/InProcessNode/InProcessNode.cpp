@@ -401,6 +401,18 @@ uint32_t InProcessNode::getLastLocalBlockHeight() const {
   return lastLocalBlockHeaderInfo.index;
 }
 
+bool InProcessNode::getBlockByHeight(uint32_t& blockHeight, BlockChain &bc)
+{
+    {
+        std::unique_lock<std::mutex> lock(mutex);
+        if (state != INITIALIZED) {
+            throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+        }
+    }
+
+    return core.getBlockByHeight(blockHeight, bc);
+}
+
 uint32_t InProcessNode::getLastKnownBlockHeight() const {
   {
     std::unique_lock<std::mutex> lock(mutex);
@@ -971,6 +983,35 @@ std::error_code InProcessNode::doGetPoolTransactions(uint64_t timestampBegin, ui
   }
   return std::error_code();
 }
+
+#if SQ_GET_POOL_TEST
+std::error_code InProcessNode::GetPoolTransactions(std::vector<TransactionDetails>& transactions)
+{
+    try
+    {
+        std::vector<Transaction> rawTransactions;
+        rawTransactions = core.getPoolTransactions();
+        for (const Transaction& rawTransaction : rawTransactions)
+        {
+            TransactionDetails transactionDetails;
+            if (!blockchainExplorerDataBuilder.fillTransactionDetails(rawTransaction, transactionDetails))
+            {
+                return make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR);
+            }
+            transactions.push_back(std::move(transactionDetails));
+        }
+    }
+    catch (std::system_error& e)
+    {
+        return e.code();
+    }
+    catch (std::exception&)
+    {
+        return make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR);
+    }
+    return std::error_code();
+}
+#endif
 
 void InProcessNode::getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions, const Callback& callback) {
   std::unique_lock<std::mutex> lock(mutex);

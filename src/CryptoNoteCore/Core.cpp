@@ -120,6 +120,11 @@ void core::get_blockchain_top(uint32_t& height, Crypto::Hash& top_id) {
   top_id = m_blockchain.getTailId(height);
 }
 
+bool core::getBlockByHeight(uint32_t& blockHeight, BlockChain &bc) {
+	assert(m_blockchain.getCurrentBlockchainHeight() > 0);
+	return m_blockchain.getBlockByHeight(blockHeight, bc);
+}
+
 bool core::get_blocks(uint32_t start_offset, uint32_t count, std::list<Block>& blocks, std::list<Transaction>& txs) {
   return m_blockchain.getBlocks(start_offset, count, blocks, txs);
 }

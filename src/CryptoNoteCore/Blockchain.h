@@ -79,6 +79,7 @@ namespace CryptoNote {
     uint32_t getAlternativeBlocksCount();
     Crypto::Hash getBlockIdByHeight(uint32_t height);
     bool getBlockByHash(const Crypto::Hash &h, Block &blk);
+	bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc);
     bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight);
 
     template<class archive_t> void serialize(archive_t & ar, const unsigned int version);

@@ -57,6 +57,7 @@ public:
 
   virtual bool addObserver(ICoreObserver* observer) = 0;
   virtual bool removeObserver(ICoreObserver* observer) = 0;
+  virtual bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc) = 0;
 
   virtual bool have_block(const Crypto::Hash& id) = 0;
   virtual std::vector<Crypto::Hash> buildSparseChain() = 0;

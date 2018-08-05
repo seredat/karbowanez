@@ -107,6 +107,7 @@ namespace CryptoNote {
      void on_synchronized() override;
 
      virtual void get_blockchain_top(uint32_t& height, Crypto::Hash& top_id) override;
+	 virtual bool getBlockByHeight(uint32_t& blockHeight, BlockChain &bc);
      bool get_blocks(uint32_t start_offset, uint32_t count, std::list<Block>& blocks, std::list<Transaction>& txs);
      bool get_blocks(uint32_t start_offset, uint32_t count, std::list<Block>& blocks);
      template<class t_ids_container, class t_blocks_container, class t_missed_container>

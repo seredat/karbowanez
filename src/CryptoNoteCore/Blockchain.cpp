@@ -694,6 +694,29 @@ bool Blockchain::getBlockByHash(const Crypto::Hash& blockHash, Block& b) {
   return false;
 }
 
+bool Blockchain::getBlockByHeight(uint32_t& blockHeight, BlockChain &bc)
+{
+	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+
+	uint32_t height = getCurrentBlockchainHeight();
+	if (blockHeight > height)
+	{
+		return false;
+	}
+
+	bc.hash = m_blockIndex.getBlockId(blockHeight);
+	bc.block = m_blocks[blockHeight].bl;
+	bc.size = uint32_t(m_blocks[blockHeight].block_cumulative_size);
+	bc.height = blockHeight;
+	//bc.transactions = m_blocks[blockHeight].bl.
+
+	bc.block_cumulative_size = m_blocks[blockHeight].block_cumulative_size;
+//	bc.cumulative_difficulty = m_blocks[blockHeight].cumulative_difficulty;
+	bc.already_generated_coins = m_blocks[blockHeight].already_generated_coins;
+	//bc.transactions = m_blocks[blockHeight].transactions;
+	return true;
+}
+
 bool Blockchain::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   std::lock_guard<decltype(m_blockchain_lock)> lock(m_blockchain_lock);
   return m_blockIndex.getBlockHeight(blockId, blockHeight);
