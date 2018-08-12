@@ -121,6 +121,7 @@ bool constructTransaction(
   std::vector<uint8_t> extra,
   Transaction& tx,
   uint64_t unlock_time,
+  Crypto::SecretKey &tx_key,
   Logging::ILogger& log) {
   LoggerRef logger(log, "construct_tx");
 
@@ -134,6 +135,8 @@ bool constructTransaction(
   tx.extra = extra;
   KeyPair txkey = generateKeyPair();
   addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
+
+  tx_key = txkey.secretKey;
 
   struct input_generation_context_data {
     KeyPair in_ephemeral;

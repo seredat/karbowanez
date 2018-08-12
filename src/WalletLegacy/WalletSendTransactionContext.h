@@ -44,6 +44,7 @@ struct SendTransactionContext
   std::list<TransactionOutputInformation> selectedTransfers;
   TxDustPolicy dustPolicy;
   uint64_t mixIn;
+  Crypto::SecretKey tx_key = NULL_SECRET_KEY;
 };
 
 } //namespace CryptoNote

@@ -40,6 +40,7 @@ struct TransactionInformation {
   uint64_t totalAmountOut;
   std::vector<uint8_t> extra;
   Crypto::Hash paymentId;
+  Crypto::SecretKey secretKey;
 };
 
 

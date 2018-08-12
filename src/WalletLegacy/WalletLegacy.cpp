@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017, The Monero Project
 // Copyright (c) 2017-2018, Karbo developers
 // 
 // All rights reserved.
@@ -32,11 +33,13 @@
 #include <string.h>
 #include <time.h>
 
+#include <Common/Base58.h>
 #include "Logging/ConsoleLogger.h"
 #include "WalletLegacy/WalletHelper.h"
 #include "WalletLegacy/WalletLegacySerialization.h"
 #include "WalletLegacy/WalletLegacySerializer.h"
 #include "WalletLegacy/WalletUtils.h"
+#include "Common/StringTools.h"
 #include "mnemonics/electrum-words.h"
 
 extern "C"
@@ -729,6 +732,93 @@ void WalletLegacy::getAccountKeys(AccountKeys& keys) {
 std::vector<TransactionId> WalletLegacy::deleteOutdatedUnconfirmedTransactions() {
   std::lock_guard<std::mutex> lock(m_cacheMutex);
   return m_transactionsCache.deleteOutdatedTransactions();
+}
+
+Crypto::SecretKey WalletLegacy::getTxKey(Crypto::Hash& txid) {
+  TransactionId ti = m_transactionsCache.findTransactionByHash(txid);
+  WalletLegacyTransaction transaction;
+  getTransaction(ti, transaction);
+  return transaction.secretKey;
+}
+
+bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& tx_key, std::string& sig_str) {
+  //SecretKey txKey = *reinterpret_cast<const Crypto::SecretKey*>(tx_key.data());
+  Crypto::Hash tx_key_hash;
+  size_t size;
+  if (!Common::fromHex(tx_key, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash))
+	  return false;
+  SecretKey txKey = *(struct Crypto::SecretKey *) &tx_key_hash;
+  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&address.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&txKey);
+  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
+  Crypto::PublicKey R;
+  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
+  Crypto::secret_key_to_public_key(txKey, R);
+  Crypto::Signature sig;
+  try
+  {
+    Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, txKey, sig);
+  }
+  catch (const std::runtime_error &e)
+  {
+    std::cout << "Proof generation error: " << e.what();
+    return false;
+  }
+
+  sig_str = std::string("ProofV1") +
+    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
+    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
+
+  return true;
+}
+
+bool WalletLegacy::checkTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, std::string& sig_str) {
+  const size_t header_len = strlen("ProofV1");
+  if (sig_str.size() < header_len || sig_str.substr(0, header_len) != "ProofV1")
+  {
+	std::cout << "Signature header check error";
+    return false;
+  }
+  Crypto::PublicKey rA;
+  Crypto::Signature sig;
+  const size_t rA_len = Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))).size();
+  const size_t sig_len = Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature))).size();
+  std::string rA_decoded;
+  std::string sig_decoded;
+  if (!Tools::Base58::decode(sig_str.substr(header_len, rA_len), rA_decoded)) {
+    std::cout << "Signature decoding error";
+	return false;
+  }
+  if (!Tools::Base58::decode(sig_str.substr(header_len + rA_len, sig_len), sig_decoded))
+  {
+    std::cout << "Signature decoding error";
+    return false;
+  }
+  if (sizeof(Crypto::PublicKey) != rA_decoded.size() || sizeof(Crypto::Signature) != sig_decoded.size())
+  {
+    std::cout << "Signature decoding error";
+    return false;
+  }
+  memcpy(&rA, rA_decoded.data(), sizeof(Crypto::PublicKey));
+  memcpy(&sig, sig_decoded.data(), sizeof(Crypto::PublicKey));
+
+  // fetch tx pubkey
+  TransactionId ti = m_transactionsCache.findTransactionByHash(txid);
+  WalletLegacyTransaction tx;
+  if (!getTransaction(ti, tx)) {
+    std::cout << "Transaction with hash " << Common::podToHex(txid) << "is not found";
+	return false;
+  }
+  CryptoNote::TransactionPrefix txp = *reinterpret_cast<const TransactionPrefix*>(&tx);
+  Crypto::PublicKey R = getTransactionPublicKeyFromExtra(txp.extra);
+  if (R == NULL_PUBLIC_KEY)
+  {
+    std::cout << "Tx pubkey was not found";
+    return false;
+  }
+
+  // check signature
+  return Crypto::check_tx_proof(txid, R, address.viewPublicKey, rA, sig);
 }
 
 } //namespace CryptoNote

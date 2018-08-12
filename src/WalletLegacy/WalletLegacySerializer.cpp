@@ -35,10 +35,12 @@ using namespace Common;
 
 namespace CryptoNote {
 
+uint32_t WALLET_LEGACY_SERIALIZATION_VERSION = 2;
+
 WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account, WalletUserTransactionsCache& transactionsCache) :
   account(account),
   transactionsCache(transactionsCache),
-  walletSerializationVersion(1)
+  walletSerializationVersion(2)
 {
 }
 
@@ -108,6 +110,8 @@ void WalletLegacySerializer::deserialize(std::istream& stream, const std::string
 
   uint32_t version;
   serializerEncrypted(version, "version");
+  // set serialization version global variable
+  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = version;
 
   Crypto::chacha8_iv iv;
   serializerEncrypted(iv, "iv");

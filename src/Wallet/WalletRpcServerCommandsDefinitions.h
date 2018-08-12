@@ -298,4 +298,27 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	/* Command: get_tx_key */
+	struct COMMAND_RPC_GET_TX_KEY
+	{
+		struct request
+		{
+			std::string tx_hash;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_hash)
+			}
+		};
+		struct response
+		{
+			std::string tx_key;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_key)
+			}
+		};
+	};
+
 }} //Tools::wallet_rpc

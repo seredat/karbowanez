@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbowanec developers
+// Copyright (c) 2014-2017, The Monero Project
+// Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -84,6 +86,10 @@ struct EllipticCurveScalar {
     friend void generate_signature(const Hash &, const PublicKey &, const SecretKey &, Signature &);
     static bool check_signature(const Hash &, const PublicKey &, const Signature &);
     friend bool check_signature(const Hash &, const PublicKey &, const Signature &);
+	static void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
+	friend void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
+	static bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
+	friend bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
     static void generate_key_image(const PublicKey &, const SecretKey &, KeyImage &);
     friend void generate_key_image(const PublicKey &, const SecretKey &, KeyImage &);
     static KeyImage scalarmultKey(const KeyImage & P, const KeyImage & a);
@@ -221,6 +227,16 @@ struct EllipticCurveScalar {
   }
   inline bool check_signature(const Hash &prefix_hash, const PublicKey &pub, const Signature &sig) {
     return crypto_ops::check_signature(prefix_hash, pub, sig);
+  }
+
+  /* Generation and checking of a tx proof; given a tx pubkey R, the recipient's view pubkey A, and the key 
+   * derivation D, the signature proves the knowledge of the tx secret key r such that R=r*G and D=r*A
+   */
+  inline void generate_tx_proof(const Hash &prefix_hash, const PublicKey &R, const PublicKey &A, const PublicKey &D, const SecretKey &r, Signature &sig) {
+    crypto_ops::generate_tx_proof(prefix_hash, R, A, D, r, sig);
+  }
+  inline bool check_tx_proof(const Hash &prefix_hash, const PublicKey &R, const PublicKey &A, const PublicKey &D, const Signature &sig) {
+    return crypto_ops::check_tx_proof(prefix_hash, R, A, D, sig);
   }
 
   /* To send money to a key:
