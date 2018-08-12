@@ -169,6 +169,7 @@ using CryptoNote::ISerializer;
 		uint64_t blockIndex;
 		uint64_t unlockTime;
 		uint64_t confirmations;
+		std::string txKey;
 
 		void serialize(ISerializer& s)
 		{
@@ -182,6 +183,7 @@ using CryptoNote::ISerializer;
 			KV_MEMBER(blockIndex)
 			KV_MEMBER(unlockTime)
 			KV_MEMBER(confirmations)
+			KV_MEMBER(txKey)
 		}
 	};
 
