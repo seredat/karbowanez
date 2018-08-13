@@ -137,7 +137,7 @@ std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionUpd
     transaction.extra.assign(txInfo.extra.begin(), txInfo.extra.end());
     transaction.state = WalletLegacyTransactionState::Active;
     transaction.unlockTime = txInfo.unlockTime;
-	transaction.secretKey = txInfo.secretKey;
+	transaction.secretKey = NULL_SECRET_KEY;
 
     id = insertTransaction(std::move(transaction));
     // notification event

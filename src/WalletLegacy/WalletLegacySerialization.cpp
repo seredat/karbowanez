@@ -35,8 +35,9 @@ void serialize(UnconfirmedTransferDetails& utd, CryptoNote::ISerializer& seriali
   uint64_t txId = static_cast<uint64_t>(utd.transactionId);
   serializer(txId, "transaction_id");
   utd.transactionId = static_cast<size_t>(txId);
-  Crypto::SecretKey secretKey = static_cast<Crypto::SecretKey>(utd.secretKey);
-  serializer(secretKey, "secret_key");
+  Crypto::SecretKey secretKey = utd.secretKey;
+  if (CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION >= 2 && secretKey != NULL_SECRET_KEY)
+    serializer(secretKey, "secret_key");
 }
 
 void serialize(WalletLegacyTransaction& txi, CryptoNote::ISerializer& serializer) {
@@ -60,8 +61,9 @@ void serialize(WalletLegacyTransaction& txi, CryptoNote::ISerializer& serializer
   serializer(txi.unlockTime, "unlock_time");
   serializer(txi.extra, "extra");
 
-  if (CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION >= 2)
-	  serializer(txi.secretKey, "secret_key");
+  Crypto::SecretKey secretKey = txi.secretKey;
+  if (CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION >= 2 && secretKey != NULL_SECRET_KEY)
+    serializer(secretKey, "secret_key");
 
   //this field has been added later in the structure.
   //in order to not break backward binary compatibility

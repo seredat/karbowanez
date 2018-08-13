@@ -45,6 +45,9 @@ WalletLegacySerializer::WalletLegacySerializer(CryptoNote::AccountBase& account,
 }
 
 void WalletLegacySerializer::serialize(std::ostream& stream, const std::string& password, bool saveDetailed, const std::string& cache) {
+  // set serialization version global variable
+  CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION = walletSerializationVersion;
+
   std::stringstream plainArchive;
   StdOutputStream plainStream(plainArchive);
   CryptoNote::BinaryOutputStreamSerializer serializer(plainStream);
