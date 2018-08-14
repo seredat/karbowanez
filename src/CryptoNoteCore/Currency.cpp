@@ -635,14 +635,13 @@ namespace CryptoNote {
 
 		const int64_t  T = static_cast<int64_t>(m_difficultyTarget);
 		int64_t  N = difficultyBlocksCount3();
-		int64_t  FTL = timestampCheckWindow(blockMajorVersion); // FTL=3xT
 		int64_t  L(0), ST, sum_3_ST(0);
 		uint64_t next_D, prev_D;
 
 		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() <= static_cast<uint64_t>(N + 1));
 
 		for (int64_t i = 1; i <= N; i++) {
-			ST = clamp(-FTL, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
+			ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
 			L += ST * i;
 			if (i > N - 3) { sum_3_ST += ST; }
 		}
