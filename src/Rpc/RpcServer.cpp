@@ -565,7 +565,7 @@ bool RpcServer::on_stop_daemon(const COMMAND_RPC_STOP_DAEMON::request& req, COMM
 
 bool RpcServer::on_get_fee_address(const COMMAND_RPC_GET_FEE_ADDRESS::request& req, COMMAND_RPC_GET_FEE_ADDRESS::response& res) {
   if (m_fee_address.empty()) {
-	res.status = "Node's fee address is not set";
+	res.status = CORE_RPC_STATUS_OK;
 	return false; 
   }
   res.fee_address = m_fee_address;
