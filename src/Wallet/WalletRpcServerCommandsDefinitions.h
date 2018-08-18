@@ -87,10 +87,12 @@ using CryptoNote::ISerializer;
 		struct response
 		{
 			std::string tx_hash;
+			std::string tx_key;
 
 			void serialize(ISerializer& s)
 			{
 				KV_MEMBER(tx_hash)
+				KV_MEMBER(tx_key)
 			}
 		};
 	};

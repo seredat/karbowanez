@@ -231,6 +231,7 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 		CryptoNote::WalletLegacyTransaction txInfo;
 		m_wallet.getTransaction(tx, txInfo);
 		res.tx_hash = Common::podToHex(txInfo.hash);
+		res.tx_key = Common::podToHex(txInfo.secretKey);
 
 	}
 	catch (const std::exception& e)
