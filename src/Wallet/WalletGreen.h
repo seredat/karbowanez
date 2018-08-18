@@ -84,7 +84,7 @@ public:
   virtual std::vector<WalletTransactionWithTransfers> getUnconfirmedTransactions() const override;
   virtual std::vector<size_t> getDelayedTransactionIds() const override;
 
-  virtual size_t transfer(const TransactionParameters& sendingTransaction) override;
+  virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey& txSecretKey) override;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) override;
   virtual void commitTransaction(size_t) override;
@@ -223,9 +223,10 @@ protected:
     uint64_t unlockTimestamp,
     const DonationSettings& donation,
     const CryptoNote::AccountPublicAddress& changeDestinationAddress,
-    PreparedTransaction& preparedTransaction);
+    PreparedTransaction& preparedTransaction,
+    Crypto::SecretKey& txSecretKey);
 
-  size_t doTransfer(const TransactionParameters& transactionParameters);
+  size_t doTransfer(const TransactionParameters& transactionParameters, Crypto::SecretKey& txSecretKey);
 
   void checkIfEnoughMixins(std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& mixinResult, uint64_t mixIn) const;
   std::vector<WalletTransfer> convertOrdersToTransfers(const std::vector<WalletOrder>& orders) const;
@@ -258,7 +259,7 @@ protected:
   ReceiverAmounts splitAmount(uint64_t amount, const AccountPublicAddress& destination, uint64_t dustThreshold);
 
   std::unique_ptr<CryptoNote::ITransaction> makeTransaction(const std::vector<ReceiverAmounts>& decomposedOutputs,
-    std::vector<InputInfo>& keysInfo, const std::string& extra, uint64_t unlockTimestamp);
+    std::vector<InputInfo>& keysInfo, const std::string& extra, uint64_t unlockTimestamp, Crypto::SecretKey& txSecretKey);
 
   void sendTransaction(const CryptoNote::Transaction& cryptoNoteTransaction);
   size_t validateSaveAndSendTransaction(const ITransactionReader& transaction, const std::vector<WalletTransfer>& destinations, bool isFusion, bool send);

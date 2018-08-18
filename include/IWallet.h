@@ -174,7 +174,7 @@ public:
   virtual std::vector<WalletTransactionWithTransfers> getUnconfirmedTransactions() const = 0;
   virtual std::vector<size_t> getDelayedTransactionIds() const = 0;
 
-  virtual size_t transfer(const TransactionParameters& sendingTransaction) = 0;
+  virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey &txSecretKey) = 0;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) = 0;
   virtual void commitTransaction(size_t transactionId) = 0;

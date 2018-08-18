@@ -250,6 +250,7 @@ void SendTransaction::Request::serialize(CryptoNote::ISerializer& serializer) {
 
 void SendTransaction::Response::serialize(CryptoNote::ISerializer& serializer) {
   serializer(transactionHash, "transactionHash");
+  serializer(transactionSecretKey, "transactionSecretKey");
 }
 
 void CreateDelayedTransaction::Request::serialize(CryptoNote::ISerializer& serializer) {
