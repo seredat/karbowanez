@@ -60,8 +60,11 @@ void serialize(WalletLegacyTransaction& txi, CryptoNote::ISerializer& serializer
   serializer(txi.unlockTime, "unlock_time");
   serializer(txi.extra, "extra");
 
-  if (CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION >= 2)
-    serializer(txi.secretKey, "secret_key");
+  if (CryptoNote::WALLET_LEGACY_SERIALIZATION_VERSION >= 2) {
+    Crypto::SecretKey secretKey = reinterpret_cast<const Crypto::SecretKey&>(txi.secretKey.get());
+    serializer(secretKey, "secret_key");
+    txi.secretKey = secretKey;
+  }
 
   //this field has been added later in the structure.
   //in order to not break backward binary compatibility

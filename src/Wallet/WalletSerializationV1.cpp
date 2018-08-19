@@ -203,8 +203,7 @@ CryptoNote::WalletTransaction convert(const CryptoNote::WalletLegacyTransaction&
   mtx.unlockTime = tx.unlockTime;
   mtx.extra = tx.extra;
   mtx.isBase = tx.isCoinbase;
-  mtx.secretKey = tx.secretKey;
-
+  mtx.secretKey = reinterpret_cast<const Crypto::SecretKey&>(tx.secretKey.get());
   return mtx;
 }
 

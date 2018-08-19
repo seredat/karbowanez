@@ -22,6 +22,7 @@
 #include <ostream>
 #include <string>
 #include <system_error>
+#include <boost/optional.hpp>
 #include "CryptoNote.h"
 #include "CryptoTypes.h"
 
@@ -56,7 +57,7 @@ struct WalletLegacyTransaction {
   uint64_t         sentTime;
   uint64_t         unlockTime;
   Crypto::Hash     hash;
-  Crypto::SecretKey secretKey;
+  boost::optional<Crypto::SecretKey> secretKey;
   bool             isCoinbase;
   uint32_t         blockHeight;
   uint64_t         timestamp;
