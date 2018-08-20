@@ -49,6 +49,8 @@ struct WalletTransactionDtoV2 {
     unlockTime = wallet.unlockTime;
     extra = wallet.extra;
     isBase = wallet.isBase;
+    if (wallet.secretKey)
+      secretKey = reinterpret_cast<const Crypto::SecretKey&>(wallet.secretKey.get());
   }
 
   CryptoNote::WalletTransactionState state;
@@ -61,6 +63,7 @@ struct WalletTransactionDtoV2 {
   uint64_t unlockTime;
   std::string extra;
   bool isBase;
+  boost::optional<Crypto::SecretKey> secretKey;
 };
 
 //DO NOT CHANGE IT
@@ -101,6 +104,8 @@ void serialize(WalletTransactionDtoV2& value, CryptoNote::ISerializer& serialize
   serializer(value.unlockTime, "unlockTime");
   serializer(value.extra, "extra");
   serializer(value.isBase, "isBase");
+  if (value.secretKey)
+    serializer(value.secretKey.get(), "secret_key");
 }
 
 void serialize(WalletTransferDtoV2& value, CryptoNote::ISerializer& serializer) {
@@ -273,6 +278,8 @@ void WalletSerializerV2::loadTransactions(CryptoNote::ISerializer& serializer) {
     tx.unlockTime = dto.unlockTime;
     tx.extra = dto.extra;
     tx.isBase = dto.isBase;
+    if (dto.secretKey)
+      tx.secretKey = reinterpret_cast<const Crypto::SecretKey&>(dto.secretKey.get());
 
     m_transactions.get<RandomAccessIndex>().emplace_back(std::move(tx));
   }
