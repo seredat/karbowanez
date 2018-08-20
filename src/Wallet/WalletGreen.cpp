@@ -1687,7 +1687,7 @@ void WalletGreen::pushBackOutgoingTransfers(size_t txId, const std::vector<Walle
   }
 }
 
-size_t WalletGreen::insertOutgoingTransactionAndPushEvent(const Hash& transactionHash, uint64_t fee, const BinaryArray& extra, uint64_t unlockTimestamp) {
+size_t WalletGreen::insertOutgoingTransactionAndPushEvent(const Hash& transactionHash, uint64_t fee, const BinaryArray& extra, uint64_t unlockTimestamp, Crypto::SecretKey& txSecretKey) {
   WalletTransaction insertTx;
   insertTx.state = WalletTransactionState::CREATED;
   insertTx.creationTime = static_cast<uint64_t>(time(nullptr));
@@ -1699,6 +1699,7 @@ size_t WalletGreen::insertOutgoingTransactionAndPushEvent(const Hash& transactio
   insertTx.totalAmount = 0; // 0 until transactionHandlingEnd() is called
   insertTx.timestamp = 0; //0 until included in a block
   insertTx.isBase = false;
+  insertTx.secretKey = txSecretKey;
 
   size_t txId = m_transactions.get<RandomAccessIndex>().size();
   m_transactions.get<RandomAccessIndex>().push_back(std::move(insertTx));
@@ -2085,7 +2086,9 @@ size_t WalletGreen::validateSaveAndSendTransaction(const ITransactionReader& tra
   }
 
   uint64_t fee = transaction.getInputTotalAmount() - transaction.getOutputTotalAmount();
-  size_t transactionId = insertOutgoingTransactionAndPushEvent(transaction.getTransactionHash(), fee, transaction.getExtra(), transaction.getUnlockTime());
+  Crypto::SecretKey txSecretKey;
+  transaction.getTransactionSecretKey(txSecretKey);
+  size_t transactionId = insertOutgoingTransactionAndPushEvent(transaction.getTransactionHash(), fee, transaction.getExtra(), transaction.getUnlockTime(), txSecretKey);
   m_logger(DEBUGGING) << "Transaction added to container, ID " << transactionId <<
     ", hash " << transaction.getTransactionHash() <<
     ", block " << m_transactions[transactionId].blockHeight <<
