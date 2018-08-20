@@ -153,8 +153,10 @@ void serialize(WalletTransactionDto& value, CryptoNote::ISerializer& serializer)
   serializer(value.creationTime, "creation_time");
   serializer(value.unlockTime, "unlock_time");
   serializer(value.extra, "extra");
-  if (value.secretKey)
-    serializer(value.secretKey.get(), "secret_key");
+
+  Crypto::SecretKey secretKey = reinterpret_cast<const Crypto::SecretKey&>(value.secretKey.get());
+  serializer(secretKey, "secret_key");
+  value.secretKey = secretKey;
 }
 
 void serialize(WalletTransferDto& value, CryptoNote::ISerializer& serializer) {
