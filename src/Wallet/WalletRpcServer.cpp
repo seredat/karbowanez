@@ -178,8 +178,9 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 {
 	
 	if (req.mixin < m_currency.minMixin() && req.mixin != 0) {
+		logger(ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_MIXIN,
-			std::string("Requested mixin \"" + std::to_string(req.mixin) + "\" is too low"));
+			std::string("Requested mixin " + std::to_string(req.mixin) + " is too low"));
 	}
 	
 	std::vector<CryptoNote::WalletLegacyTransfer> transfers;
@@ -199,7 +200,7 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 		if (!CryptoNote::parsePaymentId(payment_id_str, payment_id))
 		{
 			throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID, 
-				"Payment ID has invalid format: \"" + payment_id_str + "\", expected 64-character string");
+				"Payment ID has invalid format: " + payment_id_str + ", expected 64-character string");
 		}
 
 		BinaryArray extra_nonce;
@@ -207,7 +208,7 @@ bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::requ
 		if (!CryptoNote::addExtraNonceToTransactionExtra(extra, extra_nonce))
 		{
 			throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID,
-				"Something went wrong with payment_id. Please check its format: \"" + payment_id_str + "\", expected 64-character string");
+				"Something went wrong with payment_id. Please check its format: " + payment_id_str + ", expected 64-character string");
 		}
 	}
 
