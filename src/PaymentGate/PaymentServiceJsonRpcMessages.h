@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -310,6 +311,7 @@ struct SendTransaction {
 
   struct Response {
     std::string transactionHash;
+	std::string transactionSecretKey;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
