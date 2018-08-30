@@ -105,6 +105,8 @@ public:
   virtual void getAccountKeys(AccountKeys& keys) override;
   virtual bool getSeed(std::string& electrum_words) override;
 
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
+
 private:
 
   // IBlockchainSynchronizerObserver

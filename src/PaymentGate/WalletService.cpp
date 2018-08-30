@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -780,7 +781,7 @@ std::error_code WalletService::getAddresses(std::vector<std::string>& addresses)
   return std::error_code();
 }
 
-std::error_code WalletService::sendTransaction(const SendTransaction::Request& request, std::string& transactionHash) {
+std::error_code WalletService::sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey) {
   try {
     System::EventLock lk(readyEvent);
 
@@ -805,8 +806,10 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     sendParams.unlockTimestamp = request.unlockTime;
     sendParams.changeDestination = request.changeAddress;
 
-    size_t transactionId = wallet.transfer(sendParams);
+	Crypto::SecretKey tx_key;
+    size_t transactionId = wallet.transfer(sendParams, tx_key);
     transactionHash = Common::podToHex(wallet.getTransaction(transactionId).hash);
+	transactionSecretKey = Common::podToHex(tx_key);
 
     logger(Logging::DEBUGGING) << "Transaction " << transactionHash << " has been sent";
   } catch (std::system_error& x) {
