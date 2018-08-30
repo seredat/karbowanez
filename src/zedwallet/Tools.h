@@ -4,7 +4,13 @@
 
 #pragma once
 
-#include <zedwallet/Types.h>
+#include <algorithm>
+
+#include <string>
+
+#include <vector>
+
+#include <iterator>
 
 void confirmPassword(std::string walletPass, std::string msg="");
 
@@ -27,10 +33,20 @@ std::string formatCents(uint64_t amount);
 
 std::string getPaymentIDFromExtra(std::string extra);
 
-std::string yellowANSIMsg(std::string msg);
-
-std::string getPrompt(std::shared_ptr<WalletInfo> &walletInfo);
-
-std::string createTemporaryFile(const std::string& path, std::fstream& tempFile);
-
 std::string unixTimeToDate(uint64_t timestamp);
+
+uint64_t getDivisor();
+
+uint64_t getScanHeight();
+
+template <typename T, typename Function>
+std::vector<T> filter(std::vector<T> input, Function predicate)
+{
+    std::vector<T> result;
+
+    std::copy_if(
+        input.begin(), input.end(), std::back_inserter(result), predicate
+    );
+
+    return result;
+}
