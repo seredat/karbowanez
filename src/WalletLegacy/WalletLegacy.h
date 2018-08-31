@@ -107,8 +107,10 @@ public:
   virtual void getAccountKeys(AccountKeys& keys) override;
   virtual bool getSeed(std::string& electrum_words) override;
   
-  virtual std::string sign(const std::string &data) override;
-  virtual bool verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
+  virtual std::string sign_message(const std::string &data) override;
+  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
+
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
 
 private:
 
@@ -152,6 +154,7 @@ private:
 
   std::atomic<uint64_t> m_lastNotifiedActualBalance;
   std::atomic<uint64_t> m_lastNotifiedPendingBalance;
+  std::atomic<uint64_t> m_lastNotifiedUnmixableBalance;
 
   BlockchainSynchronizer m_blockchainSync;
   TransfersSyncronizer m_transfersSync;

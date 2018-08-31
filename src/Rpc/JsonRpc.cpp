@@ -43,6 +43,7 @@ void invokeJsonRpcCommand(HttpClient& httpClient, JsonRpcRequest& jsReq, JsonRpc
   HttpRequest httpReq;
   HttpResponse httpRes;
 
+  httpReq.addHeader("Content-Type", "application/json");
   httpReq.setUrl("/json_rpc");
   httpReq.setBody(jsReq.getBody());
 

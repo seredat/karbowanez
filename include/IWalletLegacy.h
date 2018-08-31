@@ -24,6 +24,7 @@
 #include <ostream>
 #include <string>
 #include <system_error>
+#include <boost/optional.hpp>
 #include "CryptoNote.h"
 #include "CryptoTypes.h"
 #include "CryptoNote.h"
@@ -59,6 +60,7 @@ struct WalletLegacyTransaction {
   uint64_t         sentTime;
   uint64_t         unlockTime;
   Crypto::Hash     hash;
+  boost::optional<Crypto::SecretKey> secretKey;
   bool             isCoinbase;
   uint32_t         blockHeight;
   uint64_t         timestamp;
@@ -76,6 +78,7 @@ public:
   virtual void synchronizationCompleted(std::error_code result) {}
   virtual void actualBalanceUpdated(uint64_t actualBalance) {}
   virtual void pendingBalanceUpdated(uint64_t pendingBalance) {}
+  virtual void unmixableBalanceUpdated(uint64_t dustBalance) {}
   virtual void externalTransactionCreated(TransactionId transactionId) {}
   virtual void sendTransactionCompleted(TransactionId transactionId, std::error_code result) {}
   virtual void transactionUpdated(TransactionId transactionId) {}
@@ -122,8 +125,9 @@ public:
   virtual void getAccountKeys(AccountKeys& keys) = 0;
   virtual bool getSeed(std::string& electrum_words) = 0;
 
-  virtual std::string sign(const std::string &data) = 0;
-  virtual bool verify(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) = 0;
+  virtual std::string sign_message(const std::string &data) = 0;
+  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
 };
 
 }

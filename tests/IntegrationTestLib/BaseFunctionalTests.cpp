@@ -388,7 +388,7 @@ bool BaseFunctionalTests::stopMining() {
 
 bool BaseFunctionalTests::makeWallet(std::unique_ptr<CryptoNote::IWalletLegacy> & wallet, std::unique_ptr<CryptoNote::INode>& node, const std::string& password) {
   if (!node) return false;
-  wallet = std::unique_ptr<CryptoNote::IWalletLegacy>(new CryptoNote::WalletLegacy(m_currency, *node));
+  wallet = std::unique_ptr<CryptoNote::IWalletLegacy>(new CryptoNote::WalletLegacy(m_currency, *node, m_logger));
   wallet->initAndGenerate(password);
   return true;
 }

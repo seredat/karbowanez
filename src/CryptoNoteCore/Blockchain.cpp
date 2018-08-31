@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
+// Copyright (c) 2018, Ryo Currency Project
 // Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Bytecoin.
@@ -19,10 +20,12 @@
 #include "Blockchain.h"
 
 #include <algorithm>
+#include <numeric>
 #include <cstdio>
 #include <cmath>
 #include <boost/foreach.hpp>
 #include "Common/Math.h"
+#include "Common/int-util.h"
 #include "Common/ShuffleGenerator.h"
 #include "Common/StdInputStream.h"
 #include "Common/StdOutputStream.h"
@@ -323,6 +326,7 @@ m_current_block_cumul_sz_limit(0),
 m_is_in_checkpoint_zone(false),
 m_upgradeDetectorV2(currency, m_blocks, BLOCK_MAJOR_VERSION_2, logger),
 m_upgradeDetectorV3(currency, m_blocks, BLOCK_MAJOR_VERSION_3, logger),
+m_upgradeDetectorV4(currency, m_blocks, BLOCK_MAJOR_VERSION_4, logger),
 m_checkpoints(logger),
 m_paymentIdIndex(blockchainIndexesEnabled),
 m_timestampIndex(blockchainIndexesEnabled),
@@ -492,9 +496,15 @@ bool Blockchain::init(const std::string& config_folder, bool load_existing) {
       " expected=" << static_cast<int>(m_upgradeDetectorV3.targetVersion()) << ". Rollback blockchain to height=" << upgradeHeight;
     rollbackBlockchainTo(upgradeHeight);
     reinitUpgradeDetectors = true;
+  } else if (!checkUpgradeHeight(m_upgradeDetectorV4)) {
+    uint32_t upgradeHeight = m_upgradeDetectorV4.upgradeHeight();
+    logger(WARNING, BRIGHT_YELLOW) << "Invalid block version at " << upgradeHeight + 1 << ": real=" << static_cast<int>(m_blocks[upgradeHeight + 1].bl.majorVersion) <<
+      " expected=" << static_cast<int>(m_upgradeDetectorV4.targetVersion()) << ". Rollback blockchain to height=" << upgradeHeight;
+    rollbackBlockchainTo(upgradeHeight);
+    reinitUpgradeDetectors = true;
   }
 
-  if (reinitUpgradeDetectors && (!m_upgradeDetectorV2.init() || !m_upgradeDetectorV3.init())) {
+  if (reinitUpgradeDetectors && (!m_upgradeDetectorV2.init() || !m_upgradeDetectorV3.init() || !m_upgradeDetectorV4.init())) {
     logger(ERROR, BRIGHT_RED) << "Failed to initialize upgrade detector";
     return false;
   }
@@ -707,9 +717,64 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
+difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  size_t offset;
+  offset = height - std::min(height, std::min<uint32_t>(m_blocks.size(), window));
+  if (offset == 0) {
+    ++offset;
+  }
+  difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
+  return cumulDiffForPeriod / std::min<uint32_t>(m_blocks.size(), window);
+}
+
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
   assert(height < m_blocks.size());
   return m_blocks[height].bl.timestamp;
+}
+
+uint64_t Blockchain::getMinimalFee(uint32_t height) {
+	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+
+	if (height > m_blocks.size() - 1) {
+		height = m_blocks.size() - 1;
+	}
+	if (height < 3) {
+		height = 3;
+	}
+	size_t window = std::min(height, std::min<uint32_t>(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay()));
+	if (window == 0) {
+		++window;
+	}
+	size_t offset = height - window;
+	if (offset == 0) {
+		++offset;
+	}
+
+	// calculate average difficulty for ~last month
+	uint64_t avgDifficultyCurrent = getAvgDifficultyForHeight(height, window * 7 * 4);
+	
+	// historical reference moving average difficulty
+	uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
+
+	/*
+	* Total reward with transaction fees is used as the level of usage metric
+	* to take into account transaction volume and cost of space in blockchain.
+	*/
+
+	// calculate average reward for ~last day
+	std::vector<uint64_t> rewards;
+	rewards.reserve(window);
+	for (; offset < height; offset++) {
+		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
+	}
+	uint64_t avgRewardCurrent = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
+	rewards.shrink_to_fit();
+
+	// historical reference moving average reward
+	uint64_t avgRewardHistorical = m_blocks[height].already_generated_coins / height;
+
+	return m_currency.getMinimalFee(avgDifficultyCurrent, avgRewardCurrent, avgDifficultyHistorical, avgRewardHistorical, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
@@ -722,7 +787,9 @@ uint64_t Blockchain::getCoinsInCirculation() {
 }
 
 uint8_t Blockchain::getBlockMajorVersionForHeight(uint32_t height) const {
-  if (height > m_upgradeDetectorV3.upgradeHeight()) {
+  if (height > m_upgradeDetectorV4.upgradeHeight()) {
+    return m_upgradeDetectorV4.targetVersion();
+  } else if (height > m_upgradeDetectorV3.upgradeHeight()) {
     return m_upgradeDetectorV3.targetVersion();
   } else if (height > m_upgradeDetectorV2.upgradeHeight()) {
     return m_upgradeDetectorV2.targetVersion();
@@ -767,6 +834,72 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
   if (!(m_blocks.size() > split_height)) {
     logger(ERROR, BRIGHT_RED) << "switch_to_alternative_blockchain: blockchain size is lower than split height";
     return false;
+  }
+
+  // Poisson check, courtesy of ryo-project
+  // https://github.com/ryo-currency/ryo-writeups/blob/master/poisson-writeup.md
+  // For longer reorgs, check if the timestamps are probable - if they aren't the diff algo has failed
+  // This check is meant to detect an offline bypass of timestamp < time() + ftl check
+  // It doesn't need to be very strict as it synergises with the median check
+  if (alt_chain.size() >= CryptoNote::parameters::POISSON_CHECK_TRIGGER)
+  {
+	  uint64_t alt_chain_size = alt_chain.size();
+	  uint64_t high_timestamp = alt_chain.back()->second.bl.timestamp;
+	  Crypto::Hash low_block = alt_chain.front()->second.bl.previousBlockHash;
+
+	  //Make sure that the high_timestamp is really highest
+	  for (const blocks_ext_by_hash::iterator &it : alt_chain)
+	  {
+		  if (high_timestamp < it->second.bl.timestamp)
+			  high_timestamp = it->second.bl.timestamp;
+	  }
+
+	  uint64_t block_ftl = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
+	  // This would fail later anyway
+	  if (high_timestamp > get_adjusted_time() + block_ftl)
+	  {
+		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! Timestamp: " << high_timestamp << ", limit: " << get_adjusted_time() + block_ftl;
+		  return false;
+	  }
+
+	  logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
+
+	  uint64_t failed_checks = 0, i = 1;
+	  for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
+	  {
+		  // This means we reached the genesis block
+		  if (low_block == NULL_HASH)
+			  break;
+
+		  Block blk;
+		  getBlockByHash(low_block, blk);
+
+		  uint64_t low_timestamp = blk.timestamp;
+		  low_block = blk.previousBlockHash;
+
+		  if (low_timestamp >= high_timestamp)
+		  {
+			  logger(INFO) << "Skipping check at depth " << i << " due to tampered timestamp on main chain.";
+			  failed_checks++;
+			  continue;
+		  }
+
+		  double lam = double(high_timestamp - low_timestamp) / double(CryptoNote::parameters::DIFFICULTY_TARGET);
+		  if (calc_poisson_ln(lam, alt_chain_size + i) < CryptoNote::parameters::POISSON_LOG_P_REJECT)
+		  {
+			  logger(INFO) << "Poisson check at depth " << i << " failed! delta_t: " << (high_timestamp - low_timestamp) << " size: " << alt_chain_size + i;
+			  failed_checks++;
+		  }
+	  }
+
+	  i--; //Convert to number of checks
+	  logger(INFO) << "Poisson check result " << failed_checks << " fails out of " << i;
+
+	  if (failed_checks > i / 2)
+	  {
+		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed Poisson check! " << failed_checks << " fails out of " << i << " alt_chain_size: " << alt_chain_size;
+		  return false;
+	  }
   }
 
   //disconnecting old chain
@@ -982,12 +1115,12 @@ uint64_t Blockchain::getCurrentCumulativeBlocksizeLimit() {
   return m_current_block_cumul_sz_limit;
 }
 
-bool Blockchain::complete_timestamps_vector(uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
-  if (timestamps.size() >= m_currency.timestampCheckWindow())
+bool Blockchain::complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
+  if (timestamps.size() >= m_currency.timestampCheckWindow(blockMajorVersion))
     return true;
 
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
-  size_t need_elements = m_currency.timestampCheckWindow() - timestamps.size();
+  size_t need_elements = m_currency.timestampCheckWindow(blockMajorVersion) - timestamps.size();
   if (!(start_top_height < m_blocks.size())) { logger(ERROR, BRIGHT_RED) << "internal error: passed start_height = " << start_top_height << " not less then m_blocks.size()=" << m_blocks.size(); return false; }
   size_t stop_offset = start_top_height > need_elements ? start_top_height - need_elements : 0;
   do {
@@ -1066,11 +1199,11 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
 	  Crypto::Hash h = NULL_HASH;
       get_block_hash(m_blocks[alt_chain.front()->second.height - 1].bl, h);
       if (!(h == alt_chain.front()->second.bl.previousBlockHash)) { logger(ERROR, BRIGHT_RED) << "alternative chain have wrong connection to main chain"; return false; }
-      complete_timestamps_vector(alt_chain.front()->second.height - 1, timestamps);
+      complete_timestamps_vector(b.majorVersion, alt_chain.front()->second.height - 1, timestamps);
     } else {
       // if block parent is not part of main chain or an alternate chain, we ignore it
       if (!(mainPrev)) { logger(ERROR, BRIGHT_RED) << "internal error: broken imperative condition it_main_prev != m_blocks_index.end()"; return false; }
-      complete_timestamps_vector(mainPrevHeight, timestamps);
+	  complete_timestamps_vector(b.majorVersion, mainPrevHeight, timestamps);
     }
 
     // check timestamp correct - verify that the block's timestamp is within the acceptable range
@@ -1213,7 +1346,6 @@ bool Blockchain::handleGetObjects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTI
   rsp.current_blockchain_height = getCurrentBlockchainHeight();
   std::list<Block> blocks;
   getBlocks(arg.blocks, blocks, rsp.missed_ids);
-
   for (const auto& bl : blocks) {
     std::list<Crypto::Hash> missed_tx_id;
     std::list<Transaction> txs;
@@ -1645,14 +1777,14 @@ uint64_t Blockchain::get_adjusted_time() {
 }
 
 bool Blockchain::check_block_timestamp_main(const Block& b) {
-  if (b.timestamp > get_adjusted_time() + m_currency.blockFutureTimeLimit()) {
+  if (b.timestamp > get_adjusted_time() + m_currency.blockFutureTimeLimit(b.majorVersion)) {
     logger(INFO, BRIGHT_WHITE) <<
       "Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", bigger than adjusted time + 28 min.";
     return false;
   }
 
   std::vector<uint64_t> timestamps;
-  size_t offset = m_blocks.size() <= m_currency.timestampCheckWindow() ? 0 : m_blocks.size() - m_currency.timestampCheckWindow();
+  size_t offset = m_blocks.size() <= m_currency.timestampCheckWindow(b.majorVersion) ? 0 : m_blocks.size() - m_currency.timestampCheckWindow(b.majorVersion);
   for (; offset != m_blocks.size(); ++offset) {
     timestamps.push_back(m_blocks[offset].bl.timestamp);
   }
@@ -1669,7 +1801,7 @@ bool Blockchain::check_block_timestamp_main(const Block& b) {
 //       of the selected blocks
 //   false otherwise
 bool Blockchain::check_block_timestamp(std::vector<uint64_t> timestamps, const Block& b) {
-  if (timestamps.size() < m_currency.timestampCheckWindow()) {
+  if (timestamps.size() < m_currency.timestampCheckWindow(b.majorVersion)) {
     return true;
   }
 
@@ -1678,7 +1810,7 @@ bool Blockchain::check_block_timestamp(std::vector<uint64_t> timestamps, const B
   if (b.timestamp < median_ts) {
     logger(INFO, BRIGHT_WHITE) <<
       "Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp <<
-      ", less than median of last " << m_currency.timestampCheckWindow() << " blocks, " << median_ts;
+      ", less than median of last " << m_currency.timestampCheckWindow(b.majorVersion) << " blocks, " << median_ts;
     return false;
   }
 
@@ -1704,7 +1836,7 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
 }
 
 bool Blockchain::checkParentBlockSize(const Block& b, const Crypto::Hash& blockHash) {
-  if (b.majorVersion >= BLOCK_MAJOR_VERSION_2) {
+  if (b.majorVersion == BLOCK_MAJOR_VERSION_2 || b.majorVersion == BLOCK_MAJOR_VERSION_3) {
     auto serializer = makeParentBlockSerializer(b, false, false);
     size_t parentBlockSize;
     if (!getObjectBinarySize(serializer, parentBlockSize)) {
@@ -1983,6 +2115,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
 
   m_upgradeDetectorV2.blockPushed();
   m_upgradeDetectorV3.blockPushed();
+  m_upgradeDetectorV4.blockPushed();
   update_next_comulative_size_limit();
 
   return true;
@@ -2019,6 +2152,7 @@ void Blockchain::popBlock() {
 
   m_upgradeDetectorV2.blockPopped();
   m_upgradeDetectorV3.blockPopped();
+  m_upgradeDetectorV4.blockPopped();
 }
 
 bool Blockchain::pushTransaction(BlockEntry& block, const Crypto::Hash& transactionHash, TransactionIndex transactionIndex) {

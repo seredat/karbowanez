@@ -31,7 +31,7 @@ TestWalletLegacy::TestWalletLegacy(System::Dispatcher& dispatcher, const Currenc
     m_someTransactionUpdated(dispatcher),
     m_currency(currency),
     m_node(node),
-    m_wallet(new CryptoNote::WalletLegacy(currency, node)),
+    m_wallet(new CryptoNote::WalletLegacy(currency, node, m_logger)),
     m_currentHeight(0) {
   m_wallet->addObserver(this);
 }

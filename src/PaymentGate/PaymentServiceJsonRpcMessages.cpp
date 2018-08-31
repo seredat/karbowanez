@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -48,6 +49,18 @@ void GetStatus::Response::serialize(CryptoNote::ISerializer& serializer) {
   serializer(knownBlockCount, "knownBlockCount");
   serializer(lastBlockHash, "lastBlockHash");
   serializer(peerCount, "peerCount");
+  serializer(minimalFee, "minimalFee");
+}
+
+void ValidateAddress::Request::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(address, "address");
+}
+
+void ValidateAddress::Response::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(isvalid, "isvalid");
+  serializer(address, "address");
+  serializer(spendPublicKey, "spendPublicKey");
+  serializer(viewPublicKey, "viewPublicKey");
 }
 
 void GetAddresses::Request::serialize(CryptoNote::ISerializer& serializer) {
@@ -238,6 +251,7 @@ void SendTransaction::Request::serialize(CryptoNote::ISerializer& serializer) {
 
 void SendTransaction::Response::serialize(CryptoNote::ISerializer& serializer) {
   serializer(transactionHash, "transactionHash");
+  serializer(transactionSecretKey, "transactionSecretKey");
 }
 
 void CreateDelayedTransaction::Request::serialize(CryptoNote::ISerializer& serializer) {

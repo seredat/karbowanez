@@ -216,7 +216,7 @@ template<class t_test_class>
 bool do_check_tx_verification_context(const CryptoNote::tx_verification_context& tvc, bool tx_added, size_t /*event_index*/, const CryptoNote::Transaction& /*tx*/, t_test_class&, long)
 {
   // Default block verification context check
-  if (tvc.m_verifivation_failed)
+  if (tvc.m_verification_failed)
     throw std::runtime_error("Transaction verification failed");
   return true;
 }
@@ -239,7 +239,7 @@ template<class t_test_class>
 bool do_check_block_verification_context(const CryptoNote::block_verification_context& bvc, size_t /*event_index*/, const CryptoNote::Block& /*blk*/, t_test_class&, long)
 {
   // Default block verification context check
-  if (bvc.m_verifivation_failed)
+  if (bvc.m_verification_failed)
     throw std::runtime_error("Block verification failed");
   return true;
 }

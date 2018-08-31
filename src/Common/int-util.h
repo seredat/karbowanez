@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018 ryo-project
 //
 // This file is part of Bytecoin.
 //
@@ -22,6 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/param.h>
+#include <math.h>
 
 #if defined(__ANDROID__)
 #include <byteswap.h>
@@ -189,6 +191,25 @@ static inline void memcpy_swap64(void *dst, const void *src, size_t n) {
   for (i = 0; i < n; i++) {
     ((uint64_t *) dst)[i] = swap64(((const uint64_t *) src)[i]);
   }
+}
+
+// Calculate ln(p) of Poisson distribution
+// https://github.com/ryo-currency/ryo-writeups/blob/master/poisson-writeup.md
+// Original idea : https://stackoverflow.com/questions/30156803/implementing-poisson-distribution-in-c
+// Using logarithms avoids dealing with very large (k!) and very small (p < 10^-44) numbers
+// lam     - lambda parameter - in our case, how many blocks, on average, you would expect to see in the interval
+// k       - k parameter - in our case, how many blocks we have actually seen
+//           !!! k must not be zero
+// return  - ln(p)
+
+static inline double calc_poisson_ln(double lam, uint64_t k)
+{
+  double logx = -lam + k * log(lam);
+  do
+  {
+    logx -= log(k); // This can be tabulated
+  } while (--k > 0);
+  return logx;
 }
 
 #if !defined(BYTE_ORDER) || !defined(LITTLE_ENDIAN) || !defined(BIG_ENDIAN)

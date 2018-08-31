@@ -23,6 +23,7 @@
 #include "System/Dispatcher.h"
 #include "System/Event.h"
 #include "WalletLegacy/WalletLegacy.h"
+#include <Logging/ConsoleLogger.h>
 
 namespace Tests {
 namespace Common {
@@ -49,6 +50,7 @@ private:
 
   CryptoNote::INode& m_node;
   const CryptoNote::Currency& m_currency;
+  Logging::ConsoleLogger m_logger;
   std::unique_ptr<CryptoNote::IWalletLegacy> m_wallet;
   std::unique_ptr<CryptoNote::IWalletLegacyObserver> m_walletObserver;
   uint32_t m_currentHeight;

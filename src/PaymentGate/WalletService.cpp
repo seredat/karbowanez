@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -265,6 +266,17 @@ std::vector<PaymentService::TransactionHashesInBlockRpcInfo> convertTransactions
   }
 
   return transactionHashes;
+}
+
+void validateMixin(const uint16_t& mixin, const CryptoNote::Currency& currency, Logging::LoggerRef logger) {
+    if (mixin < currency.minMixin()) {
+        logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Mixin must be equal or bigger to" << currency.minMixin();
+        throw std::system_error(make_error_code(CryptoNote::error::MIXIN_COUNT_TOO_SMALL));
+    }
+    if (mixin > currency.maxMixin()) {
+        logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Mixin must be equal or smaller than" << currency.maxMixin();
+        throw std::system_error(make_error_code(CryptoNote::error::MIXIN_COUNT_TOO_LARGE));
+    }
 }
 
 void validateAddresses(const std::vector<std::string>& addresses, const CryptoNote::Currency& currency, Logging::LoggerRef logger) {
@@ -769,7 +781,7 @@ std::error_code WalletService::getAddresses(std::vector<std::string>& addresses)
   return std::error_code();
 }
 
-std::error_code WalletService::sendTransaction(const SendTransaction::Request& request, std::string& transactionHash) {
+std::error_code WalletService::sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey) {
   try {
     System::EventLock lk(readyEvent);
 
@@ -778,6 +790,7 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     if (!request.changeAddress.empty()) {
       validateAddresses({ request.changeAddress }, currency, logger);
     }
+	validateMixin(request.anonymity, currency, logger);
 
     CryptoNote::TransactionParameters sendParams;
     if (!request.paymentId.empty()) {
@@ -793,8 +806,10 @@ std::error_code WalletService::sendTransaction(const SendTransaction::Request& r
     sendParams.unlockTimestamp = request.unlockTime;
     sendParams.changeDestination = request.changeAddress;
 
-    size_t transactionId = wallet.transfer(sendParams);
+	Crypto::SecretKey tx_key;
+    size_t transactionId = wallet.transfer(sendParams, tx_key);
     transactionHash = Common::podToHex(wallet.getTransaction(transactionId).hash);
+	transactionSecretKey = Common::podToHex(tx_key);
 
     logger(Logging::DEBUGGING) << "Transaction " << transactionHash << " has been sent";
   } catch (std::system_error& x) {
@@ -947,13 +962,14 @@ std::error_code WalletService::getUnconfirmedTransactionHashes(const std::vector
   return std::error_code();
 }
 
-std::error_code WalletService::getStatus(uint32_t& blockCount, uint32_t& knownBlockCount, std::string& lastBlockHash, uint32_t& peerCount) {
+std::error_code WalletService::getStatus(uint32_t& blockCount, uint32_t& knownBlockCount, std::string& lastBlockHash, uint32_t& peerCount, uint64_t& minimalFee) {
   try {
     System::EventLock lk(readyEvent);
 
     knownBlockCount = node.getKnownBlockCount();
     peerCount = static_cast<uint32_t>(node.getPeerCount());
     blockCount = wallet.getBlockCount();
+	minimalFee = node.getMinimalFee();
 
     auto lastHashes = wallet.getBlockHashes(blockCount - 1, 1);
     lastBlockHash = Common::podToHex(lastHashes.back());
@@ -963,6 +979,33 @@ std::error_code WalletService::getStatus(uint32_t& blockCount, uint32_t& knownBl
   } catch (std::exception& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting status: " << x.what();
     return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
+std::error_code WalletService::validateAddress(const std::string& address, bool& isvalid, std::string& _address, std::string& spendPublicKey, std::string& viewPublicKey) {
+  try {
+    System::EventLock lk(readyEvent);
+
+    CryptoNote::AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+    if (currency.parseAccountAddressString(address, acc)) {
+      isvalid = true;
+      _address = currency.accountAddressAsString(acc);
+      spendPublicKey = Common::podToHex(acc.spendPublicKey);
+      viewPublicKey = Common::podToHex(acc.viewPublicKey);
+    }
+    else {
+      isvalid = false;
+    }
+  }
+  catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while validating address: " << x.what();
+     return x.code();
+  }
+  catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while validating address: " << x.what();
+    return make_error_code(CryptoNote::error::BAD_ADDRESS);
   }
 
   return std::error_code();

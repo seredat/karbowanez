@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -121,6 +122,7 @@ bool constructTransaction(
   std::vector<uint8_t> extra,
   Transaction& tx,
   uint64_t unlock_time,
+  Crypto::SecretKey &tx_key,
   Logging::ILogger& log) {
   LoggerRef logger(log, "construct_tx");
 
@@ -134,6 +136,8 @@ bool constructTransaction(
   tx.extra = extra;
   KeyPair txkey = generateKeyPair();
   addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
+
+  tx_key = txkey.secretKey;
 
   struct input_generation_context_data {
     KeyPair in_ephemeral;
@@ -465,7 +469,8 @@ bool get_block_hash(const Block& b, Hash& res) {
     return false;
   }
 
-  if (BLOCK_MAJOR_VERSION_2 <= b.majorVersion) {
+  // The header of block version 1 differs from headers of blocks starting from v.2
+  if (BLOCK_MAJOR_VERSION_2 == b.majorVersion || BLOCK_MAJOR_VERSION_3 == b.majorVersion) {
     BinaryArray parent_blob;
     auto serializer = makeParentBlockSerializer(b, true, false);
     if (!toBinaryArray(serializer, parent_blob))
@@ -494,11 +499,11 @@ bool get_aux_block_header_hash(const Block& b, Hash& res) {
 
 bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   BinaryArray bd;
-  if (b.majorVersion == BLOCK_MAJOR_VERSION_1) {
+  if (b.majorVersion == BLOCK_MAJOR_VERSION_1 || b.majorVersion >= BLOCK_MAJOR_VERSION_4) {
     if (!get_block_hashing_blob(b, bd)) {
       return false;
     }
-  } else if (b.majorVersion >= BLOCK_MAJOR_VERSION_2) {
+  } else if (b.majorVersion == BLOCK_MAJOR_VERSION_2 || b.majorVersion == BLOCK_MAJOR_VERSION_3) {
     if (!get_parent_block_hashing_blob(b, bd)) {
       return false;
     }

@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, Karbo developers
 //
 // This file is part of Bytecoin.
 //
@@ -51,5 +52,7 @@ private:
   WalletUserTransactionsCache& transactionsCache;
   const uint32_t walletSerializationVersion;
 };
+
+extern uint32_t WALLET_LEGACY_SERIALIZATION_VERSION;
 
 } //namespace CryptoNote

@@ -60,6 +60,7 @@ void invokeJsonCommand(HttpClient& client, const std::string& url, const Request
   HttpRequest hreq;
   HttpResponse hres;
 
+  hreq.addHeader("Content-Type", "application/json");
   hreq.setUrl(url);
   hreq.setBody(storeToJson(req));
   client.request(hreq, hres);
