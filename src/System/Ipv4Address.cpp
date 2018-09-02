@@ -116,11 +116,11 @@ bool Ipv4Address::isLoopback() const {
 bool Ipv4Address::isPrivate() const {
   return
     // 10.0.0.0/8
-    (value & 0xff000000) == (10 << 24) ||
+    static_cast<int>(value & 0xff000000) == static_cast<int>(10 << 24) ||
     // 172.16.0.0/12
-    (value & 0xfff00000) == ((172 << 24) | (16 << 16)) ||
+    static_cast<int>(value & 0xfff00000) == static_cast<int>((172 << 24) | (16 << 16)) ||
     // 192.168.0.0/16
-    (value & 0xffff0000) == ((192 << 24) | (168 << 16));
+    static_cast<int>(value & 0xffff0000) == static_cast<int>((192 << 24) | (168 << 16));
 }
 
 }

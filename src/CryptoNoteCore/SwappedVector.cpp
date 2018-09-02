@@ -18,5 +18,7 @@
 #include "SwappedVector.h"
 
 namespace {
-char suppressMSVCWarningLNK4221;
+#ifdef MSVC
+  char suppressMSVCWarningLNK4221;
+#endif
 }
