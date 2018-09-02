@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
 // Copyright (c) 2014-2016, XDN developers
+// Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2014-2017, The Forknote developers
 // Copyright (c) 2014-2017, The Monero Project
 // Copyright (c) 2016-2018, The Karbo developers
@@ -683,6 +684,8 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Change password");
   m_consoleHandler.setHandler("sweep_dust", boost::bind(&simple_wallet::sweep_dust, this, _1), "Sweep unmixable dust");
   m_consoleHandler.setHandler("get_tx_key", boost::bind(&simple_wallet::get_tx_key, this, _1), "Get secret transaction key for a given <txid>");
+  m_consoleHandler.setHandler("sign_message", boost::bind(&simple_wallet::sign_message, this, _1), "Sign the message");
+  m_consoleHandler.setHandler("verify_message", boost::bind(&simple_wallet::verify_message, this, _1), "Verify a signature of the message");
   m_consoleHandler.setHandler("help", boost::bind(&simple_wallet::help, this, _1), "Show this help");
   m_consoleHandler.setHandler("exit", boost::bind(&simple_wallet::exit, this, _1), "Close wallet");
 }
@@ -1300,7 +1303,6 @@ bool simple_wallet::gen_wallet(const std::string &wallet_file, const std::string
 	success_msg_writer() <<
 		"**********************************************************************\n" <<
 		"Your wallet has been generated.\n" <<
-		"To start synchronizing with the daemon use \"refresh\" command.\n" <<
 		"Use \"help\" command to see the list of available commands.\n" <<
 		"Always use \"exit\" command when closing simplewallet to save\n" <<
 		"current session's state. Otherwise, you will possibly need to synchronize \n" <<
@@ -2133,6 +2135,58 @@ void simple_wallet::stop() {
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::print_address(const std::vector<std::string> &args/* = std::vector<std::string>()*/) {
   success_msg_writer() << m_wallet->getAddress();
+  return true;
+}
+//----------------------------------------------------------------------------------------------------
+bool simple_wallet::sign_message(const std::vector<std::string> &args) {
+  if (args.size() != 1) {
+    fail_msg_writer() << "usage: sign \"message to sign\" (use quotes if case of spaces)";
+    return true;
+  }
+  if (m_trackingWallet) {
+    fail_msg_writer() << "wallet is watch-only and cannot sign";
+    return true;
+  }
+  std::string message = args[0];
+  std::string signature = m_wallet->sign_message(message);
+  success_msg_writer() << signature;
+  return true;
+}
+//----------------------------------------------------------------------------------------------------
+bool simple_wallet::verify_message(const std::vector<std::string> &args) {
+  if (args.size() != 3) {
+    fail_msg_writer() << "usage: verify \"message to verify\" <address> <signature>";
+    return true;
+  }
+  std::string message = args[0];
+  std::string address_string = args[1];
+  std::string signature = args[2];
+  CryptoNote::AccountPublicAddress address;
+  if (!m_currency.parseAccountAddressString(address_string, address)) {
+    fail_msg_writer() << "failed to parse address " << address_string;
+	return true;
+  }
+  const size_t header_len = strlen("SigV1");
+  if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
+    fail_msg_writer() << ("Signature header check error");
+    return false;
+  }
+  std::string decoded;
+  if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
+    fail_msg_writer() << ("Signature decoding error");
+    return false;
+  }
+  Crypto::Signature s;
+  if (sizeof(s) != decoded.size()) {
+    fail_msg_writer() << ("Signature decoding error");
+    return false;
+  }
+  bool r = m_wallet->verify_message(message, address, signature);
+  if (!r) {
+    fail_msg_writer() << "Invalid signature from " << address_string;
+  } else {
+    success_msg_writer() << "Valid signature from " << address_string;
+  }
   return true;
 }
 //----------------------------------------------------------------------------------------------------

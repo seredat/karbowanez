@@ -126,6 +126,8 @@ namespace CryptoNote
     bool change_password(const std::vector<std::string> &args);
     bool sweep_dust(const std::vector<std::string> &args);
     bool get_tx_key(const std::vector<std::string> &args);
+    bool sign_message(const std::vector<std::string> &args);
+    bool verify_message(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
 	std::string resolveAlias(const std::string& aliasUrl);

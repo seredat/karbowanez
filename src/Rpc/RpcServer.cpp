@@ -25,6 +25,7 @@
 
 // CryptoNote
 #include "Common/StringTools.h"
+#include "Common/Base58.h"
 #include "CryptoNoteCore/TransactionUtils.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
@@ -173,7 +174,8 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
 	  { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::k_on_transactions_by_payment_id), false } },
 	  { "check_tx_key", { makeMemberMethod(&RpcServer::k_on_check_tx_key), false } },
 	  { "check_tx_with_view_key", { makeMemberMethod(&RpcServer::k_on_check_tx_with_view_key), false } },
-	  { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } }
+	  { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } },
+	  { "verifymessage", { makeMemberMethod(&RpcServer::on_verify_message), false } }
 
     };
 
@@ -1318,6 +1320,31 @@ bool RpcServer::on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request&
   }
   res.status = CORE_RPC_STATUS_OK;
   return true;
+}
+
+bool RpcServer::on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req, COMMAND_RPC_VERIFY_MESSAGE::response& res) {
+	Crypto::Hash hash;
+	Crypto::cn_fast_hash(req.message.data(), req.message.size(), hash);
+
+	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+	if (!m_core.currency().parseAccountAddressString(req.address, acc)) {
+		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Failed to parse address"));
+	}
+
+	const size_t header_len = strlen("SigV1");
+	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "SigV1") {
+		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature header check error"));
+	}
+	std::string decoded;
+	Crypto::Signature s;
+	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(s) != decoded.size()) {
+		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature decoding error"));
+		return false;
+	}
+	memcpy(&s, decoded.data(), sizeof(s));
+	res.sig_valid = Crypto::check_signature(hash, acc.spendPublicKey, s);
+	res.status = CORE_RPC_STATUS_OK;
+	return true;
 }
 
 }

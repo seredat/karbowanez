@@ -836,8 +836,8 @@ struct K_COMMAND_RPC_CHECK_TX_WITH_PRIVATE_VIEW_KEY {
 
 		void serialize(ISerializer &s) {
 			KV_MEMBER(txid)
-				KV_MEMBER(view_key)
-				KV_MEMBER(address)
+			KV_MEMBER(view_key)
+			KV_MEMBER(address)
 		}
 	};
 
@@ -848,8 +848,8 @@ struct K_COMMAND_RPC_CHECK_TX_WITH_PRIVATE_VIEW_KEY {
 
 		void serialize(ISerializer &s) {
 			KV_MEMBER(amount)
-				KV_MEMBER(outputs)
-				KV_MEMBER(status)
+			KV_MEMBER(outputs)
+			KV_MEMBER(status)
 		}
 	};
 };
@@ -878,6 +878,30 @@ struct COMMAND_RPC_VALIDATE_ADDRESS {
       KV_MEMBER(status)
     }
   };
+};
+
+struct COMMAND_RPC_VERIFY_MESSAGE {
+	struct request {
+		std::string message;
+		std::string address;
+		std::string signature;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(message)
+			KV_MEMBER(address)
+			KV_MEMBER(signature)
+		}
+	};
+
+	struct response {
+		bool sig_valid;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(sig_valid)
+			KV_MEMBER(status)
+		}
+	};
 };
 
 }
