@@ -474,6 +474,7 @@ bool wallet_rpc_server::on_stop_wallet(const wallet_rpc::COMMAND_RPC_STOP::reque
 		WalletHelper::storeWallet(m_wallet, m_walletFilename);
 	}
 	catch (std::exception& e) {
+		logger(ERROR) << "Couldn't save wallet: " << e.what();
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Couldn't save wallet: ") + e.what());
 	}
 	wallet_rpc_server::send_stop_signal();
@@ -543,15 +544,16 @@ bool wallet_rpc_server::on_verify_message(const wallet_rpc::COMMAND_RPC_VERIFY_M
 //------------------------------------------------------------------------------------------------------------------------------
 bool wallet_rpc_server::on_change_password(const wallet_rpc::COMMAND_RPC_CHANGE_PASSWORD::request& req, wallet_rpc::COMMAND_RPC_CHANGE_PASSWORD::response& res)
 {
-	std::error_code ec = m_wallet.changePassword(req.old_password, req.new_password);
-	if (!ec)
+	try
 	{
-		res.password_changed = true; // Success.
+		m_wallet.changePassword(req.old_password, req.new_password);
 	}
-	else
-	{
-		res.password_changed = false; // Failure.
+	catch (const std::exception& e) {
+		logger(ERROR) << "Could not change password: " << e.what();
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Could not change password: ") + e.what());
+		res.password_changed = false;
 	}
+	logger(INFO) << "Password changed via RPC.";
 	return true;
 }
 
