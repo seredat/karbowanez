@@ -180,7 +180,12 @@ bool wallet_rpc_server::on_getbalance(const wallet_rpc::COMMAND_RPC_GET_BALANCE:
 bool wallet_rpc_server::on_transfer(const wallet_rpc::COMMAND_RPC_TRANSFER::request& req,
 	wallet_rpc::COMMAND_RPC_TRANSFER::response& res)
 {
-	
+	if (req.fee < m_node.getMinimalFee()) {
+		logger(ERROR) << "Fee " << std::to_string(req.fee) << " is too low";
+		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_FEE,
+			std::string("Fee " + std::to_string(req.fee) + " is too low"));
+	}
+
 	if (req.mixin < m_currency.minMixin() && req.mixin != 0) {
 		logger(ERROR) << "Requested mixin " << std::to_string(req.mixin) << " is too low";
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_MIXIN,
