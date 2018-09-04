@@ -291,9 +291,11 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	getObjectHash(tx, h, blobSize);
 	const uint64_t fee = inputs_amount - outputs_amount;
 	bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, height);
-	if (!isFusionTransaction && (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() : fee < getMinimalFeeForHeight(height))) {
-		logger(INFO) << "transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
-			m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : getMinimalFeeForHeight(height));
+	if (!isFusionTransaction && (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() : 
+		fee < getMinimalFeeForHeight(height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY))) {
+		logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
+			m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : 
+			getMinimalFeeForHeight(height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY));
 		tvc.m_verification_failed = true;
 		tvc.m_tx_fee_too_small = true;
 		return false;
