@@ -478,7 +478,7 @@ bool RpcServer::on_send_raw_tx(const COMMAND_RPC_SEND_RAW_TX::request& req, COMM
   logger(DEBUGGING) << "transaction " << transactionHash << " came in on_send_raw_tx";
 
   tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
-  if (!m_core.handle_incoming_tx(tx_blob, tvc, false))
+  if (!m_core.handle_incoming_tx(tx_blob, tvc, false, false))
   {
     logger(INFO) << "[on_send_raw_tx]: Failed to process tx";
     res.status = "Failed";
