@@ -2310,13 +2310,10 @@ int main(int argc, char* argv[]) {
 
   if (command_line::has_arg(vm, Tools::wallet_rpc_server::arg_rpc_bind_port)) {
     //runs wallet with rpc interface
-    if (!command_line::has_arg(vm, arg_wallet_file)) {
+	
+    std::string wallet_file = command_line::get_arg(vm, arg_wallet_file);
+    if (wallet_file.empty()) {
       logger(ERROR, BRIGHT_RED) << "Wallet file not set.";
-      return 1;
-    }
-
-    if (!command_line::has_arg(vm, arg_daemon_address)) {
-      logger(ERROR, BRIGHT_RED) << "Daemon address not set.";
       return 1;
     }
 
@@ -2332,14 +2329,9 @@ int main(int argc, char* argv[]) {
 		wallet_password = command_line::get_arg(vm, arg_password);
 	}
 
-    std::string wallet_file = command_line::get_arg(vm, arg_wallet_file);
     std::string daemon_address = command_line::get_arg(vm, arg_daemon_address);
     std::string daemon_host = command_line::get_arg(vm, arg_daemon_host);
     uint16_t daemon_port = command_line::get_arg(vm, arg_daemon_port);
-    if (daemon_host.empty())
-      daemon_host = "localhost";
-    if (!daemon_port)
-      daemon_port = RPC_DEFAULT_PORT;
 
     if (!daemon_address.empty()) {
       if (!parseUrlAddress(daemon_address, daemon_host, daemon_port)) {
@@ -2347,6 +2339,10 @@ int main(int argc, char* argv[]) {
         return 1;
       }
     }
+    if (daemon_host.empty())
+      daemon_host = "localhost";
+    if (!daemon_port)
+      daemon_port = RPC_DEFAULT_PORT;
 
     std::unique_ptr<INode> node(new NodeRpcProxy(daemon_host, daemon_port));
 
