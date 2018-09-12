@@ -27,7 +27,7 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
-#include <boost/regex.hpp>
+#include <fstream>
 
 #include "Checkpoints.h"
 #include "Common/StringTools.h"
@@ -47,7 +47,7 @@ bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
     return false;
   }
 
-  if (!(0 == m_points.count(height))) {
+  if (!m_points.insert({ height, h }).second) {
     logger(WARNING) << "Checkpoint already exists.";
     return false;
   }
@@ -56,50 +56,31 @@ bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
   return true;
 }
 //---------------------------------------------------------------------------
-const boost::regex linesregx("\\r\\n|\\n\\r|\\n|\\r");
-const boost::regex fieldsregx(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
 bool Checkpoints::load_checkpoints_from_file(const std::string& fileName) {
-  std::string buff;
-  if (!Common::loadFileToString(fileName, buff)) {
-    logger(Logging::ERROR, BRIGHT_RED) << "Could not load checkpoints file: " << fileName;
-    return false;
-  }
-  const char* data = buff.c_str();
-  unsigned int length = strlen(data);
-
-  boost::cregex_token_iterator li(data, data + length, linesregx, -1);
-  boost::cregex_token_iterator end;
-
-  int count = 0;
-  while (li != end) {
-    std::string line = li->str();
-    ++li;
- 
-    boost::sregex_token_iterator ti(line.begin(), line.end(), fieldsregx, -1);
-    boost::sregex_token_iterator end2;
- 
-    std::vector<std::string> row;
-    while (ti != end2) {
-      std::string token = ti->str();
-      ++ti;
-      row.push_back(token);
-    }
-    if (row.size() != 2) {
-      logger(Logging::ERROR, BRIGHT_RED) << "Invalid checkpoint file format";
-      return false;
-    } else {
-      uint32_t height = stoi(row[0]);
-      bool r = add_checkpoint(height, row[1]);
-      if (!r) {
-        return false;
-      }
-      count += 1;
-    }
-  }
-
-  logger(Logging::INFO) << "Loaded " << count << " checkpoint(s) from " << fileName;
-  return true;
+	std::ifstream file(fileName);
+	if (!file) {
+		logger(Logging::ERROR, BRIGHT_RED) << "Could not load checkpoints file: " << fileName;
+		return false;
+	}
+	std::string indexString;
+	std::string hash;
+	uint32_t height;
+	while (std::getline(file, indexString, ','), std::getline(file, hash)) {
+		try {
+			height = std::stoi(indexString);
+		} catch (const std::invalid_argument &)	{
+			logger(ERROR, BRIGHT_RED) << "Invalid checkpoint file format - "
+				<< "could not parse height as a number";
+			return false;
+		}
+		if (!add_checkpoint(height, hash)) {
+			return false;
+		}
+	}
+	logger(Logging::INFO) << "Loaded " << m_points.size() << " checkpoints from "	<< fileName;
+	return true;
 }
+
 //---------------------------------------------------------------------------
 bool Checkpoints::is_in_checkpoint_zone(uint32_t  height) const {
   return !m_points.empty() && (height <= (--m_points.end())->first);
