@@ -412,6 +412,11 @@ else()
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_CXX_FLAGS} -fPIE -pie -ldl -pthread")
   endif()
 
+  if(ANDROID AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND ARCH STREQUAL "i686")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mstackrealign")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstackrealign")
+  endif()
+
   if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGTEST_HAS_TR1_TUPLE=0")
   endif()
