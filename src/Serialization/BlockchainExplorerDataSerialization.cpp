@@ -50,7 +50,7 @@ struct VariantSerializer : boost::static_visitor<> {
 
 void getVariantValue(CryptoNote::ISerializer& serializer, uint8_t tag, boost::variant<CryptoNote::BaseInputDetails,
                                                                                       CryptoNote::KeyInputDetails,
-                                                                                      CryptoNote::MultisignatureInputDetails>& in) {
+                                                                                      CryptoNote::MultisignatureInputDetails> in) {
   switch (static_cast<SerializationTag>(tag)) {
   case SerializationTag::Base: {
     CryptoNote::BaseInputDetails v;
@@ -132,7 +132,7 @@ void serialize(TransactionExtraDetails& extra, ISerializer& serializer) {
   serializeAsBinary(extra.raw, "raw", serializer);
 }
 
-void serialize(transaction_details& transaction, ISerializer& serializer) {
+void serialize(TransactionDetails2& transaction, ISerializer& serializer) {
   serializePod(transaction.hash, "hash", serializer);
   serializer(transaction.size, "size");
   serializer(transaction.fee, "fee");
@@ -177,7 +177,7 @@ void serialize(transaction_details& transaction, ISerializer& serializer) {
   }
 }
 
-void serialize(block_details& block, ISerializer& serializer) {
+void serialize(BlockDetails2& block, ISerializer& serializer) {
   serializer(block.majorVersion, "majorVersion");
   serializer(block.minorVersion, "minorVersion");
   serializer(block.timestamp, "timestamp");

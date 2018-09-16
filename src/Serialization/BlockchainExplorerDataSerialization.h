@@ -25,19 +25,18 @@
 namespace CryptoNote {
 
 void serialize(transaction_output_details& output, ISerializer& serializer);
-void serialize(transaction_input_details& input, ISerializer& serializer);
-
 void serialize(TransactionOutputReferenceDetails& outputReference, ISerializer& serializer);
 
 void serialize(BaseInputDetails& inputBase, ISerializer& serializer);
 void serialize(KeyInputDetails& inputToKey, ISerializer& serializer);
 void serialize(MultisignatureInputDetails& inputMultisig, ISerializer& serializer);
+void serialize(transaction_input_details& input, ISerializer& serializer);
 
 void serialize(TransactionExtraDetails& extra, ISerializer& serializer);
 //void serialize(TransactionDetails& transaction, ISerializer& serializer);
-void serialize(transaction_details& transaction, ISerializer& serializer);
+void serialize(TransactionDetails2& transaction, ISerializer& serializer);
 
 //void serialize(BlockDetails& block, ISerializer& serializer);
-void serialize(block_details& block, ISerializer& serializer);
+void serialize(BlockDetails2& block, ISerializer& serializer);
 
 } //namespace CryptoNote

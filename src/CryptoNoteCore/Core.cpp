@@ -1163,7 +1163,7 @@ size_t core::median(std::vector<size_t>& v) {
 
 }
 
-bool core::fillBlockDetails(const Block &block, block_details& blockDetails) {
+bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   Crypto::Hash hash = get_block_hash(block);
 
   blockDetails.majorVersion = block.majorVersion;
@@ -1242,7 +1242,7 @@ bool core::fillBlockDetails(const Block &block, block_details& blockDetails) {
   }
 
   blockDetails.transactions.reserve(block.transactionHashes.size() + 1);
-  transaction_details transactionDetails;
+  TransactionDetails2 transactionDetails;
   if (!fillTransactionDetails(block.baseTransaction, transactionDetails, block.timestamp)) {
     return false;
   }
@@ -1258,7 +1258,7 @@ bool core::fillBlockDetails(const Block &block, block_details& blockDetails) {
   blockDetails.totalFeeAmount = 0;
 
   for (const Transaction& tx : found) {
-    transaction_details transactionDetails;
+    TransactionDetails2 transactionDetails;
     if (!fillTransactionDetails(tx, transactionDetails, block.timestamp)) {
       return false;
     }
@@ -1268,7 +1268,7 @@ bool core::fillBlockDetails(const Block &block, block_details& blockDetails) {
   return true;
 }
 
-bool core::fillTransactionDetails(const Transaction& transaction, transaction_details& transactionDetails, uint64_t timestamp) {
+bool core::fillTransactionDetails(const Transaction& transaction, TransactionDetails2& transactionDetails, uint64_t timestamp) {
   Crypto::Hash hash = getObjectHash(transaction);
   transactionDetails.hash = hash;
 
@@ -1345,6 +1345,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, transaction_de
       for (const TransactionOutput& out : transaction.outputs) {
         txInGenDetails.amount += out.amount;
       }
+	  txInDetails = txInGenDetails;
     } else if (txIn.type() == typeid(KeyInput)) {
       CryptoNote::KeyInputDetails txInToKeyDetails;
       const KeyInput& txInToKey = boost::get<KeyInput>(txIn);
@@ -1356,6 +1357,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, transaction_de
       txInToKeyDetails.mixin = txInToKey.outputIndexes.size();
       txInToKeyDetails.output.number = outputReferences.back().second;
       txInToKeyDetails.output.transactionHash = outputReferences.back().first;
+	  txInDetails = txInToKeyDetails;
     } else if (txIn.type() == typeid(MultisignatureInput)) {
       MultisignatureInputDetails txInMultisigDetails;
       const MultisignatureInput& txInMultisig = boost::get<MultisignatureInput>(txIn);
@@ -1366,7 +1368,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, transaction_de
       }
       txInMultisigDetails.output.number = outputReference.second;
       txInMultisigDetails.output.transactionHash = outputReference.first;
-
+	  txInDetails = txInMultisigDetails;
     } else {
       return false;
     }

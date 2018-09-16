@@ -102,8 +102,8 @@ namespace CryptoNote {
      uint8_t getCurrentBlockMajorVersion() override;
 	 uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
 
-	 bool fillBlockDetails(const CryptoNote::Block& block, block_details& blockDetails);
-	 bool fillTransactionDetails(const Transaction &tx, transaction_details& txRpcInfo, uint64_t timestamp = 0);
+	 bool fillBlockDetails(const CryptoNote::Block& block, BlockDetails2& blockDetails);
+	 bool fillTransactionDetails(const Transaction &tx, TransactionDetails2& txRpcInfo, uint64_t timestamp = 0);
 
 	 static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 

@@ -917,7 +917,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS {
   };
 
   struct response {
-    std::vector<block_details> blocks;
+    std::vector<BlockDetails2> blocks;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -937,7 +937,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES {
   };
 
   struct response {
-    std::vector<block_details> blocks;
+    std::vector<BlockDetails2> blocks;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -957,7 +957,7 @@ struct COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT {
   };
 
   struct response {
-    block_details block;
+    BlockDetails2 block;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -1023,7 +1023,7 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
   };
 
   struct response {
-    std::vector<transaction_details> transactions;
+    std::vector<TransactionDetails2> transactions;
     std::string status;
 
     void serialize(ISerializer &s) {

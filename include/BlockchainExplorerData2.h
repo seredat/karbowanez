@@ -51,7 +51,7 @@ struct MultisignatureInputDetails {
 
 typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> transaction_input_details;
 
-struct transaction_details {
+struct TransactionDetails2 {
   Crypto::Hash hash;
   uint64_t size = 0;
   uint64_t fee = 0;
@@ -71,7 +71,7 @@ struct transaction_details {
   std::vector<transaction_output_details> outputs;
 };
 
-struct block_details {
+struct BlockDetails2 {
   uint8_t majorVersion = 0;
   uint8_t minorVersion = 0;
   uint64_t timestamp = 0;
@@ -90,7 +90,7 @@ struct block_details {
   uint64_t sizeMedian = 0;
   double penalty = 0.0;
   uint64_t totalFeeAmount = 0;
-  std::vector<transaction_details> transactions;
+  std::vector<TransactionDetails2> transactions;
 };
 
 }
