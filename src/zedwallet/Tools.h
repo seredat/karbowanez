@@ -5,12 +5,12 @@
 #pragma once
 
 #include <algorithm>
-
+#include <memory>
 #include <string>
-
 #include <vector>
-
 #include <iterator>
+
+#include <zedwallet/Types.h>
 
 void confirmPassword(std::string walletPass, std::string msg = "");
 
@@ -27,6 +27,9 @@ std::string getPaymentIDFromExtra(std::string extra);
 std::string unixTimeToDate(uint64_t timestamp);
 
 std::string createIntegratedAddress(std::string address, std::string paymentID);
+
+bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
+              bool &alreadyShuttingDown);
 
 uint64_t getDivisor();
 

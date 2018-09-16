@@ -6,6 +6,8 @@
 #include <zedwallet/Menu.h>
 ///////////////////////////
 
+#include <Common/SignalHandler.h>
+
 #include <zedwallet/ColouredMsg.h>
 #include <zedwallet/CommandDispatcher.h>
 #include <zedwallet/Commands.h>
@@ -149,6 +151,20 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
         }
         else
         {
+            /* Need another signal handler here, in case the user does
+               ctrl+c whilst syncing, to save the wallet. The walletInfo
+               ptr will be null in the parent scope, since we haven't returned
+               it yet. */
+            bool alreadyShuttingDown = false;
+
+            Tools::SignalHandler::install([&]
+            {
+                if (shutdown(walletInfo, node, alreadyShuttingDown))
+                {
+                    exit(0);
+                }
+            });
+
             syncWallet(node, walletInfo);
         }
 
