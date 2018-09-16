@@ -55,26 +55,22 @@ int main(int argc, char **argv)
         new CryptoNote::NodeRpcProxy(config.host, config.port));
 
     std::promise<std::error_code> errorPromise;
-    std::future<std::error_code> error = errorPromise.get_future();
-    auto callback = [&errorPromise](std::error_code e) 
-                    {errorPromise.set_value(e); };
+
+    /* Once the function is complete, set the error value from the promise */
+    auto callback = [&errorPromise](std::error_code e)
+    {
+        errorPromise.set_value(e);
+    };
+
+    /* Get the future of the result */
+    auto initNode = errorPromise.get_future();
 
     node->init(callback);
-
-    std::future<void> initNode = std::async(std::launch::async, [&]
-    {
-            if (error.get())
-            {
-                throw std::runtime_error("Failed to initialize node!");
-            }
-    });
-
-    std::future_status status = initNode.wait_for(std::chrono::seconds(20));
 
     /* Connection took to long to remote node, let program continue regardless
        as they could perform functions like export_keys without being
        connected */
-    if (status != std::future_status::ready)
+    if (initNode.wait_for(std::chrono::seconds(20)) != std::future_status::ready)
     {
         if (config.host != "127.0.0.1")
         {
