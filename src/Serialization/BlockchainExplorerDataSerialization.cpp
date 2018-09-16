@@ -110,7 +110,7 @@ void serialize(MultisignatureInputDetails& inputMultisig, ISerializer& serialize
   serializer(inputMultisig.output, "output");
 }
 
-void serialize(TransactionInputs& input, ISerializer& serializer) {
+void serialize(transaction_input_details& input, ISerializer& serializer) {
   if (serializer.type() == ISerializer::OUTPUT) {
     BinaryVariantTagGetter tagGetter;
     uint8_t tag = boost::apply_visitor(tagGetter, input);
@@ -124,10 +124,6 @@ void serialize(TransactionInputs& input, ISerializer& serializer) {
 
     getVariantValue(serializer, tag, input);
   }
-}
-
-void serialize(TransactionOutputToKeyDetails& output, ISerializer& serializer) {
-  serializePod(output.txOutKey, "txOutKey", serializer);
 }
 
 void serialize(TransactionExtraDetails& extra, ISerializer& serializer) {

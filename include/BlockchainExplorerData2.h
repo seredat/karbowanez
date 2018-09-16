@@ -49,7 +49,7 @@ struct MultisignatureInputDetails {
   TransactionOutputReferenceDetails output;
 };
 
-typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> TransactionInputs;
+typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> transaction_input_details;
 
 struct transaction_details {
   Crypto::Hash hash;
@@ -67,7 +67,7 @@ struct transaction_details {
   uint32_t blockHeight = 0;
   TransactionExtraDetails extra;
   std::vector<std::vector<Crypto::Signature>> signatures;
-  std::vector<TransactionInputs> inputs;
+  std::vector<transaction_input_details> inputs;
   std::vector<transaction_output_details> outputs;
 };
 

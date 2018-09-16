@@ -1337,8 +1337,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, transaction_de
 
   transactionDetails.inputs.reserve(transaction.inputs.size());
   for (const TransactionInput& txIn : transaction.inputs) {
-    TransactionInputs txInDetails;
-
+    transaction_input_details txInDetails;
     if (txIn.type() == typeid(BaseInput)) {
       BaseInputDetails txInGenDetails;
       txInGenDetails.input.blockIndex = boost::get<BaseInput>(txIn).blockIndex;
@@ -1349,19 +1348,19 @@ bool core::fillTransactionDetails(const Transaction& transaction, transaction_de
     } else if (txIn.type() == typeid(KeyInput)) {
       CryptoNote::KeyInputDetails txInToKeyDetails;
       const KeyInput& txInToKey = boost::get<KeyInput>(txIn);
-	  txInToKeyDetails.input = txInToKey; 
+      txInToKeyDetails.input = txInToKey; 
       std::list<std::pair<Crypto::Hash, size_t>> outputReferences;
       if (!scanOutputkeysForIndices(txInToKey, outputReferences)) {
         return false;
       }
       txInToKeyDetails.mixin = txInToKey.outputIndexes.size();
-	  txInToKeyDetails.output.number = outputReferences.back().second;
+      txInToKeyDetails.output.number = outputReferences.back().second;
       txInToKeyDetails.output.transactionHash = outputReferences.back().first;
     } else if (txIn.type() == typeid(MultisignatureInput)) {
       MultisignatureInputDetails txInMultisigDetails;
-	  const MultisignatureInput& txInMultisig = boost::get<MultisignatureInput>(txIn);
-	  txInMultisigDetails.input = txInMultisig;
-	  std::pair<Crypto::Hash, size_t> outputReference;
+      const MultisignatureInput& txInMultisig = boost::get<MultisignatureInput>(txIn);
+      txInMultisigDetails.input = txInMultisig;
+      std::pair<Crypto::Hash, size_t> outputReference;
       if (!getMultisigOutputReference(txInMultisig, outputReference)) {
         return false;
       }
