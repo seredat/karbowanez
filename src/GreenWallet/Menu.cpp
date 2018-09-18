@@ -111,16 +111,13 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
             return std::make_tuple(true, nullptr);
         }
 
-        bool success;
-        std::shared_ptr<WalletInfo> walletInfo;
-
-        /* Handle the users action */
-        std::tie(success, walletInfo) = handleLaunchCommand(
+        /* Handle the user input */
+        std::shared_ptr<WalletInfo> walletInfo = handleLaunchCommand(
             wallet, launchCommand, config
         );
 
         /* Action failed, for example wallet file is corrupted. */
-        if (!success)
+        if (walletInfo == nullptr)
         {
             std::cout << InformationMsg("Returning to selection screen...")
                       << std::endl;

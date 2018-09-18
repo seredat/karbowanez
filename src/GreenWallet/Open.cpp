@@ -28,6 +28,19 @@
 
 std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
 {
+    std::cout << WarningMsg("View wallets are only for viewing incoming ")
+              << WarningMsg("transactions, and cannot make transfers.")
+              << std::endl;
+
+    bool create = confirm("Is this OK?");
+
+    std::cout << std::endl;
+
+    if (!create)
+    {
+        return nullptr;
+    }
+    
     Crypto::SecretKey privateViewKey = getPrivateKey("Private View Key: ");
 
     std::string address;
@@ -215,8 +228,8 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
                                         walletAddress, false, wallet);
 }
 
-std::tuple<bool, std::shared_ptr<WalletInfo>>
-    openWallet(CryptoNote::WalletGreen &wallet, Config &config)
+std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
+                                       Config &config)
 {
     const std::string walletFileName = getExistingWalletFileName(config);
 
@@ -274,11 +287,8 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
                           << std::endl << std::endl;
             }
 
-            return std::make_tuple(true,
-                std::make_shared<WalletInfo>(
-                    walletFileName, walletPass, walletAddress, viewWallet,
-                    wallet
-                )
+            return std::make_shared<WalletInfo>(
+                walletFileName, walletPass, walletAddress, viewWallet, wallet
             );
 
         }
@@ -312,7 +322,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
 
                     std::cout << WarningMsg(msg.str()) << std::endl;
 
-                    return std::make_tuple(false, nullptr);
+                    return nullptr;
                 }
             }
 
@@ -347,7 +357,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
                           << WarningMsg(".")
                           << std::endl << std::endl;
 
-                return std::make_tuple(false, nullptr);
+                return nullptr;
             }
             else
             {
@@ -355,7 +365,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
                 std::cout << "Please report this error message and what "
                           << "you did to cause it." << std::endl << std::endl;
 
-                return std::make_tuple(false, nullptr);
+                return nullptr;
             }
         }
     }
