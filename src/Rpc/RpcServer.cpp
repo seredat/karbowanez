@@ -999,6 +999,7 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
       block_short.cumul_size = blokBlobSize + tx_cumulative_block_size - minerTxBlobSize;
       block_short.tx_count = blk.transactionHashes.size() + 1;
       res.block = block_short;
+	  res.txDetails.confirmations = m_protocolQuery.getObservedHeight() - blockHeight;
     }
   }
 
@@ -1498,6 +1499,13 @@ bool RpcServer::k_on_check_tx_with_view_key(const K_COMMAND_RPC_CHECK_TX_WITH_PR
 	}
 	res.amount = received;
 	res.outputs = outputs;
+	
+	Crypto::Hash blockHash;
+	uint32_t blockHeight;
+	if (m_core.getBlockContainingTx(txid, blockHash, blockHeight)) {
+		res.confirmations = m_protocolQuery.getObservedHeight() - blockHeight;
+	}
+
 	res.status = CORE_RPC_STATUS_OK;
 	return true;
 }
