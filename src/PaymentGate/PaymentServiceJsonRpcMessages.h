@@ -75,6 +75,7 @@ struct GetStatus {
   struct Response {
     uint32_t blockCount;
     uint32_t knownBlockCount;
+	uint32_t localDaemonBlockCount;
     std::string lastBlockHash;
     uint32_t peerCount;
     uint64_t minimalFee;
