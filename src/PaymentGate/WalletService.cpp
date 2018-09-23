@@ -28,13 +28,25 @@
 
 #include <System/Timer.h>
 #include <System/InterruptedException.h>
+
+#include "Common/SignalHandler.h"
+#include "Common/CommandLine.h"
+#include "Common/StringTools.h"
+#include "Common/PathTools.h"
+#include "Common/Base58.h"
 #include "Common/Util.h"
 
 #include "crypto/crypto.h"
+#include "crypto/hash.h"
+
 #include "CryptoNote.h"
+#include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
+#include "CryptoNoteCore/CryptoNoteTools.h"
+#include "CryptoNoteCore/CryptoNoteBasic.h"
 #include "CryptoNoteCore/TransactionExtra.h"
+#include "CryptoNoteCore/Account.h"
 
 #include <System/EventLock.h>
 
@@ -528,6 +540,29 @@ std::error_code WalletService::createTrackingAddress(const std::string& spendPub
   }
 
   logger(Logging::DEBUGGING) << "Created address " << address;
+  return std::error_code();
+}
+
+std::error_code WalletService::createIntegratedAddress(const CreateIntegrated::Request& request, std::string& integrated_address) {
+  std::string payment_id_str = request.payment_id;
+  std::string address_str = request.address;
+
+  uint64_t prefix;
+  CryptoNote::AccountPublicAddress addr;
+
+  // get the spend and view public keys from the address
+  const bool valid = CryptoNote::parseAccountAddressString(prefix, addr, address_str);
+
+  CryptoNote::BinaryArray ba;
+  CryptoNote::toBinaryArray(addr, ba);
+  std::string keys = Common::asString(ba);
+
+  // create the integrated address the same way you make a public address
+  integrated_address = Tools::Base58::encode_addr (
+      CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
+      payment_id_str + keys
+  );
+
   return std::error_code();
 }
 

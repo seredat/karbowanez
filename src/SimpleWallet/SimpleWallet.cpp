@@ -69,6 +69,7 @@
 #include "Common/PathTools.h"
 #include "Common/DnsTools.h"
 #include "Common/Util.h"
+#include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "NodeRpcProxy/NodeRpcProxy.h"
@@ -261,6 +262,44 @@ struct TransferCommand {
             }
           }
         } else {
+
+          // Check integrated address
+          if (arg.length() == 183) 
+          {
+            std::string paymentID;
+            std::string spendPublicKey;
+            std::string viewPublicKey;
+            const uint64_t paymentIDLen = 64;
+
+            // extract the payment id
+            std::string decoded;
+            uint64_t prefix;
+            if (Tools::Base58::decode_addr(arg, prefix, decoded)) 
+            {
+              paymentID = decoded.substr(0, paymentIDLen);
+            }
+
+            // validate and add the payment ID to extra
+            if (!createTxExtraWithPaymentId(paymentID, extra)) 
+            {
+              logger(ERROR, BRIGHT_RED) << "Integrated payment ID has invalid format: \"" << paymentID << "\", expected 64-character string";
+              return false;
+            }
+
+            // create the address from the public keys
+            std::string keys = decoded.substr(paymentIDLen, std::string::npos);
+            CryptoNote::AccountPublicAddress addr;
+            CryptoNote::BinaryArray ba = Common::asBinaryArray(keys);
+
+            if (!CryptoNote::fromBinaryArray(addr, ba))
+            {
+              return true;
+            }
+
+            std::string address = CryptoNote::getAccountAddressAsStr(CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX, addr);
+            arg = address;
+          }
+
           WalletLegacyTransfer destination;
           CryptoNote::TransactionDestinationEntry de;
 #ifndef __ANDROID__		  
@@ -681,6 +720,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("reset", boost::bind(&simple_wallet::reset, this, _1), "Discard cache data and start synchronizing from the start");
   m_consoleHandler.setHandler("show_seed", boost::bind(&simple_wallet::seed, this, _1), "Get wallet recovery phrase (deterministic seed)");
   m_consoleHandler.setHandler("payment_id", boost::bind(&simple_wallet::payment_id, this, _1), "Generate random Payment ID");
+  m_consoleHandler.setHandler("create_integrated", boost::bind(&simple_wallet::create_integrated, this, _1), "create_integrated <payment_id> - Create an integrated address with a payment ID");
   m_consoleHandler.setHandler("password", boost::bind(&simple_wallet::change_password, this, _1), "Change password");
   m_consoleHandler.setHandler("sweep_dust", boost::bind(&simple_wallet::sweep_dust, this, _1), "Sweep unmixable dust");
   m_consoleHandler.setHandler("get_tx_key", boost::bind(&simple_wallet::get_tx_key, this, _1), "Get secret transaction key for a given <txid>");
@@ -1747,6 +1787,42 @@ void simple_wallet::synchronizationProgressUpdated(uint32_t current, uint32_t to
   if (!m_walletSynchronized) {
     m_refresh_progress_reporter.update(current, false);
   }
+}
+/* ------------------------------------------------------------------------------------------- */
+// take a payment Id as an argument and generate an integrated wallet address
+bool simple_wallet::create_integrated(const std::vector<std::string>& args/* = std::vector<std::string>()*/) 
+{
+
+  /* check if there is a payment id */
+  if (args.empty()) 
+  {
+
+    fail_msg_writer() << "Please enter a payment ID";
+    return true;
+  }
+
+  std::string paymentID = args[0];
+  std::string address = m_wallet->getAddress();
+  uint64_t prefix;
+  CryptoNote::AccountPublicAddress addr;
+
+  /* get the spend and view public keys from the address */
+  const bool valid = CryptoNote::parseAccountAddressString(prefix, 
+                                                          addr,
+                                                          address);
+
+  CryptoNote::BinaryArray ba;
+  CryptoNote::toBinaryArray(addr, ba);
+  std::string keys = Common::asString(ba);
+
+  /* create the integrated address the same way you make a public address */
+  std::string integratedAddress = Tools::Base58::encode_addr (CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX,
+                                                              paymentID + keys
+  );
+
+  std::cout << std::endl << "Integrated address: " << integratedAddress << std::endl << std::endl;
+
+  return true;
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::export_keys(const std::vector<std::string>& args/* = std::vector<std::string>()*/) {
