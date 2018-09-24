@@ -221,8 +221,9 @@ namespace CryptoNote {
         logger(ERROR, BRIGHT_RED) << "transaction already exists at inserting in memory pool";
         return false;
       }
-      m_paymentIdIndex.add(tx);
+      m_paymentIdIndex.add(txd.tx);
       m_timestampIndex.add(txd.receiveTime, txd.id);
+
     }
 
     tvc.m_added_to_pool = true;
@@ -708,9 +709,7 @@ namespace CryptoNote {
 
   bool tx_memory_pool::getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionIds) {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
-    //return m_paymentIdIndex.find(paymentId, transactionIds);
-	transactionIds = m_paymentIdIndex.find(paymentId);
-	return true;
+    return m_paymentIdIndex.find(paymentId, transactionIds);
   }
 
   bool tx_memory_pool::getTransactionIdsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Crypto::Hash>& hashes, uint64_t& transactionsNumberWithinTimestamps) {

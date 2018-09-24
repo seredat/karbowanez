@@ -202,9 +202,7 @@ void serialize(Transaction& tx, ISerializer& serializer) {
   //TODO: make arrays without sizes
 //  serializer.beginArray(sigSize, "signatures");
   
-  //if (serializer.type() == ISerializer::INPUT) {
-  // ignore base transaction
-  if (serializer.type() == ISerializer::INPUT && !(sigSize == 1 && tx.inputs[0].type() == typeid(BaseInput))) {
+  if (serializer.type() == ISerializer::INPUT) {
     tx.signatures.resize(sigSize);
   }
 

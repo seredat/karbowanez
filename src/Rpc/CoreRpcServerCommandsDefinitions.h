@@ -24,10 +24,7 @@
 #include "CryptoNoteCore/Difficulty.h"
 #include "crypto/hash.h"
 
-#include "BlockchainExplorerData2.h"
-
 #include "Serialization/SerializationOverloads.h"
-#include "Serialization/BlockchainExplorerDataSerialization.h"
 
 namespace CryptoNote {
 //-----------------------------------------------
@@ -909,132 +906,6 @@ struct COMMAND_RPC_VERIFY_MESSAGE {
 			KV_MEMBER(status)
 		}
 	};
-};
-
-struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS {
-  struct request {
-    std::vector<uint32_t> blockHeights;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(blockHeights);
-    }
-  };
-
-  struct response {
-    std::vector<BlockDetails2> blocks;
-    std::string status;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(status)
-      KV_MEMBER(blocks)
-    }
-  };
-};
-
-struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES {
-  struct request {
-    std::vector<Crypto::Hash> blockHashes;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(blockHashes);
-    }
-  };
-
-  struct response {
-    std::vector<BlockDetails2> blocks;
-    std::string status;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(status)
-      KV_MEMBER(blocks)
-    }
-  };
-};
-
-struct COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT {
-  struct request {
-    uint32_t blockHeight;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(blockHeight)
-    }
-  };
-
-  struct response {
-    BlockDetails2 block;
-    std::string status;
-
-    void serialize(ISerializer& s) {
-      KV_MEMBER(status)
-      KV_MEMBER(block)
-    }
-  };
-};
-
-struct COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS {
-  struct request {
-    uint64_t timestampBegin;
-    uint64_t timestampEnd;
-	uint32_t limit;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(timestampBegin)
-      KV_MEMBER(timestampEnd)
-      KV_MEMBER(limit)
-    }
-  };
-
-  struct response {
-    std::vector<Crypto::Hash> blockHashes;
-	uint32_t count;
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(status)
-      KV_MEMBER(count)
-      KV_MEMBER(blockHashes)
-    }
-  };
-};
-
-struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
-  struct request {
-    Crypto::Hash paymentId;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(paymentId)
-    }
-  };
-
-  struct response {
-    std::vector<Crypto::Hash> transactionHashes;
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(status)
-      KV_MEMBER(transactionHashes);
-    }
-  };
-};
-
-struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
-  struct request {
-    std::vector<Crypto::Hash> transactionHashes;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(transactionHashes);
-    }
-  };
-
-  struct response {
-    std::vector<TransactionDetails2> transactions;
-    std::string status;
-
-    void serialize(ISerializer &s) {
-      KV_MEMBER(status)
-      KV_MEMBER(transactions)
-    }
-  };
 };
 
 }
