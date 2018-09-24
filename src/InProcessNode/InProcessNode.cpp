@@ -381,10 +381,6 @@ uint32_t InProcessNode::getLocalBlockCount() const {
   return lastLocalBlockHeaderInfo.index + 1;
 }
 
-uint32_t InProcessNode::getNodeHeight() const {
-  return getLocalBlockCount();
-}
-
 uint32_t InProcessNode::getKnownBlockCount() const {
   {
     std::unique_lock<std::mutex> lock(mutex);

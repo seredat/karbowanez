@@ -56,7 +56,6 @@ public:
   virtual uint32_t getLastKnownBlockHeight() const override;
   virtual uint32_t getLocalBlockCount() const override;
   virtual uint32_t getKnownBlockCount() const override;
-  virtual uint32_t getNodeHeight() const override;
   virtual uint64_t getLastLocalBlockTimestamp() const override;
   virtual uint64_t getMinimalFee() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
