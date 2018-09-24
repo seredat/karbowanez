@@ -25,6 +25,7 @@
 #include <thread>
 #include <unordered_set>
 
+#include "../CryptoNoteConfig.h"
 #include "Common/ObserverManager.h"
 #include "INode.h"
 
@@ -65,6 +66,7 @@ public:
   virtual uint32_t getKnownBlockCount() const override;
   virtual uint64_t getLastLocalBlockTimestamp() const override;
   virtual uint64_t getMinimalFee() const override;
+  virtual uint32_t getNodeHeight() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
 
   virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override;
@@ -147,6 +149,7 @@ private:
   bool m_stop = false;
   std::atomic<size_t> m_peerCount;
   std::atomic<uint32_t> m_networkHeight;
+  std::atomic<uint64_t> m_nodeHeight;
   std::atomic<uint64_t> m_minimalFee;
 
   BlockHeaderInfo lastLocalBlockHeaderInfo;
