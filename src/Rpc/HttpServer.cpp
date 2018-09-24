@@ -149,7 +149,7 @@ void HttpServer::acceptLoop() {
 
   } catch (System::InterruptedException&) {
   } catch (std::exception& e) {
-    logger(WARNING) << "Connection error: " << e.what();
+    logger(DEBUGGING) << "Connection error: " << e.what();
   }
 }
 
