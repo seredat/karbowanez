@@ -625,7 +625,7 @@ void BlockchainSynchronizer::removeOutdatedTransactions() {
       }
     }
   } else {
-    m_logger(ERROR, BRIGHT_RED) << "Failed to query outdated pool transaction: " << ec << ", " << ec.message();
+    m_logger(DEBUGGING, BRIGHT_RED) << "Failed to query outdated pool transaction: " << ec << ", " << ec.message();
   }
 
   if (!ec) {
