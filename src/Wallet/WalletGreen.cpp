@@ -1304,7 +1304,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   preparedTransaction.neededMoney = countNeededMoney(preparedTransaction.destinations, fee);
 
   std::vector<OutputToTransfer> selectedTransfers;
-  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, UINT64_C(100000000)/*m_currency.defaultDustThreshold()*/, std::move(wallets), selectedTransfers);
+  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, m_currency.defaultDustThreshold(), std::move(wallets), selectedTransfers);
 
   if (foundMoney < preparedTransaction.neededMoney) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to create transaction: not enough money. Needed " << m_currency.formatAmount(preparedTransaction.neededMoney) <<
@@ -2942,7 +2942,7 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint64_t mixin,
 
   const size_t MAX_FUSION_OUTPUT_COUNT = 4;
 
-  uint64_t fusionTreshold = m_node.getLastKnownBlockHeight() < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : m_currency.defaultDustThreshold();
+  uint64_t fusionTreshold = m_currency.defaultDustThreshold();
 
   if (threshold <= fusionTreshold) {
     m_logger(ERROR, BRIGHT_RED) << "Fusion transaction threshold is too small. Threshold " << m_currency.formatAmount(threshold) <<

@@ -57,7 +57,7 @@ const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 12;
 const uint64_t MINIMUM_FEE                                   = UINT64_C(100000000000);
 const uint64_t MAXIMUM_FEE                                   = UINT64_C(100000000000);
 
-const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(0);
+const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(100000000);
 const uint64_t MIN_TX_MIXIN_SIZE                             = 2;
 const uint64_t MAX_TX_MIXIN_SIZE                             = 20;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
