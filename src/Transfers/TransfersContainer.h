@@ -274,6 +274,9 @@ private:
   void copyToSpent(const TransactionBlockInfo& block, const ITransactionReader& tx, size_t inputIndex, const TransactionOutputInformationEx& output);
   void repair();
 
+  std::vector<TransactionOutputInformation> m_allTransfers;
+  std::unordered_set<Crypto::PublicKey> m_allOutputKeys;
+
 private:
   TransactionMultiIndex m_transactions;
   UnconfirmedTransfersMultiIndex m_unconfirmedTransfers;
