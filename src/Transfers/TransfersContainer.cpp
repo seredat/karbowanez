@@ -306,7 +306,6 @@ bool TransfersContainer::addTransactionOutputs(const TransactionBlockInfo& block
 		// check for burned output key
 		if (m_allOutputKeys.find(transfer.outputKey) != m_allOutputKeys.end()) {
 			duplicate = true;
-			auto result = m_unconfirmedTransfers.emplace(std::move(info));
 		}
 		else {
 			m_allOutputKeys.insert(transfer.outputKey);
