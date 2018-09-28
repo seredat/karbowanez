@@ -222,7 +222,7 @@ bool TransfersContainer::addTransaction(const TransactionBlockInfo& block, const
       deleteTransactionTransfers(tx.getTransactionHash());
     }
 
-    throw;
+    //throw;
   }
 }
 
@@ -280,15 +280,6 @@ bool TransfersContainer::addTransactionOutputs(const TransactionBlockInfo& block
     info.transactionHash = txHash;
     info.visible = true;
 
-    // check for burned output key
-    if (m_allOutputKeys.find(transfer.outputKey) != m_allOutputKeys.end()) {
-      auto message = "Failed to add transaction output: key output already exists";
-      m_logger(ERROR, BRIGHT_RED) << message << ", transaction hash " << info.transactionHash << ", output index " << info.outputInTransaction;
-      //throw std::runtime_error(message);
-    } else {
-      m_allOutputKeys.insert(transfer.outputKey);
-    }
-
     if (transferIsUnconfirmed) {
       auto result = m_unconfirmedTransfers.emplace(std::move(info));
       (void)result; // Disable unused warning
@@ -311,6 +302,15 @@ bool TransfersContainer::addTransactionOutputs(const TransactionBlockInfo& block
             duplicate = true;
           }
         }
+
+		// check for burned output key
+		if (m_allOutputKeys.find(transfer.outputKey) != m_allOutputKeys.end()) {
+			duplicate = true;
+			auto result = m_unconfirmedTransfers.emplace(std::move(info));
+		}
+		else {
+			m_allOutputKeys.insert(transfer.outputKey);
+		}
 
         if (duplicate) {
           auto message = "Failed to add transaction output: key output already exists";
