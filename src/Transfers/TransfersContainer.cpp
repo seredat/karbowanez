@@ -173,6 +173,12 @@ TransfersContainer::TransfersContainer(const Currency& currency, Logging::ILogge
   m_currency(currency),
   m_logger(logger, "TransfersContainer"),
   m_transactionSpendableAge(transactionSpendableAge) {
+
+  // burn check
+  getOutputs(m_allTransfers, ITransfersContainer::IncludeTypeAll);
+  for (auto& o : m_allTransfers) {
+    m_allOutputKeys.insert(o.outputKey);
+  }
 }
 
 bool TransfersContainer::addTransaction(const TransactionBlockInfo& block, const ITransactionReader& tx,
@@ -216,7 +222,7 @@ bool TransfersContainer::addTransaction(const TransactionBlockInfo& block, const
       deleteTransactionTransfers(tx.getTransactionHash());
     }
 
-    throw;
+    //throw;
   }
 }
 
@@ -296,6 +302,14 @@ bool TransfersContainer::addTransactionOutputs(const TransactionBlockInfo& block
             duplicate = true;
           }
         }
+
+		// check for burned output key
+		if (m_allOutputKeys.find(transfer.outputKey) != m_allOutputKeys.end()) {
+			duplicate = true;
+		}
+		else {
+			m_allOutputKeys.insert(transfer.outputKey);
+		}
 
         if (duplicate) {
           auto message = "Failed to add transaction output: key output already exists";
