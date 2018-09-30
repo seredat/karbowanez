@@ -33,7 +33,7 @@ using namespace Crypto;
 using namespace Logging;
 using namespace Common;
 
-std::unordered_set<Crypto::PublicKey> public_keys_seen;
+std::unordered_map<Hash, std::vector<PublicKey>> public_keys_seen;
 
 namespace {
 
@@ -414,14 +414,22 @@ std::error_code createTransfers(
         info.keyImage);
 
       assert(out.key == reinterpret_cast<const PublicKey&>(in_ephemeral.publicKey));
+	  
+	  std::unordered_map<Hash, std::vector<PublicKey>>::iterator it = public_keys_seen.find(tx.getTransactionHash());
+	  if (it == public_keys_seen.end()) {
+		  for (const std::pair<Hash, std::vector<PublicKey>>& kv : public_keys_seen) {
+			  auto& keys = kv.second;
+			  if (std::find(keys.begin(), keys.end(), out.key) != keys.end()) {
+				  throw std::runtime_error("duplicate transaction output key is found");
+				  return std::error_code();
+			  }
+		  }
+	  
+		  std::vector<PublicKey> temp_keys;
+		  temp_keys.push_back(out.key);
+		  public_keys_seen.insert(std::make_pair(tx.getTransactionHash(), temp_keys));
+	  }
 
-	  if (public_keys_seen.find(out.key) != public_keys_seen.end()) {
-		  throw std::runtime_error("duplicate transaction output key is found");
-		  return std::error_code();
-	  }
-	  else {
-		  public_keys_seen.insert(out.key);
-	  }
 	  info.amount = amount;
       info.outputKey = out.key;
 
@@ -431,12 +439,19 @@ std::error_code createTransfers(
       tx.getOutput(idx, out, amount);
 
 	  for (const auto& key : out.keys) {
-		  if (public_keys_seen.find(key) != public_keys_seen.end()) {
-			  throw std::runtime_error("duplicate multisignature output key is found");
-			  return std::error_code();
-		  }
-		  else {
-			  public_keys_seen.insert(key);
+		  std::unordered_map<Hash, std::vector<PublicKey>>::iterator it = public_keys_seen.find(tx.getTransactionHash());
+		  if (it == public_keys_seen.end()) {
+			  for (const std::pair<Hash, std::vector<PublicKey>>& kv : public_keys_seen) {
+				  auto& keys = kv.second;
+				  if (std::find(keys.begin(), keys.end(), key) != keys.end()) {
+					  throw std::runtime_error("duplicate transaction output key is found");
+					  return std::error_code();
+				  }
+			  }
+
+			  std::vector<PublicKey> temp_keys;
+			  temp_keys.push_back(key);
+			  public_keys_seen.insert(std::make_pair(tx.getTransactionHash(), temp_keys));
 		  }
 	  }
 	  info.amount = amount;
