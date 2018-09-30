@@ -18,17 +18,20 @@
 #include "TransfersConsumer.h"
 
 #include <numeric>
+#include <future>
 
 #include "CommonTypes.h"
+#include "Common/StringTools.h"
 #include "Common/BlockingQueue.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/TransactionApi.h"
 
 #include "IWallet.h"
 #include "INode.h"
-#include <future>
 
 using namespace Crypto;
+using namespace Logging;
+using namespace Common;
 
 std::unordered_set<Crypto::PublicKey> public_keys_seen;
 
@@ -79,7 +82,8 @@ void findMyOutputs(
       KeyOutput out;
       tx.getOutput(idx, out, amount);
       checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
-	  ++keyIndex;
+      ++keyIndex;
+
     } else if (outType == TransactionTypes::OutputType::Multisignature) {
 
       uint64_t amount;
@@ -412,13 +416,13 @@ std::error_code createTransfers(
       assert(out.key == reinterpret_cast<const PublicKey&>(in_ephemeral.publicKey));
 
 	  if (public_keys_seen.find(out.key) != public_keys_seen.end()) {
-		  //throw std::runtime_error("The same transaction pubkey is present more than once");
-		  info.amount = 0;
+		  throw std::runtime_error("duplicate transaction output key is found");
+		  return std::error_code();
 	  }
 	  else {
 		  public_keys_seen.insert(out.key);
-		  info.amount = amount;
 	  }
+	  info.amount = amount;
       info.outputKey = out.key;
 
     } else if (outType == TransactionTypes::OutputType::Multisignature) {
@@ -428,15 +432,14 @@ std::error_code createTransfers(
 
 	  for (const auto& key : out.keys) {
 		  if (public_keys_seen.find(key) != public_keys_seen.end()) {
-			  //throw std::runtime_error("The same transaction pubkey is present more than once");
-			  info.amount = 0;
+			  throw std::runtime_error("duplicate multisignature output key is found");
+			  return std::error_code();
 		  }
 		  else {
 			  public_keys_seen.insert(key);
-			  info.amount = amount;
 		  }
 	  }
-
+	  info.amount = amount;
       info.requiredSignatures = out.requiredSignatureCount;
     }
 
@@ -467,10 +470,16 @@ std::error_code TransfersConsumer::preprocessOutputs(const TransactionBlockInfo&
     auto it = m_subscriptions.find(kv.first);
     if (it != m_subscriptions.end()) {
       auto& transfers = info.outputs[kv.first];
-      errorCode = createTransfers(it->second->getKeys(), blockInfo, tx, kv.second, info.globalIdxs, transfers);
-      if (errorCode) {
-        return errorCode;
-      }
+	  try {
+		  errorCode = createTransfers(it->second->getKeys(), blockInfo, tx, kv.second, info.globalIdxs, transfers);
+		  if (errorCode) {
+			  return errorCode;
+		  }
+	  }
+	  catch (const std::exception& e) {
+		  m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction: " << e.what() << ", transaction hash " << Common::podToHex(tx.getTransactionHash());
+		  return std::error_code();
+	  }
     }
   }
 
