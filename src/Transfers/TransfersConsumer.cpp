@@ -71,6 +71,7 @@ void findMyOutputs(
 
   size_t keyIndex = 0;
   size_t outputCount = tx.getOutputCount();
+  std::unordered_set<Crypto::PublicKey> public_keys_seen;
 
   for (size_t idx = 0; idx < outputCount; ++idx) {
 
@@ -81,7 +82,14 @@ void findMyOutputs(
       uint64_t amount;
       KeyOutput out;
       tx.getOutput(idx, out, amount);
-      checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
+      if (public_keys_seen.find(out.key) != public_keys_seen.end())
+	  {
+        throw std::runtime_error("The same transaction pubkey is present more than once");
+	  }
+	  else {
+        public_keys_seen.insert(out.key);
+        checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
+      }
       ++keyIndex;
 
     } else if (outType == TransactionTypes::OutputType::Multisignature) {
@@ -91,7 +99,14 @@ void findMyOutputs(
       tx.getOutput(idx, out, amount);
 
       for (const auto& key : out.keys) {
-        checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
+        if (public_keys_seen.find(key) != public_keys_seen.end())
+        {
+          throw std::runtime_error("The same transaction pubkey is present more than once");
+        }
+        else {
+          public_keys_seen.insert(key);
+          checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
+        }
         ++keyIndex;
       }
     }
@@ -466,7 +481,13 @@ std::error_code createTransfers(
 
 std::error_code TransfersConsumer::preprocessOutputs(const TransactionBlockInfo& blockInfo, const ITransactionReader& tx, PreprocessInfo& info) {
   std::unordered_map<PublicKey, std::vector<uint32_t>> outputs;
-  findMyOutputs(tx, m_viewSecret, m_spendKeys, outputs);
+  try {
+    findMyOutputs(tx, m_viewSecret, m_spendKeys, outputs);
+  }
+  catch (const std::exception& e) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction: " << e.what() << ", transaction hash " << Common::podToHex(tx.getTransactionHash());
+    return std::error_code();
+  }
 
   if (outputs.empty()) {
     return std::error_code();
