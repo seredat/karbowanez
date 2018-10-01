@@ -483,6 +483,10 @@ bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::
   return Crypto::check_signature(hash, address.spendPublicKey, s);
 }
 
+std::vector<Payments> WalletLegacy::getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const {
+  return m_transactionsCache.getTransactionsByPaymentIds(paymentIds);
+}
+
 uint64_t WalletLegacy::actualBalance() {
   std::unique_lock<std::mutex> lock(m_cacheMutex);
   throwIfNotInitialised();
@@ -553,6 +557,12 @@ bool WalletLegacy::getTransfer(TransferId transferId, WalletLegacyTransfer& tran
   throwIfNotInitialised();
 
   return m_transactionsCache.getTransfer(transferId, transfer);
+}
+
+size_t WalletLegacy::getUnlockedOutputsCount() {
+  std::vector<TransactionOutputInformation> outputs;
+  m_transferDetails->getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
+  return outputs.size();
 }
 
 TransactionId WalletLegacy::sendTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {

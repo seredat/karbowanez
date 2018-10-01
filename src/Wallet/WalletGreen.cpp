@@ -2942,7 +2942,7 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint64_t mixin,
 
   const size_t MAX_FUSION_OUTPUT_COUNT = 4;
 
-  uint64_t fusionTreshold = m_node.getLastKnownBlockHeight() < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : m_currency.defaultDustThreshold();
+  uint64_t fusionTreshold = m_currency.defaultDustThreshold();
 
   if (threshold <= fusionTreshold) {
     m_logger(ERROR, BRIGHT_RED) << "Fusion transaction threshold is too small. Threshold " << m_currency.formatAmount(threshold) <<

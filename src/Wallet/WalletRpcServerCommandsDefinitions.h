@@ -401,4 +401,18 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	struct COMMAND_RPC_GET_OUTPUTS
+    {
+      typedef CryptoNote::EMPTY_STRUCT request;
+
+      struct response
+      {
+        size_t unlocked_outputs_count;
+
+        void serialize(ISerializer& s) {
+          KV_MEMBER(unlocked_outputs_count)
+        }
+      };
+    };
+
 }} //Tools::wallet_rpc

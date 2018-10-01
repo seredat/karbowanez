@@ -209,7 +209,7 @@ namespace CryptoNote {
 		}
 
 		std::vector<uint64_t> outAmounts;
-		decompose_amount_into_digits(blockReward, m_defaultDustThreshold,
+		decompose_amount_into_digits(blockReward, UINT64_C(0),
 			[&outAmounts](uint64_t a_chunk) { outAmounts.push_back(a_chunk); },
 			[&outAmounts](uint64_t a_dust) { outAmounts.push_back(a_dust); });
 
@@ -279,7 +279,7 @@ namespace CryptoNote {
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
+			if (amount < defaultDustThreshold()) {
 				return false;
 			}
 
@@ -288,7 +288,7 @@ namespace CryptoNote {
 
 		std::vector<uint64_t> expectedOutputsAmounts;
 		expectedOutputsAmounts.reserve(outputsAmounts.size());
-		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold(), expectedOutputsAmounts);
+		decomposeAmount(inputAmount, defaultDustThreshold(), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
 		return expectedOutputsAmounts == outputsAmounts;
@@ -320,7 +320,7 @@ namespace CryptoNote {
 			return false;
 		}
 
-		if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
+		if (amount < defaultDustThreshold()) {
 			return false;
 		}
 
