@@ -528,6 +528,26 @@ void WalletGreen::load(const std::string& path, const std::string& password, std
     }
   }
 
+  // Read all output keys cache
+  try {
+    std::vector<AccountPublicAddress> subscriptionList;
+    m_synchronizer.getSubscriptions(subscriptionList);
+    for (auto& addr : subscriptionList) {
+      auto sub = m_synchronizer.getSubscription(addr);
+      if (sub != nullptr) {
+         std::vector<TransactionOutputInformation> allTransfers;
+		 ITransfersContainer* container = &sub->getContainer();
+		 container->getOutputs(allTransfers, ITransfersContainer::IncludeAll);
+         m_logger(INFO, BRIGHT_WHITE) << "Known Transfers " << allTransfers.size();
+         for (auto& o : allTransfers) {
+			 m_synchronizer.addPublicKeysSeen(addr, o.transactionHash, o.outputKey);
+         }
+      }
+    }
+  } catch (const std::exception& e) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to read output keys!! Continue without output keys: " << e.what();
+  }
+
   m_blockchainSynchronizer.addObserver(this);
 
   initTransactionPool();
