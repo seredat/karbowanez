@@ -279,7 +279,7 @@ namespace CryptoNote {
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (amount < defaultDustThreshold()) {
+			if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 && amount < defaultDustThreshold()) {
 				return false;
 			}
 
@@ -288,7 +288,7 @@ namespace CryptoNote {
 
 		std::vector<uint64_t> expectedOutputsAmounts;
 		expectedOutputsAmounts.reserve(outputsAmounts.size());
-		decomposeAmount(inputAmount, defaultDustThreshold(), expectedOutputsAmounts);
+		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? defaultDustThreshold() : UINT64_C(0), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
 		return expectedOutputsAmounts == outputsAmounts;
@@ -320,7 +320,7 @@ namespace CryptoNote {
 			return false;
 		}
 
-		if (amount < defaultDustThreshold()) {
+		if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 && amount < defaultDustThreshold()) {
 			return false;
 		}
 
