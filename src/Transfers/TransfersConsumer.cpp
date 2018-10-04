@@ -385,7 +385,7 @@ void TransfersConsumer::removeUnconfirmedTransaction(const Crypto::Hash& transac
   m_observerManager.notify(&IBlockchainConsumerObserver::onTransactionDeleteEnd, this, transactionHash);
 }
 
-void TransfersConsumer::addPublicKeysSeen(const Crypto::Hash& transactionHash, Crypto::PublicKey outputKey) {
+void TransfersConsumer::addPublicKeysSeen(const Crypto::Hash& transactionHash, const Crypto::PublicKey& outputKey) {
     std::unordered_map<Hash, std::vector<Crypto::PublicKey>>::iterator it = public_keys_seen.find(transactionHash);
     if (it == public_keys_seen.end()) {
         std::vector<Crypto::PublicKey> temp_keys;

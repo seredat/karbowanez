@@ -54,7 +54,7 @@ public:
   void subscribeConsumerNotifications(const Crypto::PublicKey& viewPublicKey, ITransfersSynchronizerObserver* observer);
   void unsubscribeConsumerNotifications(const Crypto::PublicKey& viewPublicKey, ITransfersSynchronizerObserver* observer);
 
-  void addPublicKeysSeen(const AccountPublicAddress& acc, const Crypto::Hash& transactionHash, Crypto::PublicKey outputKey);
+  void addPublicKeysSeen(const AccountPublicAddress& acc, const Crypto::Hash& transactionHash, const Crypto::PublicKey& outputKey);
 
   // IStreamSerializable
   virtual void save(std::ostream& os) override;
