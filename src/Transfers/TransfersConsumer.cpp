@@ -35,6 +35,7 @@ using namespace Common;
 
 std::unordered_set<Crypto::Hash> transactions_hash_seen;
 std::unordered_set<Crypto::PublicKey> public_keys_seen;
+std::mutex seen_mutex;
 
 namespace {
 
@@ -73,8 +74,6 @@ void findMyOutputs(
   size_t keyIndex = 0;
   size_t outputCount = tx.getOutputCount();
 
-  std::unordered_set<Crypto::PublicKey> public_keys_seen;
-
   for (size_t idx = 0; idx < outputCount; ++idx) {
 
     auto outType = tx.getOutputType(size_t(idx));
@@ -85,14 +84,7 @@ void findMyOutputs(
       KeyOutput out;
       tx.getOutput(idx, out, amount);
 
-      if (public_keys_seen.find(out.key) != public_keys_seen.end())
-	  {
-        throw std::runtime_error("The same transaction pubkey is present more than once");
-	  }
-	  else {
-        public_keys_seen.insert(out.key);
-        checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
-      }
+      checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
       ++keyIndex;
 
     } else if (outType == TransactionTypes::OutputType::Multisignature) {
@@ -102,14 +94,8 @@ void findMyOutputs(
       tx.getOutput(idx, out, amount);
 
       for (const auto& key : out.keys) {
-        if (public_keys_seen.find(key) != public_keys_seen.end())
-        {
-          throw std::runtime_error("The same transaction pubkey is present more than once");
-        }
-        else {
-          public_keys_seen.insert(key);
-          checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
-        }
+        checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
+
         ++keyIndex;
       }
     }
@@ -387,6 +373,7 @@ void TransfersConsumer::removeUnconfirmedTransaction(const Crypto::Hash& transac
 }
 
 void TransfersConsumer::addPublicKeysSeen(const Crypto::Hash& transactionHash, const Crypto::PublicKey& outputKey) {
+	std::lock_guard<std::mutex> lk(seen_mutex);
     transactions_hash_seen.insert(transactionHash);
     public_keys_seen.insert(outputKey);
 }
@@ -401,6 +388,7 @@ std::error_code createTransfers(
 
   auto txPubKey = tx.getTransactionPublicKey();
   std::vector<PublicKey> temp_keys;
+  std::lock_guard<std::mutex> lk(seen_mutex);
 
   for (auto idx : outputs) {
 
@@ -476,7 +464,7 @@ std::error_code createTransfers(
     transfers.push_back(info);
   }
 
-  transactions_hash_seen.insert(tx.getTransactionHash());
+  transactions_hash_seen.emplace(tx.getTransactionHash());
   for (std::vector<PublicKey>::iterator it = temp_keys.begin(); it != temp_keys.end(); it++) {
     public_keys_seen.insert(*it);
   }
