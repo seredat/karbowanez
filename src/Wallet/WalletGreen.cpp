@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The BBSCoin Developers
 // Copyright (c) 2017-2018, Karbo developers
 //
 // This file is part of Bytecoin.
@@ -540,7 +541,7 @@ void WalletGreen::load(const std::string& path, const std::string& password, std
          container->getOutputs(allTransfers, ITransfersContainer::IncludeAll);
          m_logger(INFO, BRIGHT_WHITE) << "Known Transfers " << allTransfers.size();
          for (auto& o : allTransfers) {
-             if (o.type == TransactionTypes::OutputType::Key) {
+             if (o.type != TransactionTypes::OutputType::Invalid) {
                 m_synchronizer.addPublicKeysSeen(addr, o.transactionHash, o.outputKey);
              }
          }

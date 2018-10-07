@@ -298,7 +298,7 @@ void WalletLegacy::doLoad(std::istream& source) {
     auto message = "Loaded " + std::to_string(allTransfers.size()) + " known transfer(s)\r\n";
     m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), message);
     for (auto& o : allTransfers) {
-      if (o.type == TransactionTypes::OutputType::Key) {
+      if (o.type != TransactionTypes::OutputType::Invalid) {
         m_transfersSync.addPublicKeysSeen(m_account.getAccountKeys().address, o.transactionHash, o.outputKey);
       }
     }
