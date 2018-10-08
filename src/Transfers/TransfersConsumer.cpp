@@ -369,7 +369,7 @@ void TransfersConsumer::findMyOutputs(
 	  if (it == transactions_hash_seen.end()) {
         std::unordered_set<Crypto::PublicKey>::iterator key_it = public_keys_seen.find(out.key);
         if (key_it != public_keys_seen.end() || std::find(temp_keys.begin(), temp_keys.end(), out.key) != temp_keys.end()) {
-          m_logger(ERROR, BRIGHT_RED) << "Failed to process outputs of transaction " << Common::podToHex(txHash) << ": duplicate output key is found!";
+          m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": found duplicate output key " << Common::podToHex(out.key);
         }
         else {
           checkOutputKey(derivation, out.key, keyIndex, idx, spendKeys, outputs);
@@ -390,7 +390,7 @@ void TransfersConsumer::findMyOutputs(
         if (it == transactions_hash_seen.end()) {
           std::unordered_set<Crypto::PublicKey>::iterator key_it = public_keys_seen.find(key);
           if (key_it != public_keys_seen.end() || std::find(temp_keys.begin(), temp_keys.end(), key) != temp_keys.end()) {
-            m_logger(ERROR, BRIGHT_RED) << "Failed to process outputs of transaction " << Common::podToHex(txHash) << ": duplicate multisignature output key is found";
+            m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": found duplicate multisignature output key " << Common::podToHex(key);
           }
           else {
             checkOutputKey(derivation, key, idx, idx, spendKeys, outputs);
