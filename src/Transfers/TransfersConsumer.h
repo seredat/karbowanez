@@ -78,6 +78,8 @@ private:
   void processTransaction(const TransactionBlockInfo& blockInfo, const ITransactionReader& tx, const PreprocessInfo& info);
   void processOutputs(const TransactionBlockInfo& blockInfo, TransfersSubscription& sub, const ITransactionReader& tx,
     const std::vector<TransactionOutputInformationIn>& outputs, const std::vector<uint32_t>& globalIdxs, bool& contains, bool& updated);
+  void findMyOutputs(const ITransactionReader& tx, const Crypto::SecretKey& viewSecretKey, const std::unordered_set<Crypto::PublicKey>& spendKeys,
+    std::unordered_map<Crypto::PublicKey, std::vector<uint32_t>>& outputs);
   std::error_code createTransfers(const AccountKeys& account, const TransactionBlockInfo& blockInfo, const ITransactionReader& tx,
     const std::vector<uint32_t>& outputs, const std::vector<uint32_t>& globalIdxs, std::vector<TransactionOutputInformationIn>& transfers);
   std::error_code getGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices);
