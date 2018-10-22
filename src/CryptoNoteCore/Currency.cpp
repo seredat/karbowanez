@@ -640,12 +640,23 @@ namespace CryptoNote {
 
 		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() <= static_cast<uint64_t>(N + 1));
 
+		int64_t max_TS, prev_max_TS;
+		prev_max_TS = timestamps[0];
 		for (int64_t i = 1; i <= N; i++) {
-			ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
+			if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
+				max_TS = timestamps[i];
+			}
+			else {
+				max_TS = prev_max_TS + 1;
+			}
+			ST = std::min(6 * T, max_TS - prev_max_TS);
+			prev_max_TS = max_TS;
 			L += ST * i;
-			if (i > N - 3) { sum_3_ST += ST; }
+			if (i > N - 3) {
+				sum_3_ST += ST;
+			}
 		}
-		
+
 		next_D = uint64_t((cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N + 1)) / uint64_t(2 * L);
 		next_D = (next_D * 99ull) / 100ull;
 
@@ -657,8 +668,8 @@ namespace CryptoNote {
 		}
 
 		// minimum limit
-		if (next_D < 100000) {
-			next_D = 100000;
+		if (next_D < 1000000) {
+			next_D = 1000000;
 		}
 
 		return next_D;
