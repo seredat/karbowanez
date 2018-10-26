@@ -265,24 +265,28 @@ namespace CryptoNote {
 	}
 
 	bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size, uint32_t height) const {
-		if (size > fusionTxMaxSize()) {
+		if (height <= CryptoNote::parameters::UPGRADE_HEIGHT_V3 ? size > CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT * 30 / 100 : size > fusionTxMaxSize()) {
+			logger(ERROR) << "Fusion transaction verification failed: size exceeded max allowed size.";
 			return false;
 		}
 
 		if (inputsAmounts.size() < fusionTxMinInputCount()) {
+			logger(ERROR) << "Fusion transaction verification failed: inputs count is less than minimum.";
 			return false;
 		}
 
 		if (inputsAmounts.size() < outputsAmounts.size() * fusionTxMinInOutCountRatio()) {
+			logger(ERROR) << "Fusion transaction verification failed: inputs to outputs count ratio is less than minimum.";
 			return false;
 		}
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 && amount < defaultDustThreshold()) {
-				return false;
-			}
-
+			if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4)
+				if (amount < defaultDustThreshold()) {
+					logger(ERROR) << "Fusion transaction verification failed: amount " << amount << " is less than dust threshold.";
+					return false;
+				}
 			inputAmount += amount;
 		}
 
@@ -291,7 +295,13 @@ namespace CryptoNote {
 		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? defaultDustThreshold() : UINT64_C(0), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
-		return expectedOutputsAmounts == outputsAmounts;
+		bool decompose = expectedOutputsAmounts == outputsAmounts;
+		if (!decompose) {
+			logger(ERROR) << "Fusion transaction verification failed: decomposed output amounts do not match expected.";
+			return false;
+		}
+
+		return true;
 	}
 
 	bool Currency::isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const {
