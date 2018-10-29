@@ -32,6 +32,7 @@
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Serialization/BinarySerializationTools.h"
 #include "CryptoNoteTools.h"
+#include "TransactionExtra.h"
 
 using namespace Logging;
 using namespace Common;
@@ -1238,6 +1239,13 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
       return false;
     }
 
+    // Disable merged mining
+	TransactionExtraMergeMiningTag mmTag;
+    if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag) && bei.bl.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+      logger(ERROR, BRIGHT_RED) << "merge mining tag was found in extra of miner transaction";
+      return false;
+    }
+
     // Always check PoW for alternative blocks
     m_is_in_checkpoint_zone = false;
     // Check the block's hash against the difficulty target for its alt chain
@@ -1991,6 +1999,13 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
 
   if (!checkParentBlockSize(blockData, blockHash)) {
     bvc.m_verification_failed = true;
+    return false;
+  }
+
+  // Disable merged mining
+  TransactionExtraMergeMiningTag mmTag;
+  if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag) && blockData.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    logger(ERROR, BRIGHT_RED) << "merge mining tag was found in extra of miner transaction";
     return false;
   }
 
