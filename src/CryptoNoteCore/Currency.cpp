@@ -642,7 +642,7 @@ namespace CryptoNote {
 	difficulty_type Currency::nextDifficultyV4(uint8_t blockMajorVersion,
 		std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties) const {
 
-		// LWMA-2 difficulty algorithm 
+		// LWMA-2 / LWMA-3 difficulty algorithm 
 		// Copyright (c) 2017-2018 Zawy, MIT License
 		// https://github.com/zawy12/difficulty-algorithms/issues/3
 		// with modifications by Ryo Currency developers
@@ -656,18 +656,29 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		for (int64_t i = 1; i <= N; i++) {
-			if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
-				max_TS = timestamps[i];
+		if (blockMajorVersion < CryptoNote::parameters::BLOCK_MAJOR_VERSION_5) { // LWMA-2
+			for (int64_t i = 1; i <= N; i++) {
+				ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
+				L += ST * i;
+				if (i > N - 3) {
+					sum_3_ST += ST;
+				}
 			}
-			else {
-				max_TS = prev_max_TS + 1;
-			}
-			ST = std::min(6 * T, max_TS - prev_max_TS);
-			prev_max_TS = max_TS;
-			L += ST * i;
-			if (i > N - 3) {
-				sum_3_ST += ST;
+		}
+		else { // LWMA-3
+			for (int64_t i = 1; i <= N; i++) {
+				if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
+					max_TS = timestamps[i];
+				}
+				else {
+					max_TS = prev_max_TS + 1;
+				}
+				ST = std::min(6 * T, max_TS - prev_max_TS);
+				prev_max_TS = max_TS;
+				L += ST * i;
+				if (i > N - 3) {
+					sum_3_ST += ST;
+				}
 			}
 		}
 
