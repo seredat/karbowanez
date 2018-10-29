@@ -656,7 +656,7 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		if (blockMajorVersion < CryptoNote::parameters::BLOCK_MAJOR_VERSION_5) { // LWMA-2
+		if (blockMajorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) { // LWMA-2
 			for (int64_t i = 1; i <= N; i++) {
 				ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
 				L += ST * i;
