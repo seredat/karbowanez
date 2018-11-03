@@ -652,7 +652,7 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		uint32_t lwma3_height = CryptoNote::parameters::DIFFICULTY_LWMA3_HEIGHT;
+		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_V5;
 		
 		for (int64_t i = 1; i <= N; i++) {
 			if (height < lwma3_height) { // LWMA-2
