@@ -652,17 +652,13 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		if (height < CryptoNote::parameters::DIFFICULTY_LWMA3_HEIGHT) { // LWMA-2
-			for (int64_t i = 1; i <= N; i++) {
+		uint32_t lwma3_height = CryptoNote::parameters::DIFFICULTY_LWMA3_HEIGHT;
+		
+		for (int64_t i = 1; i <= N; i++) {
+			if (height < lwma3_height) { // LWMA-2
 				ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
-				L += ST * i;
-				if (i > N - 3) {
-					sum_3_ST += ST;
-				}
 			}
-		}
-		else { // LWMA-3
-			for (int64_t i = 1; i <= N; i++) {
+			else { // LWMA-3
 				if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
 					max_TS = timestamps[i];
 				}
@@ -671,10 +667,10 @@ namespace CryptoNote {
 				}
 				ST = std::min(6 * T, max_TS - prev_max_TS);
 				prev_max_TS = max_TS;
-				L += ST * i;
-				if (i > N - 3) {
-					sum_3_ST += ST;
-				}
+			}
+			L += ST * i;
+			if (i > N - 3) {
+				sum_3_ST += ST;
 			}
 		}
 
@@ -689,8 +685,8 @@ namespace CryptoNote {
 		}
 
 		// minimum limit
-		if (next_D < 1000000) {
-			next_D = 1000000;
+		if (next_D < 100000) {
+			next_D = 100000;
 		}
 
 		return next_D;
