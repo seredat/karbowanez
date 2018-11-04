@@ -863,7 +863,7 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
       return false;
     }
 
-    logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
+    logger(WARNING) << "Poisson check triggered by reorg size of " << alt_chain_size;
 
     uint64_t failed_checks = 0, i = 1;
     for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
@@ -904,25 +904,30 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
   }
 
   // Compare transactions in proposed alt chain vs current main chain and reject if some transaction is missing in the alt chain
-  std::vector<Crypto::Hash> mainChainTxHashes, altChainTxHashes;
-  for (size_t i = m_blocks.size() - 1; i >= split_height; i--) {
-    Block b = m_blocks[i].bl;
-    std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(mainChainTxHashes, mainChainTxHashes.end()));
-  }
-  for (auto alt_ch_iter = alt_chain.begin(); alt_ch_iter != alt_chain.end(); alt_ch_iter++) {
-    auto ch_ent = *alt_ch_iter;
-    Block b = ch_ent->second.bl;
-    std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(altChainTxHashes, altChainTxHashes.end()));
-  }
-  for (auto main_ch_it = mainChainTxHashes.begin(); main_ch_it != mainChainTxHashes.end(); main_ch_it++) {
-    auto tx_hash = *main_ch_it;
-    if (std::find(altChainTxHashes.begin(), altChainTxHashes.end(), tx_hash) == altChainTxHashes.end()) {
-      logger(ERROR, BRIGHT_RED) << "Attempting to switch to an alternate chain, but it lacks transaction " << Common::podToHex(tx_hash) << " from main chain, rejected";
-      mainChainTxHashes.clear();
-      mainChainTxHashes.shrink_to_fit();
-      altChainTxHashes.clear();
-      altChainTxHashes.shrink_to_fit();
-      return false;
+  // Comparison is triggered when reogranization is longer than usual 2 blocks
+  if (alt_chain.size() > 3)
+  {
+    logger(WARNING) << "Transactions comparison triggered by reorganization of size " << alt_chain.size() << ".";
+    std::vector<Crypto::Hash> mainChainTxHashes, altChainTxHashes;
+    for (size_t i = m_blocks.size() - 1; i >= split_height; i--) {
+      Block b = m_blocks[i].bl;
+      std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(mainChainTxHashes, mainChainTxHashes.end()));
+    }
+    for (auto alt_ch_iter = alt_chain.begin(); alt_ch_iter != alt_chain.end(); alt_ch_iter++) {
+      auto ch_ent = *alt_ch_iter;
+      Block b = ch_ent->second.bl;
+      std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(altChainTxHashes, altChainTxHashes.end()));
+    }
+    for (auto main_ch_it = mainChainTxHashes.begin(); main_ch_it != mainChainTxHashes.end(); main_ch_it++) {
+      auto tx_hash = *main_ch_it;
+      if (std::find(altChainTxHashes.begin(), altChainTxHashes.end(), tx_hash) == altChainTxHashes.end()) {
+        logger(ERROR, BRIGHT_RED) << "Attempting to switch to an alternate chain, but it lacks transaction " << Common::podToHex(tx_hash) << " from main chain, rejected";
+        mainChainTxHashes.clear();
+        mainChainTxHashes.shrink_to_fit();
+        altChainTxHashes.clear();
+        altChainTxHashes.shrink_to_fit();
+        return false;
+      }
     }
   }
 
