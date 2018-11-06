@@ -18,6 +18,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -27,7 +28,6 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
-#include <fstream>
 
 #include "Checkpoints.h"
 #include "Common/StringTools.h"
@@ -140,6 +140,8 @@ bool Checkpoints::load_checkpoints_from_dns()
 {
   std::string domain("checkpoints.karbo.org");
   std::vector<std::string>records;
+
+  logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
 
   if (!Common::fetch_dns_txt(domain, records)) {
     logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " << domain;

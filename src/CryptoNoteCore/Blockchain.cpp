@@ -510,7 +510,7 @@ bool Blockchain::init(const std::string& config_folder, bool load_existing) {
     return false;
   }
 
-  update_next_comulative_size_limit();
+  update_next_cumulative_size_limit();
 
   uint64_t timestamp_diff = time(NULL) - m_blocks.back().bl.timestamp;
   if (!m_blocks.back().bl.timestamp) {
@@ -863,7 +863,7 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
       return false;
     }
 
-    logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
+    logger(WARNING) << "Poisson check triggered by reorg size of " << alt_chain_size;
 
     uint64_t failed_checks = 0, i = 1;
     for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
@@ -1166,6 +1166,11 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     bvc.m_verification_failed = true;
     return false;
   }
+
+  // get fresh checkpoints from DNS - the best we have right now
+#ifndef __ANDROID__
+  m_checkpoints.load_checkpoints_from_dns();
+#endif
 
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
     logger(TRACE) << "Block with id: " << id << std::endl <<
@@ -1914,7 +1919,7 @@ bool Blockchain::getBlockCumulativeSize(const Block& block, size_t& cumulativeSi
 }
 
 // Precondition: m_blockchain_lock is locked.
-bool Blockchain::update_next_comulative_size_limit() {
+bool Blockchain::update_next_cumulative_size_limit() {
   uint8_t nextBlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(m_blocks.size()));
   size_t nextBlockGrantedFullRewardZone = m_currency.blockGrantedFullRewardZoneByBlockVersion(nextBlockMajorVersion);
 
@@ -1956,6 +1961,9 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     //check that block refers to chain tail
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
+      logger(INFO) << "chain switching or wrong block: block " 
+                   << Common::podToHex(id) << " doesn't refer to chain tail " << Common::podToHex(getTailId())
+                   << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
       bvc.m_added_to_main_chain = false;
       add_result = handle_alternative_block(bl, id, bvc);
     } else {
@@ -2157,7 +2165,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   m_upgradeDetectorV2.blockPushed();
   m_upgradeDetectorV3.blockPushed();
   m_upgradeDetectorV4.blockPushed();
-  update_next_comulative_size_limit();
+  update_next_cumulative_size_limit();
 
   return true;
 }
