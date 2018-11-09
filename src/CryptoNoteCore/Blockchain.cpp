@@ -1961,7 +1961,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     //check that block refers to chain tail
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
-      logger(INFO) << "handling alternative block " << Common::podToHex(id)
+      logger(DEBUGGING) << "handling alternative block " << Common::podToHex(id)
                    << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
                    << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
                    << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);

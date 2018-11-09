@@ -118,7 +118,7 @@ bool Checkpoints::is_alternative_block_allowed(uint32_t  blockchain_height,
 
   if (block_height < blockchain_height - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW)
   {
-    logger(Logging::ERROR, Logging::BRIGHT_WHITE)
+    logger(Logging::WARNING, Logging::WHITE)
       << "An attempt of too deep reorganization: "
       << blockchain_height - block_height << ", BLOCK REJECTED";
 
@@ -151,7 +151,7 @@ bool Checkpoints::load_checkpoints_from_dns()
   std::string domain("checkpoints.karbo.org");
   std::vector<std::string>records;
 
-  logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
+  logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;
 
   if (!Common::fetch_dns_txt(domain, records)) {
     logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " << domain;
