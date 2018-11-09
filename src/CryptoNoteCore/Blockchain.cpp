@@ -32,6 +32,7 @@
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Serialization/BinarySerializationTools.h"
 #include "CryptoNoteTools.h"
+#include "TransactionExtra.h"
 
 using namespace Logging;
 using namespace Common;
@@ -509,7 +510,7 @@ bool Blockchain::init(const std::string& config_folder, bool load_existing) {
     return false;
   }
 
-  update_next_comulative_size_limit();
+  update_next_cumulative_size_limit();
 
   uint64_t timestamp_diff = time(NULL) - m_blocks.back().bl.timestamp;
   if (!m_blocks.back().bl.timestamp) {
@@ -714,7 +715,7 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
     timestamps.push_back(m_blocks[offset].bl.timestamp);
     cumulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
   }
-  return m_currency.nextDifficulty(BlockMajorVersion, timestamps, cumulative_difficulties);
+  return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
 difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
@@ -843,63 +844,86 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
   // It doesn't need to be very strict as it synergises with the median check
   if (alt_chain.size() >= CryptoNote::parameters::POISSON_CHECK_TRIGGER)
   {
-	  uint64_t alt_chain_size = alt_chain.size();
-	  uint64_t high_timestamp = alt_chain.back()->second.bl.timestamp;
-	  Crypto::Hash low_block = alt_chain.front()->second.bl.previousBlockHash;
+    uint64_t alt_chain_size = alt_chain.size();
+    uint64_t high_timestamp = alt_chain.back()->second.bl.timestamp;
+    Crypto::Hash low_block = alt_chain.front()->second.bl.previousBlockHash;
 
-	  //Make sure that the high_timestamp is really highest
-	  for (const blocks_ext_by_hash::iterator &it : alt_chain)
-	  {
-		  if (high_timestamp < it->second.bl.timestamp)
-			  high_timestamp = it->second.bl.timestamp;
-	  }
+    //Make sure that the high_timestamp is really highest
+    for (const blocks_ext_by_hash::iterator &it : alt_chain)
+    {
+      if (high_timestamp < it->second.bl.timestamp)
+        high_timestamp = it->second.bl.timestamp;
+    }
 
-	  uint64_t block_ftl = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
-	  // This would fail later anyway
-	  if (high_timestamp > get_adjusted_time() + block_ftl)
-	  {
-		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! Timestamp: " << high_timestamp << ", limit: " << get_adjusted_time() + block_ftl;
-		  return false;
-	  }
+    uint64_t block_ftl = CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
+    // This would fail later anyway
+    if (high_timestamp > get_adjusted_time() + block_ftl)
+    {
+      logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed FTL check! Timestamp: " << high_timestamp << ", limit: " << get_adjusted_time() + block_ftl;
+      return false;
+    }
 
-	  logger(INFO) << "Poisson check triggered by reorg size of " << alt_chain_size;
+    logger(WARNING) << "Poisson check triggered by reorg size of " << alt_chain_size;
 
-	  uint64_t failed_checks = 0, i = 1;
-	  for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
-	  {
-		  // This means we reached the genesis block
-		  if (low_block == NULL_HASH)
-			  break;
+    uint64_t failed_checks = 0, i = 1;
+    for (; i <= CryptoNote::parameters::POISSON_CHECK_DEPTH; i++)
+    {
+      // This means we reached the genesis block
+      if (low_block == NULL_HASH)
+        break;
 
-		  Block blk;
-		  getBlockByHash(low_block, blk);
+      Block blk;
+      getBlockByHash(low_block, blk);
 
-		  uint64_t low_timestamp = blk.timestamp;
-		  low_block = blk.previousBlockHash;
+      uint64_t low_timestamp = blk.timestamp;
+      low_block = blk.previousBlockHash;
 
-		  if (low_timestamp >= high_timestamp)
-		  {
-			  logger(INFO) << "Skipping check at depth " << i << " due to tampered timestamp on main chain.";
-			  failed_checks++;
-			  continue;
-		  }
+      if (low_timestamp >= high_timestamp)
+      {
+        logger(INFO) << "Skipping check at depth " << i << " due to tampered timestamp on main chain.";
+        failed_checks++;
+        continue;
+      }
 
-		  double lam = double(high_timestamp - low_timestamp) / double(CryptoNote::parameters::DIFFICULTY_TARGET);
-		  if (calc_poisson_ln(lam, alt_chain_size + i) < CryptoNote::parameters::POISSON_LOG_P_REJECT)
-		  {
-			  logger(INFO) << "Poisson check at depth " << i << " failed! delta_t: " << (high_timestamp - low_timestamp) << " size: " << alt_chain_size + i;
-			  failed_checks++;
-		  }
-	  }
+      double lam = double(high_timestamp - low_timestamp) / double(CryptoNote::parameters::DIFFICULTY_TARGET);
+      if (calc_poisson_ln(lam, alt_chain_size + i) < CryptoNote::parameters::POISSON_LOG_P_REJECT)
+      {
+        logger(INFO) << "Poisson check at depth " << i << " failed! delta_t: " << (high_timestamp - low_timestamp) << " size: " << alt_chain_size + i;
+        failed_checks++;
+      }
+    }
 
-	  i--; //Convert to number of checks
-	  logger(INFO) << "Poisson check result " << failed_checks << " fails out of " << i;
+    i--; //Convert to number of checks
+    logger(INFO) << "Poisson check result " << failed_checks << " fails out of " << i;
 
-	  if (failed_checks > i / 2)
-	  {
-		  logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed Poisson check! " << failed_checks << " fails out of " << i << " alt_chain_size: " << alt_chain_size;
-		  return false;
-	  }
+    if (failed_checks > i / 2)
+    {
+      logger(ERROR, BRIGHT_RED) << "Attempting to move to an alternate chain, but it failed Poisson check! " << failed_checks << " fails out of " << i << " alt_chain_size: " << alt_chain_size;
+      return false;
+    }
+  }
+
+  // Compare transactions in proposed alt chain vs current main chain and reject if some transaction is missing in the alt chain
+  std::vector<Crypto::Hash> mainChainTxHashes, altChainTxHashes;
+  for (size_t i = m_blocks.size() - 1; i >= split_height; i--) {
+    Block b = m_blocks[i].bl;
+    std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(mainChainTxHashes, mainChainTxHashes.end()));
+  }
+  for (auto alt_ch_iter = alt_chain.begin(); alt_ch_iter != alt_chain.end(); alt_ch_iter++) {
+    auto ch_ent = *alt_ch_iter;
+    Block b = ch_ent->second.bl;
+    std::copy(b.transactionHashes.begin(), b.transactionHashes.end(), std::inserter(altChainTxHashes, altChainTxHashes.end()));
+  }
+  for (auto main_ch_it = mainChainTxHashes.begin(); main_ch_it != mainChainTxHashes.end(); main_ch_it++) {
+    auto tx_hash = *main_ch_it;
+    if (std::find(altChainTxHashes.begin(), altChainTxHashes.end(), tx_hash) == altChainTxHashes.end()) {
+      logger(ERROR, BRIGHT_RED) << "Attempting to switch to an alternate chain, but it lacks transaction " << Common::podToHex(tx_hash) << " from main chain, rejected";
+      mainChainTxHashes.clear();
+      mainChainTxHashes.shrink_to_fit();
+      altChainTxHashes.clear();
+      altChainTxHashes.shrink_to_fit();
+      return false;
+    }
   }
 
   //disconnecting old chain
@@ -1016,7 +1040,7 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
     }
   }
 
-  return m_currency.nextDifficulty(BlockMajorVersion, timestamps, cumulative_difficulties);
+  return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
 bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) {
@@ -1143,6 +1167,11 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     return false;
   }
 
+  // get fresh checkpoints from DNS - the best we have right now
+#ifndef __ANDROID__
+  m_checkpoints.load_checkpoints_from_dns();
+#endif
+
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
     logger(TRACE) << "Block with id: " << id << std::endl <<
       " can't be accepted for alternative chain, block height: " << block_height << std::endl <<
@@ -1226,6 +1255,13 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
       logger(ERROR, BRIGHT_RED) <<
         "CHECKPOINT VALIDATION FAILED";
       bvc.m_verification_failed = true;
+      return false;
+    }
+
+    // Disable merged mining
+    TransactionExtraMergeMiningTag mmTag;
+    if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag) && bei.height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
       return false;
     }
 
@@ -1883,7 +1919,7 @@ bool Blockchain::getBlockCumulativeSize(const Block& block, size_t& cumulativeSi
 }
 
 // Precondition: m_blockchain_lock is locked.
-bool Blockchain::update_next_comulative_size_limit() {
+bool Blockchain::update_next_cumulative_size_limit() {
   uint8_t nextBlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(m_blocks.size()));
   size_t nextBlockGrantedFullRewardZone = m_currency.blockGrantedFullRewardZoneByBlockVersion(nextBlockMajorVersion);
 
@@ -1925,6 +1961,10 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     //check that block refers to chain tail
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
+      logger(DEBUGGING) << "handling alternative block " << Common::podToHex(id)
+                   << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
+                   << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
+                   << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
       bvc.m_added_to_main_chain = false;
       add_result = handle_alternative_block(bl, id, bvc);
     } else {
@@ -1983,6 +2023,16 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   if (!checkParentBlockSize(blockData, blockHash)) {
     bvc.m_verification_failed = true;
     return false;
+  }
+
+  // Disable merged mining
+  uint32_t height = 0;
+  TransactionExtraMergeMiningTag mmTag;
+  if (m_blockIndex.getBlockHeight(blockHash, height)) {
+    if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag) && height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
+      return false;
+    }
   }
 
   if (blockData.previousBlockHash != getTailId()) {
@@ -2116,7 +2166,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   m_upgradeDetectorV2.blockPushed();
   m_upgradeDetectorV3.blockPushed();
   m_upgradeDetectorV4.blockPushed();
-  update_next_comulative_size_limit();
+  update_next_cumulative_size_limit();
 
   return true;
 }

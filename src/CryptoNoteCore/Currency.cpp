@@ -451,10 +451,10 @@ namespace CryptoNote {
 		return ret;
 	}
 
-	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
+	difficulty_type Currency::nextDifficulty(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
-			return nextDifficultyV4(blockMajorVersion, timestamps, cumulativeDifficulties);
+			return nextDifficultyV4(height, blockMajorVersion, timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
 			return nextDifficultyV3(timestamps, cumulativeDifficulties);
@@ -635,10 +635,10 @@ namespace CryptoNote {
 		return v < lo ? lo : v > hi ? hi : v;
 	}
 
-	difficulty_type Currency::nextDifficultyV4(uint8_t blockMajorVersion,
+	difficulty_type Currency::nextDifficultyV4(uint32_t height, uint8_t blockMajorVersion,
 		std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties) const {
 
-		// LWMA-2 difficulty algorithm 
+		// LWMA-2 / LWMA-3 difficulty algorithm 
 		// Copyright (c) 2017-2018 Zawy, MIT License
 		// https://github.com/zawy12/difficulty-algorithms/issues/3
 		// with modifications by Ryo Currency developers
@@ -652,15 +652,22 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
+		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_V5;
+		
 		for (int64_t i = 1; i <= N; i++) {
-			if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
-				max_TS = timestamps[i];
+			if (height < lwma3_height) { // LWMA-2
+				ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
 			}
-			else {
-				max_TS = prev_max_TS + 1;
+			else { // LWMA-3
+				if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
+					max_TS = timestamps[i];
+				}
+				else {
+					max_TS = prev_max_TS + 1;
+				}
+				ST = std::min(6 * T, max_TS - prev_max_TS);
+				prev_max_TS = max_TS;
 			}
-			ST = std::min(6 * T, max_TS - prev_max_TS);
-			prev_max_TS = max_TS;
 			L += ST * i;
 			if (i > N - 3) {
 				sum_3_ST += ST;
@@ -678,8 +685,8 @@ namespace CryptoNote {
 		}
 
 		// minimum limit
-		if (next_D < 1000000) {
-			next_D = 1000000;
+		if (next_D < 100000) {
+			next_D = 100000;
 		}
 
 		return next_D;
