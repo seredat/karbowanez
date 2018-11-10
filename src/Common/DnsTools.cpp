@@ -92,7 +92,7 @@ namespace Common {
 		res_init();
 		ns_msg nsMsg;
 		int response;
-		unsigned char query_buffer[1024];
+		unsigned char query_buffer[4096];
 		{
 			ns_type type = ns_t_txt;
 
