@@ -115,7 +115,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
 
   std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
 
-  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, m_currency.defaultDustThreshold(), context->selectedTransfers);
+  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
   throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
@@ -370,33 +370,37 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
 
   std::vector<size_t> unusedTransfers;
   std::vector<size_t> unusedDust;
+  std::vector<size_t> unusedUnmixable;
   
   std::vector<TransactionOutputInformation> outputs;
   m_transferDetails.getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto& out = outputs[i];
-    if (!m_transactionsCache.isUsed(out) && is_valid_decomposed_amount(out.amount)) {
-      if (dust < out.amount) {
-        unusedTransfers.push_back(i);
-      }
-      else {
-        unusedDust.push_back(i);
+    if (!m_transactionsCache.isUsed(out)) {
+      if (is_valid_decomposed_amount(out.amount)) {
+        if (dust < out.amount) {
+          unusedTransfers.push_back(i);
+        } else {
+          unusedDust.push_back(i);
+        }
+      } else {
+        unusedUnmixable.push_back(i);
       }
     }
   }
 
   std::default_random_engine randomGenerator(Crypto::rand<std::default_random_engine::result_type>());
-  bool selectDust = addDust && !unusedDust.empty();
+  bool selectOneUnmixable = addDust && !unusedUnmixable.empty();
   uint64_t foundMoney = 0;
 
-  while (foundMoney < neededMoney && (!unusedTransfers.empty() || !unusedDust.empty())) {
+  while (foundMoney < neededMoney && (!unusedTransfers.empty() || !unusedDust.empty() || !unusedUnmixable.empty())) {
     size_t idx;
-    if (selectDust) {
-      idx = !unusedDust.empty() ? popRandomValue(randomGenerator, unusedDust) : popRandomValue(randomGenerator, unusedTransfers);
-    }
-    else {
-      idx = popRandomValue(randomGenerator, unusedTransfers);
+    if (selectOneUnmixable) {
+      idx = popRandomValue(randomGenerator, unusedUnmixable);
+	  selectOneUnmixable = false;
+    } else {
+      idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
     }
     selectedTransfers.push_back(outputs[idx]);
     foundMoney += outputs[idx].amount;
@@ -425,7 +429,7 @@ uint64_t WalletTransactionSender::selectDustTransfersToSend(uint64_t neededMoney
 				}
 				else {
 					unusedDust.push_back(i);
-				}			
+				}
 			}
 			else {
 				unusedUnmixable.push_back(i);
