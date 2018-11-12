@@ -108,9 +108,13 @@ namespace Common {
 		map<ns_type, function<void(const ns_rr &rr)>> callbacks;
 
 		callbacks[ns_t_txt] = [&nsMsg, &records](const ns_rr &rr) -> void {
-			std::stringstream stream;
-			stream << ns_rr_rdata(rr) + 1 << endl;
-			records.push_back(stream.str());
+			int txt_len = *(unsigned char *) ns_rr_rdata(rr);
+			char txt[256];
+			memset(txt, 0, 256);
+			if (txt_len <= 255){
+				memcpy(txt, ns_rr_rdata(rr) + 1, txt_len);
+				records.push_back(txt);
+			}
 		};
 
 		for (int x = 0; x < ns_msg_count(nsMsg, ns_s_an); x++) {
