@@ -365,7 +365,7 @@ T popRandomValue(URNG& randomGenerator, std::vector<T>& vec) {
 
 bool compareTransactionOutputInformationByAmount(const TransactionOutputInformation &a, const TransactionOutputInformation &b)
 {
-  return a.amount > b.amount;
+  return a.amount < b.amount;
 }
 
 }
