@@ -363,8 +363,12 @@ T popRandomValue(URNG& randomGenerator, std::vector<T>& vec) {
   return res;
 }
 
+bool compareTransactionOutputInformationByAmount(const TransactionOutputInformation &a, const TransactionOutputInformation &b)
+{
+  return a.amount > b.amount;
 }
 
+}
 
 uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) {
 
@@ -374,6 +378,9 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
   
   std::vector<TransactionOutputInformation> outputs;
   m_transferDetails.getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
+
+  // minimize the number of outputs, by only picking the N largest outputs that can cover the requested amount
+  std::sort(outputs.begin(), outputs.end(), compareTransactionOutputInformationByAmount);
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto& out = outputs[i];
@@ -400,7 +407,14 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
       idx = popRandomValue(randomGenerator, unusedUnmixable);
 	  selectOneUnmixable = false;
     } else {
-      idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      //idx = !unusedTransfers.empty() ? popRandomValue(randomGenerator, unusedTransfers) : popRandomValue(randomGenerator, unusedDust);
+      // minimize the number of outputs, by only picking the N largest outputs that can cover the requested amount
+      if (!unusedTransfers.empty()) {
+        idx = unusedTransfers.back();
+        unusedTransfers.pop_back();
+      } else {
+        idx = popRandomValue(randomGenerator, unusedDust);
+      }
     }
     selectedTransfers.push_back(outputs[idx]);
     foundMoney += outputs[idx].amount;
