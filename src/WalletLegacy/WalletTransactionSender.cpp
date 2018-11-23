@@ -156,6 +156,34 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendDustRequest(Tran
 	return doSendTransaction(context, events);
 }
 
+std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+	const std::vector<WalletLegacyTransfer>& transfers, const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+
+	using namespace CryptoNote;
+
+	throwIf(transfers.empty(), error::ZERO_DESTINATION);
+	validateTransfersAddresses(transfers);
+	uint64_t neededMoney = countNeededMoney(fee, transfers);
+
+	std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
+
+	for (auto& out : fusionInputs) {
+		context->foundMoney += out.amount;
+	}
+	throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
+	context->selectedTransfers = fusionInputs;
+
+	transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
+	context->transactionId = transactionId;
+	context->mixIn = mixIn;
+
+	if (context->mixIn) {
+		std::shared_ptr<WalletRequest> request = makeGetRandomOutsRequest(context);
+		return request;
+	}
+
+	return doSendTransaction(context, events);
+}
 
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeGetRandomOutsRequest(std::shared_ptr<SendTransactionContext> context) {
   uint64_t outsCount = context->mixIn + 1;// add one to make possible (if need) to skip real output key
