@@ -54,12 +54,19 @@ const size_t   CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT = CRYPTONOTE_BL
 const size_t   CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE        = 600;
 const size_t   CRYPTONOTE_DISPLAY_DECIMAL_POINT              = 12;
 
-const uint64_t MINIMUM_FEE                                   = UINT64_C(100000000000);
+const uint64_t MINIMUM_FEE_V1                                = UINT64_C(100000000);
+const uint64_t MINIMUM_FEE_V2                                = UINT64_C(100000000000);
+const uint32_t MINIMUM_FEE_V2_HEIGHT                         = 216394;
+const uint64_t MINIMUM_FEE                                   = MINIMUM_FEE_V2;
 const uint64_t MAXIMUM_FEE                                   = UINT64_C(100000000000);
 
-const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(0);
+const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(100000000);
 const uint64_t MIN_TX_MIXIN_SIZE                             = 2;
-const uint64_t MAX_TX_MIXIN_SIZE                             = 20;
+const uint64_t MAX_TX_MIXIN_SIZE_V1                          = 50;
+const uint64_t MAX_TX_MIXIN_SIZE_V2                          = 20;
+const uint64_t MAX_TX_MIXIN_SIZE                             = MAX_TX_MIXIN_SIZE_V2;
+const uint32_t MIN_TX_MIXIN_V1_HEIGHT                        = 216245;
+const uint32_t MIN_TX_MIXIN_V2_HEIGHT                        = 216394;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
 
 const uint64_t EXPECTED_NUMBER_OF_BLOCKS_PER_DAY             = 24 * 60 * 60 / DIFFICULTY_TARGET;
@@ -92,6 +99,7 @@ const size_t   FUSION_TX_MIN_IN_OUT_COUNT_RATIO              = 4;
 const uint32_t UPGRADE_HEIGHT_V2                             = 60000;
 const uint32_t UPGRADE_HEIGHT_V3                             = 216000;
 const uint32_t UPGRADE_HEIGHT_V4                             = 266000;
+const uint32_t UPGRADE_HEIGHT_V5                             = 300000;
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90; // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -152,7 +160,8 @@ const char* const SEED_NODES[] = {
   "seed.karbo.org:32347",
   "seed.karbo.io:32347",
   "95.46.98.64:32347",
-  "52.21.253.162:32347",
+  "108.61.198.115:32347",
+  "45.32.232.11:32347",
   "46.149.182.151:32347"
 };
 
@@ -183,7 +192,12 @@ const std::initializer_list<CheckpointData> CHECKPOINTS = {
   {217000,	"1a1b6866c5a725070cd7afb0ad93bd879e1619211248903a990a162ac0c58400" },
   {231000,	"a88c3b29ad95a7a7e06ab71ac668604889fd5710365d9687857b0c7f143543a4" },
   {256700,	"0dd0f2ff1a01ab01d92f9be4732775e8b461fdd037dfe258d53b690f7c10df6f" },
-  {262662,	"05a363ef6d0d552ec181ef0b2b0f22878fe629ae492f8f251ca30df1e47e7eb4" }
+  {262662,	"05a363ef6d0d552ec181ef0b2b0f22878fe629ae492f8f251ca30df1e47e7eb4" },
+  {266062,	"316a263ea3d7dc8eac0f0480952db806f798a706d81508819403ccbe20778ae1" },
+  {269269,	"81ac921c64b11a8a724e4eb1c9f6e9556844f880e03173825b93ff20f65489d8" },
+  {278340,	"efc338ccce81b4d7c0e57ed27ac8a8daa61182eada5802f82de154e341057397" },
+  {285642,	"b9944f28c173e4b40b54cc9a74a14dddf4029a4e6be11e22a1833132e2bf3126" },
+  {297090,	"0eb8b7bea247fcd9da2160855d6779b1e4f378a30a34c898e481923772b6e004" }
 };
 
 } // CryptoNote

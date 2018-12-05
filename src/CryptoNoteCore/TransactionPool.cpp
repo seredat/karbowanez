@@ -143,15 +143,6 @@ namespace CryptoNote {
 
     const uint64_t fee = inputs_amount - outputs_amount;
     bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, m_core.get_current_blockchain_height());
-    if (!keptByBlock && !isFusionTransaction && (m_core.getCurrentBlockMajorVersion() < BLOCK_MAJOR_VERSION_4
-		? fee < m_currency.minimumFee() : fee < m_core.getMinimalFee())) {
-		logger(INFO) << "transaction fee is not enough: " << m_currency.formatAmount(fee) <<
-		", minimum fee: " << m_currency.formatAmount(m_core.getCurrentBlockMajorVersion() < BLOCK_MAJOR_VERSION_4 ?
-		m_currency.minimumFee() : m_core.getMinimalFee());
-      tvc.m_verification_failed = true;
-      tvc.m_tx_fee_too_small = true;
-      return false;
-    }
 
     //check key images for transaction if it is not kept by block
     if (!keptByBlock) {
@@ -217,9 +208,8 @@ namespace CryptoNote {
         logger(ERROR, BRIGHT_RED) << "transaction already exists at inserting in memory pool";
         return false;
       }
-      m_paymentIdIndex.add(txd.tx);
+      m_paymentIdIndex.add(tx);
       m_timestampIndex.add(txd.receiveTime, txd.id);
-
     }
 
     tvc.m_added_to_pool = true;
@@ -705,7 +695,9 @@ namespace CryptoNote {
 
   bool tx_memory_pool::getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionIds) {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
-    return m_paymentIdIndex.find(paymentId, transactionIds);
+    //return m_paymentIdIndex.find(paymentId, transactionIds);
+	transactionIds = m_paymentIdIndex.find(paymentId);
+	return true;
   }
 
   bool tx_memory_pool::getTransactionIdsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Crypto::Hash>& hashes, uint64_t& transactionsNumberWithinTimestamps) {

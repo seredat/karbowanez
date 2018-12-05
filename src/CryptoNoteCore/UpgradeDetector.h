@@ -138,14 +138,14 @@ namespace CryptoNote {
             char upgradeTimeStr[40];
             strftime(upgradeTimeStr, 40, "%H:%M:%S %Y.%m.%d", upgradeTime);
 
-            logger(Logging::TRACE, Logging::BRIGHT_GREEN) << "###### UPGRADE is going to happen after block index " << upgradeHeight() << " at about " <<
+            logger(Logging::INFO, Logging::BRIGHT_GREEN) << "###### UPGRADE is going to happen after block index " << upgradeHeight() << " at about " <<
               upgradeTimeStr << " (in " << Common::timeIntervalToString(interval) << ")! Current last block index " << (m_blockchain.size() - 1) <<
               ", hash " << get_block_hash(m_blockchain.back().bl);
           }
         } else if (m_blockchain.size() == upgradeHeight() + 1) {
           assert(m_blockchain.back().bl.majorVersion == m_targetVersion - 1);
 
-          logger(Logging::TRACE, Logging::BRIGHT_GREEN) << "###### UPGRADE has happened! Starting from block index " << (upgradeHeight() + 1) <<
+          logger(Logging::INFO, Logging::BRIGHT_GREEN) << "###### UPGRADE has happened! Starting from block index " << (upgradeHeight() + 1) <<
             " blocks with major version below " << static_cast<int>(m_targetVersion) << " will be rejected!";
         } else {
           assert(m_blockchain.back().bl.majorVersion == m_targetVersion);
@@ -155,7 +155,7 @@ namespace CryptoNote {
         uint32_t lastBlockHeight = m_blockchain.size() - 1;
         if (isVotingComplete(lastBlockHeight)) {
           m_votingCompleteHeight = lastBlockHeight;
-          logger(Logging::TRACE, Logging::BRIGHT_GREEN) << "###### UPGRADE voting complete at block index " << m_votingCompleteHeight <<
+          logger(Logging::INFO, Logging::BRIGHT_GREEN) << "###### UPGRADE voting complete at block index " << m_votingCompleteHeight <<
             "! UPGRADE is going to happen after block index " << upgradeHeight() << "!";
         }
       }
@@ -166,7 +166,7 @@ namespace CryptoNote {
         assert(m_currency.upgradeHeight(m_targetVersion) == UNDEF_HEIGHT);
 
         if (m_blockchain.size() == m_votingCompleteHeight) {
-          logger(Logging::TRACE, Logging::BRIGHT_YELLOW) << "###### UPGRADE after block index " << upgradeHeight() << " has been canceled!";
+          logger(Logging::INFO, Logging::BRIGHT_YELLOW) << "###### UPGRADE after block index " << upgradeHeight() << " has been canceled!";
           m_votingCompleteHeight = UNDEF_HEIGHT;
         } else {
           assert(m_blockchain.size() > m_votingCompleteHeight);

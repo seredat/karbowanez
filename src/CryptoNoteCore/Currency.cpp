@@ -209,7 +209,7 @@ namespace CryptoNote {
 		}
 
 		std::vector<uint64_t> outAmounts;
-		decompose_amount_into_digits(blockReward, m_defaultDustThreshold,
+		decompose_amount_into_digits(blockReward, UINT64_C(0),
 			[&outAmounts](uint64_t a_chunk) { outAmounts.push_back(a_chunk); },
 			[&outAmounts](uint64_t a_dust) { outAmounts.push_back(a_dust); });
 
@@ -265,33 +265,43 @@ namespace CryptoNote {
 	}
 
 	bool Currency::isFusionTransaction(const std::vector<uint64_t>& inputsAmounts, const std::vector<uint64_t>& outputsAmounts, size_t size, uint32_t height) const {
-		if (size > fusionTxMaxSize()) {
+		if (height <= CryptoNote::parameters::UPGRADE_HEIGHT_V3 ? size > CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT * 30 / 100 : size > fusionTxMaxSize()) {
+			logger(ERROR) << "Fusion transaction verification failed: size exceeded max allowed size.";
 			return false;
 		}
 
 		if (inputsAmounts.size() < fusionTxMinInputCount()) {
+			logger(ERROR) << "Fusion transaction verification failed: inputs count is less than minimum.";
 			return false;
 		}
 
 		if (inputsAmounts.size() < outputsAmounts.size() * fusionTxMinInOutCountRatio()) {
+			logger(ERROR) << "Fusion transaction verification failed: inputs to outputs count ratio is less than minimum.";
 			return false;
 		}
 
 		uint64_t inputAmount = 0;
 		for (auto amount : inputsAmounts) {
-			if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
-				return false;
-			}
-
+			if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4)
+				if (amount < defaultDustThreshold()) {
+					logger(ERROR) << "Fusion transaction verification failed: amount " << amount << " is less than dust threshold.";
+					return false;
+				}
 			inputAmount += amount;
 		}
 
 		std::vector<uint64_t> expectedOutputsAmounts;
 		expectedOutputsAmounts.reserve(outputsAmounts.size());
-		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold(), expectedOutputsAmounts);
+		decomposeAmount(inputAmount, height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? defaultDustThreshold() : UINT64_C(0), expectedOutputsAmounts);
 		std::sort(expectedOutputsAmounts.begin(), expectedOutputsAmounts.end());
 
-		return expectedOutputsAmounts == outputsAmounts;
+		bool decompose = expectedOutputsAmounts == outputsAmounts;
+		if (!decompose) {
+			logger(ERROR) << "Fusion transaction verification failed: decomposed output amounts do not match expected.";
+			return false;
+		}
+
+		return true;
 	}
 
 	bool Currency::isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const {
@@ -320,7 +330,7 @@ namespace CryptoNote {
 			return false;
 		}
 
-		if (amount < (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 ? UINT64_C(100000000) : defaultDustThreshold())) {
+		if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V4 && amount < defaultDustThreshold()) {
 			return false;
 		}
 
@@ -441,10 +451,10 @@ namespace CryptoNote {
 		return ret;
 	}
 
-	difficulty_type Currency::nextDifficulty(uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
+	difficulty_type Currency::nextDifficulty(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
-			return nextDifficultyV4(blockMajorVersion, timestamps, cumulativeDifficulties);
+			return nextDifficultyV4(height, blockMajorVersion, timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
 			return nextDifficultyV3(timestamps, cumulativeDifficulties);
@@ -625,10 +635,10 @@ namespace CryptoNote {
 		return v < lo ? lo : v > hi ? hi : v;
 	}
 
-	difficulty_type Currency::nextDifficultyV4(uint8_t blockMajorVersion,
+	difficulty_type Currency::nextDifficultyV4(uint32_t height, uint8_t blockMajorVersion,
 		std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties) const {
 
-		// LWMA-2 difficulty algorithm 
+		// LWMA-2 / LWMA-3 difficulty algorithm 
 		// Copyright (c) 2017-2018 Zawy, MIT License
 		// https://github.com/zawy12/difficulty-algorithms/issues/3
 		// with modifications by Ryo Currency developers
@@ -640,12 +650,30 @@ namespace CryptoNote {
 
 		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() <= static_cast<uint64_t>(N + 1));
 
-		for (int64_t i = 1; i <= N; i++) {
-			ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
-			L += ST * i;
-			if (i > N - 3) { sum_3_ST += ST; }
-		}
+		int64_t max_TS, prev_max_TS;
+		prev_max_TS = timestamps[0];
+		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_V5;
 		
+		for (int64_t i = 1; i <= N; i++) {
+			if (height < lwma3_height) { // LWMA-2
+				ST = clamp(-6 * T, int64_t(timestamps[i]) - int64_t(timestamps[i - 1]), 6 * T);
+			}
+			else { // LWMA-3
+				if (static_cast<int64_t>(timestamps[i]) > prev_max_TS) {
+					max_TS = timestamps[i];
+				}
+				else {
+					max_TS = prev_max_TS + 1;
+				}
+				ST = std::min(6 * T, max_TS - prev_max_TS);
+				prev_max_TS = max_TS;
+			}
+			L += ST * i;
+			if (i > N - 3) {
+				sum_3_ST += ST;
+			}
+		}
+
 		next_D = uint64_t((cumulativeDifficulties[N] - cumulativeDifficulties[0]) * T * (N + 1)) / uint64_t(2 * L);
 		next_D = (next_D * 99ull) / 100ull;
 
