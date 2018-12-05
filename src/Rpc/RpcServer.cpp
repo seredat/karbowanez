@@ -49,6 +49,8 @@ using namespace Logging;
 using namespace Crypto;
 using namespace Common;
 
+static const Crypto::SecretKey I = { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
+
 namespace CryptoNote {
 
 namespace {
@@ -88,7 +90,7 @@ RpcServer::HandlerFunction jsonMethod(bool (RpcServer::*handler)(typename Comman
 }
 
 }
-  
+
 std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction>> RpcServer::s_handlers = {
   
   // binary handlers
@@ -1565,9 +1567,9 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
 			CORE_RPC_ERROR_CODE_WRONG_PARAM,
 			"transaction wasn't found. Hash = " + req.tx_id + '.' };
 	}
-	CryptoNote::TransactionPrefix txp = *static_cast<const TransactionPrefix*>(&tx);
+	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
-	Crypto::PublicKey R = getTransactionPublicKeyFromExtra(txp.extra);
+	Crypto::PublicKey R = getTransactionPublicKeyFromExtra(transaction.extra);
 	if (R == NULL_PUBLIC_KEY)
 	{
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Tx pubkey was not found" };
@@ -1577,24 +1579,47 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
 	bool r = Crypto::check_tx_proof(txid, R, address.viewPublicKey, rA, sig);
 	res.signature_valid = r;
 
-	// show what's received in tx if private view key is provided
-	if (r && !req.dest_view_private_key.empty()) {
-		Crypto::SecretKey destViewSecretKey = NULL_SECRET_KEY;
-		Crypto::Hash view_key_hash;
-		size_t size;
-		if (!Common::fromHex(req.dest_view_private_key, &view_key_hash, sizeof(view_key_hash), size) || size != sizeof(view_key_hash))
+	if (r) {
+
+		// obtain key derivation by multiplying scalar 1 to the pubkey r*A included in the signature
+		Crypto::KeyDerivation derivation;
+		if (!Crypto::generate_key_derivation(rA, I, derivation)) {
+			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Failed to generate key derivation" };
+		}
+
+		// get tx pub key
+		Crypto::PublicKey txPubKey = getTransactionPublicKeyFromExtra(transaction.extra);
+
+		// look for outputs
+		uint64_t received(0);
+		size_t keyIndex(0);
+		std::vector<TransactionOutput> outputs;
+		try {
+			for (const TransactionOutput& o : transaction.outputs) {
+				if (o.target.type() == typeid(KeyOutput)) {
+					const KeyOutput out_key = boost::get<KeyOutput>(o.target);
+					Crypto::PublicKey pubkey;
+					derive_public_key(derivation, keyIndex, address.spendPublicKey, pubkey);
+					if (pubkey == out_key.key) {
+						received += o.amount;
+						outputs.push_back(o);
+					}
+				}
+				++keyIndex;
+			}
+		}
+		catch (...)
 		{
-			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse private view key" };
+			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Unknown error" };
 		}
-		destViewSecretKey = *(struct Crypto::SecretKey *) &view_key_hash;
+		res.received_amount = received;
+		res.outputs = outputs;
 
-		std::vector<uint32_t> out;
-		uint64_t amount;
-
-		if (!CryptoNote::findOutputsToAccount(txp, address, destViewSecretKey, out, amount)) {
-			throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Could not find outputs to given address" };
+		Crypto::Hash blockHash;
+		uint32_t blockHeight;
+		if (m_core.getBlockContainingTx(txid, blockHash, blockHeight)) {
+			res.confirmations = m_protocolQuery.getObservedHeight() - blockHeight;
 		}
-		res.received_amount = amount;
 	}
 	else {
 		res.received_amount = 0;
@@ -1605,8 +1630,6 @@ bool RpcServer::k_on_check_tx_proof(const K_COMMAND_RPC_CHECK_TX_PROOF::request&
 }
 
 bool RpcServer::k_on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::request& req, K_COMMAND_RPC_CHECK_RESERVE_PROOF::response& res) {
-
-	static const Crypto::SecretKey I = { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 
 	// parse address
 	CryptoNote::AccountPublicAddress address;

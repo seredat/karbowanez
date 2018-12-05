@@ -1071,24 +1071,26 @@ struct K_COMMAND_RPC_CHECK_TX_PROOF {
         std::string tx_id;
         std::string dest_address;
         std::string signature;
-        std::string dest_view_private_key;
 
         void serialize(ISerializer &s) {
             KV_MEMBER(tx_id)
             KV_MEMBER(dest_address)
             KV_MEMBER(signature)
-            KV_MEMBER(dest_view_private_key)
         }
     };
 
     struct response {
         bool signature_valid;
         uint64_t received_amount;
+		std::vector<TransactionOutput> outputs;
+		uint32_t confirmations = 0;
         std::string status;
 
         void serialize(ISerializer &s) {
             KV_MEMBER(signature_valid)
             KV_MEMBER(received_amount)
+            KV_MEMBER(outputs)
+            KV_MEMBER(confirmations)
             KV_MEMBER(status)
         }
     };
