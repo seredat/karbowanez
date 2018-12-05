@@ -415,6 +415,58 @@ using CryptoNote::ISerializer;
       };
     };
 
+	struct COMMAND_RPC_GET_TX_PROOF
+	{
+		struct request
+		{
+			std::string tx_hash;
+			std::string dest_address;
+			std::string tx_key;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_hash);
+				KV_MEMBER(dest_address);
+				KV_MEMBER(tx_key);
+			}
+		};
+
+		struct response
+		{
+			std::string signature;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(signature);
+			}
+		};
+	};
+
+	struct COMMAND_RPC_GET_BALANCE_PROOF
+	{
+		struct request
+		{
+			uint64_t amount = 0;
+			std::string message;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(amount);
+				KV_MEMBER(message);
+			}
+		};
+
+		struct response
+		{
+			std::string signature;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(signature);
+			}
+		};
+	};
+
 	/* Fusion transactions */
 
 	struct COMMAND_RPC_ESTIMATE_FUSION

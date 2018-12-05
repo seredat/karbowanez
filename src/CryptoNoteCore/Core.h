@@ -168,6 +168,8 @@ namespace CryptoNote {
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
      bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
 
+	 bool is_key_image_spent(const Crypto::KeyImage& key_im);
+
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
      bool load_state_data();
@@ -181,8 +183,6 @@ namespace CryptoNote {
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
 	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height, bool loose_check);
-
-     bool is_key_image_spent(const Crypto::KeyImage& key_im);
 
      bool check_tx_ring_signature(const KeyInput& tx, const Crypto::Hash& tx_prefix_hash, const std::vector<Crypto::Signature>& sig);
      bool is_tx_spendtime_unlocked(uint64_t unlock_time);
