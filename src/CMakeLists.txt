@@ -85,6 +85,12 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR APPLE AND NOT ANDROID)
   target_link_libraries(PaymentGateService -lresolv)
 endif ()
 
+if (FREEBSD)
+  target_link_libraries(SimpleWallet -lthr)
+  target_link_libraries(Daemon -lthr)
+  target_link_libraries(PaymentGateService -lthr)
+endif ()
+
 add_dependencies(Rpc version)
 
 add_dependencies(ConnectivityTool version)
