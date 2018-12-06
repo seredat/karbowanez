@@ -21,6 +21,8 @@
 #include <string>
 
 #include <sys/errno.h>
+#include <sys/stdint.h>
+#include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
 #include <unistd.h>
