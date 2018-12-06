@@ -163,6 +163,8 @@ namespace CryptoNote {
      virtual void getPoolChanges(const std::vector<Crypto::Hash>& knownTxsIds, std::vector<Transaction>& addedTxs,
                                  std::vector<Crypto::Hash>& deletedTxsIds) override;
 
+	 virtual void rollbackBlockchain(uint32_t height) override;
+
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
