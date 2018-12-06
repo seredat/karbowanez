@@ -247,6 +247,11 @@ bool RpcServer::setViewKey(const std::string& view_key) {
   return true;
 }
 
+bool RpcServer::setContactInfo(const std::string& contact) {
+  m_contact_info = contact;
+  return true;
+}
+
 bool RpcServer::isCoreReady() {
   return m_core.currency().isTestnet() || m_p2p.get_payload_object().isSynchronized();
 }
@@ -604,6 +609,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.top_block_hash = Common::podToHex(m_core.getBlockIdByHeight(m_core.get_current_blockchain_height() - 1));
   res.version = PROJECT_VERSION_LONG;
   res.fee_address = m_fee_address.empty() ? std::string() : m_fee_address;
+  res.contact = m_contact_info.empty() ? std::string() : m_contact_info;
   res.min_tx_fee = m_core.getMinimalFee();
   res.readable_tx_fee = m_core.currency().formatAmount(m_core.getMinimalFee());
   res.start_time = (uint64_t)m_core.getStartTime();

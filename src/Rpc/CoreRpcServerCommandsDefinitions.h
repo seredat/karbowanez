@@ -275,7 +275,7 @@ struct COMMAND_RPC_GET_INFO {
     std::string status;
     std::string version;
     uint64_t height;
-	std::string top_block_hash;
+    std::string top_block_hash;
     uint64_t difficulty;
     uint64_t min_tx_fee;
     std::string readable_tx_fee;
@@ -284,14 +284,15 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t alt_blocks_count;
     uint64_t outgoing_connections_count;
     uint64_t incoming_connections_count;
-	uint64_t rpc_connections_count;
+    uint64_t rpc_connections_count;
     uint64_t white_peerlist_size;
     uint64_t grey_peerlist_size;
     uint32_t last_known_block_index;
     uint64_t start_time;
     std::string fee_address;
     uint8_t block_major_version;
-	std::string already_generated_coins;
+    std::string already_generated_coins;
+    std::string contact;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
@@ -314,6 +315,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(fee_address)
       KV_MEMBER(block_major_version)
       KV_MEMBER(already_generated_coins)
+      KV_MEMBER(contact)
     }
   };
 };
