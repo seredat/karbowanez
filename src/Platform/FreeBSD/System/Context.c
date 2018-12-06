@@ -16,6 +16,7 @@
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string.h>
+#include <sys/types.h>
 #include "Context.h"
 
 void

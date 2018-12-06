@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <signal.h>
 #include <stdlib.h>
 
 typedef struct mcontext mctx;
