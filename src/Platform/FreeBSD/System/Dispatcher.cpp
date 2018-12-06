@@ -19,9 +19,10 @@
 #include <cassert>
 #include <string>
 #include <sys/errno.h>
+#include <sys/stdint.h>
+#include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -59,7 +60,7 @@ private:
 const size_t STACK_SIZE = 512 * 1024;
 }
 
-static_assert(Dispatcher::SIZEOF_PTHREAD_MUTEX_T == sizeof(pthread_mutex_t), "invalid pthread mutex size");
+//static_assert(Dispatcher::SIZEOF_PTHREAD_MUTEX_T == sizeof(pthread_mutex_t), "invalid pthread mutex size");
 
 Dispatcher::Dispatcher() : lastCreatedTimer(0) {
   std::string message;
