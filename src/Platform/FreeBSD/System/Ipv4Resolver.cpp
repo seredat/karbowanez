@@ -19,6 +19,8 @@
 #include <cassert>
 #include <random>
 #include <stdexcept>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include <netdb.h>
 
