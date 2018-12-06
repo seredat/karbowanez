@@ -21,6 +21,9 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <sys/errno.h>
+#include <sys/stdint.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 #include <sys/event.h>
 #include <sys/socket.h>
 #include <sys/types.h>
