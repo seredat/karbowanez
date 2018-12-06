@@ -19,6 +19,8 @@
 #include <cassert>
 
 #include <netinet/in.h>
+#include <sys/stdint.h>
+#include <sys/types.h>
 #include <sys/event.h>
 #include <sys/errno.h>
 #include <sys/socket.h>
