@@ -140,7 +140,7 @@ endif()
 
 #include_directories(include src contrib/epee/include external "${CMAKE_BINARY_DIR}/version")
 
-if(APPLE)
+if(APPLE OR FREEBSD)
   include_directories(SYSTEM /usr/include/malloc)
   if(POLICY CMP0042)
     cmake_policy(SET CMP0042 NEW)
