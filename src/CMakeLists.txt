@@ -89,6 +89,7 @@ if (FREEBSD)
   target_link_libraries(SimpleWallet -lthr)
   target_link_libraries(Daemon -lthr)
   target_link_libraries(PaymentGateService -lthr)
+  target_link_libraries(Miner -lthr)
 endif ()
 
 add_dependencies(Rpc version)
