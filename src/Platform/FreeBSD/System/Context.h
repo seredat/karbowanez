@@ -17,8 +17,8 @@
 
 #pragma once
 
-#define	setcontext(u)	setmcontext(&(u)->uc_mcontext)
-#define	getcontext(u)	getmcontext(&(u)->uc_mcontext)
+#define	setcontext(u)	_setmcontext(&(u)->uc_mcontext)
+#define	getcontext(u)	_getmcontext(&(u)->uc_mcontext)
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,8 +31,8 @@ typedef struct ucontext uctx;
 
 extern	int		swapcontext(uctx*, const uctx*);
 extern	void		makecontext(uctx*, void(*)(void), intptr_t);
-extern	int		getmcontext(mctx*);
-extern	void		setmcontext(const mctx*);
+extern	int		_getmcontext(mctx*);
+extern	void		_setmcontext(const mctx*);
 
 struct mcontext {
   /*
