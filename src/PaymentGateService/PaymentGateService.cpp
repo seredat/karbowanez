@@ -30,6 +30,7 @@
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "P2p/NetNode.h"
+#include "Rpc/RpcServer.h"
 #include <System/Context.h>
 #include "Wallet/WalletGreen.h"
 
@@ -166,6 +167,7 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
 
   CryptoNote::CryptoNoteProtocolHandler protocol(currency, *dispatcher, core, NULL, logger);
   CryptoNote::NodeServer p2pNode(*dispatcher, protocol, logger);
+  CryptoNote::RpcServer rpcServer(*dispatcher, logger, core, p2pNode, protocol);
   CryptoNote::Checkpoints checkpoints(logger);
   for (const auto& cp : CryptoNote::CHECKPOINTS) {
     checkpoints.add_checkpoint(cp.height, cp.blockId);
@@ -207,6 +209,11 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
     throw std::system_error(ec);
   }
 
+  log(Logging::INFO) << "Starting core rpc server on "
+	  << config.remoteNodeConfig.daemonHost << ":" << config.remoteNodeConfig.daemonPort;
+  rpcServer.start(config.remoteNodeConfig.daemonHost, config.remoteNodeConfig.daemonPort);
+  log(Logging::INFO) << "Core rpc server started ok";
+
   log(Logging::INFO) << "Spawning p2p server";
 
   System::Event p2pStarted(*dispatcher);
@@ -219,6 +226,9 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   p2pStarted.wait();
 
   runWalletService(currency, *node);
+
+  log(Logging::INFO) << "Stopping core rpc server...";
+  rpcServer.stop();
 
   p2pNode.sendStopSignal();
   context.get();
