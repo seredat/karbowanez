@@ -15,10 +15,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
 
+#ifndef __FreeBSD__
 #include <alloca.h>
+#endif
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
+#ifdef __FreeBSD__
+#define alloca(x)  __builtin_alloca(x)
+#endif
 
 #include "hash-ops.h"
 
