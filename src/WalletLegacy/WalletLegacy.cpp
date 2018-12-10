@@ -1011,7 +1011,6 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 		// have to repeat this to get key image as we don't store m_key_image
 		// prefix_data.append((const char*)&m_transfers[selected_transfers[i]].m_key_image, sizeof(crypto::key_image));
 		const TransactionOutputInformation &td = selected_transfers[i];
-		auto txPubKey = td.transactionPublicKey;
 
 		// derive ephemeral secret key
 		Crypto::KeyImage ki;
@@ -1023,7 +1022,7 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 		prefix_data.append((const char*)&ki, sizeof(Crypto::PublicKey));
 		kimages.push_back(ki);
 	}
-	
+
 	Crypto::Hash prefix_hash;
 	Crypto::cn_fast_hash(prefix_data.data(), prefix_data.size(), prefix_hash);
 
@@ -1040,7 +1039,9 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 		auto txPubKey = td.transactionPublicKey;
 
 		for (int i = 0; i < 2; ++i)	{
-			proof.shared_secret = reinterpret_cast<const PublicKey&>(Crypto::scalarmultKey(*reinterpret_cast<const Crypto::KeyImage*>(&txPubKey), *reinterpret_cast<const Crypto::KeyImage*>(&viewSecretKey)));
+			Crypto::KeyImage sk = Crypto::scalarmultKey(*reinterpret_cast<const Crypto::KeyImage*>(&txPubKey), *reinterpret_cast<const Crypto::KeyImage*>(&viewSecretKey));
+			proof.shared_secret = *reinterpret_cast<const PublicKey *>(&sk);
+
 			Crypto::KeyDerivation derivation;
 			if (!Crypto::generate_key_derivation(proof.shared_secret, viewSecretKey, derivation)) {
 				throw std::runtime_error("Failed to generate key derivation");
