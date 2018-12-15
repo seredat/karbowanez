@@ -81,11 +81,12 @@ Dispatcher::Dispatcher() : lastCreatedTimer(0) {
           message = "pthread_mutex_init failed, " + lastErrorMessage();
         } else {
           remoteSpawned = false;
-          
+
           mainContext.interrupted = false;
           mainContext.group = &contextGroup;
           mainContext.groupPrev = nullptr;
           mainContext.groupNext = nullptr;
+          mainContext.inExecutionQueue = false;
           contextGroup.firstContext = nullptr;
           contextGroup.lastContext = nullptr;
           contextGroup.firstWaiter = nullptr;
@@ -123,7 +124,7 @@ Dispatcher::~Dispatcher() {
     delete[] stackPtr;
     delete ucontext;
   }
-  
+
   auto result = close(kqueue);
   assert(result != -1);
   result = pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(this->mutex));
@@ -146,9 +147,11 @@ void Dispatcher::dispatch() {
     if (firstResumingContext != nullptr) {
       context = firstResumingContext;
       firstResumingContext = context->next;
+      assert(context->inExecutionQueue);
+      context->inExecutionQueue = false;
       break;
     }
-    
+
     if(remoteSpawned.load() == true) {
       MutextGuard guard(*reinterpret_cast<pthread_mutex_t*>(this->mutex));
       while (!remoteSpawningProcedures.empty()) {
@@ -238,7 +241,10 @@ bool Dispatcher::interrupted() {
 
 void Dispatcher::pushContext(NativeContext* context) {
   assert(context!=nullptr);
+  if (context->inExecutionQueue)
+    return;
   context->next = nullptr;
+  context->inExecutionQueue = true;
   if (firstResumingContext != nullptr) {
     assert(lastResumingContext != nullptr);
     lastResumingContext->next = context;
@@ -302,7 +308,7 @@ void Dispatcher::yield() {
 
         if (events[i].filter == EVFILT_USER && events[i].ident == 0) {
           EV_SET(&updates[updatesCounter++], 0, EVFILT_USER, EV_ADD | EV_DISABLE, NOTE_FFNOP, 0, NULL);
-          
+
           MutextGuard guard(*reinterpret_cast<pthread_mutex_t*>(this->mutex));
           while (!remoteSpawningProcedures.empty()) {
             spawn(std::move(remoteSpawningProcedures.front()));
@@ -342,20 +348,20 @@ NativeContext& Dispatcher::getReusableContext() {
    uint8_t* stackPointer = new uint8_t[STACK_SIZE];
    static_cast<uctx*>(newlyCreatedContext)->uc_stack.ss_sp = stackPointer;
    static_cast<uctx*>(newlyCreatedContext)->uc_stack.ss_size = STACK_SIZE;
-   
+
    ContextMakingData makingData{ newlyCreatedContext, this};
    makecontext(static_cast<uctx*>(newlyCreatedContext), reinterpret_cast<void(*)()>(contextProcedureStatic), reinterpret_cast<intptr_t>(&makingData));
-   
+
    uctx* oldContext = static_cast<uctx*>(currentContext->uctx);
    if (swapcontext(oldContext, newlyCreatedContext) == -1) {
      throw std::runtime_error("Dispatcher::getReusableContext, swapcontext failed, " + lastErrorMessage());
    }
-   
+
    assert(firstReusableContext != nullptr);
    assert(firstReusableContext->uctx == newlyCreatedContext);
    firstReusableContext->stackPtr = stackPointer;
   }
-  
+
   NativeContext* context = firstReusableContext;
   firstReusableContext = firstReusableContext->next;
   return *context;
@@ -389,6 +395,7 @@ void Dispatcher::contextProcedure(void* ucontext) {
   context.uctx = ucontext;
   context.interrupted = false;
   context.next = nullptr;
+  context.inExecutionQueue = false;
   firstReusableContext = &context;
   uctx* oldContext = static_cast<uctx*>(context.uctx);
   if (swapcontext(oldContext, static_cast<uctx*>(currentContext->uctx)) == -1) {
