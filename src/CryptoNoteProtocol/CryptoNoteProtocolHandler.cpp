@@ -662,7 +662,12 @@ void CryptoNoteProtocolHandler::updateObservedHeight(uint32_t peerHeight, const 
     std::lock_guard<std::mutex> lock(m_observedHeightMutex);
 
     uint32_t height = m_observedHeight;
-    if (peerHeight > context.m_remote_blockchain_height) {
+    if (context.m_remote_blockchain_height != 0 && context.m_last_response_height <= context.m_remote_blockchain_height - 1) {
+      m_observedHeight = context.m_remote_blockchain_height - 1;
+      if (m_observedHeight != height) {
+        updated = true;
+      }
+    } else if (peerHeight > context.m_remote_blockchain_height) {
       m_observedHeight = std::max(m_observedHeight, peerHeight);
       if (m_observedHeight != height) {
         updated = true;
@@ -695,6 +700,9 @@ void CryptoNoteProtocolHandler::recalculateMaxObservedHeight(const CryptoNoteCon
   Crypto::Hash ignore;
   m_core.get_blockchain_top(localHeight, ignore);
   m_observedHeight = std::max(peerHeight, localHeight + 1);
+  if (context.m_state == CryptoNoteConnectionContext::state_normal) {
+    m_observedHeight = localHeight;
+  }
 }
 
 uint32_t CryptoNoteProtocolHandler::getObservedHeight() const {
