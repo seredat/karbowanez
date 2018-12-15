@@ -231,6 +231,7 @@ void Dispatcher::pushContext(NativeContext* context) {
   assert(context != nullptr);
   if (context->inExecutionQueue) {
     return;
+  }
   context->next = nullptr;
   context->inExecutionQueue = true;
   if (firstResumingContext != nullptr) {
