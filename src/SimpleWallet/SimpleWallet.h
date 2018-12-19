@@ -129,6 +129,8 @@ namespace CryptoNote
 	bool estimate_fusion(const std::vector<std::string> &args);
     bool optimize(const std::vector<std::string> &args);
     bool get_tx_key(const std::vector<std::string> &args);
+	bool get_tx_proof(const std::vector<std::string> &args);
+	bool get_reserve_proof(const std::vector<std::string> &args);
     bool sign_message(const std::vector<std::string> &args);
     bool verify_message(const std::vector<std::string> &args);
 

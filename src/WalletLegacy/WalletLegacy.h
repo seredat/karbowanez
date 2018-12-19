@@ -99,6 +99,12 @@ public:
   virtual bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) override;
   virtual bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) override;
   virtual std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const override;
+  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) override;
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string &message) override;
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
+  virtual bool get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey) override;
+  virtual void getAccountKeys(AccountKeys& keys) override;
+  virtual bool getSeed(std::string& electrum_words) override;
 
   virtual TransactionId sendTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual TransactionId sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
@@ -109,13 +115,10 @@ public:
   virtual size_t estimateFusion(const uint64_t& threshold);
   virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount);
 
-  virtual void getAccountKeys(AccountKeys& keys) override;
-  virtual bool getSeed(std::string& electrum_words) override;
-  
   virtual std::string sign_message(const std::string &data) override;
   virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
 
-  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) override;
+  virtual bool isTrackingWallet();
 
 private:
 
