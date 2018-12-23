@@ -954,7 +954,7 @@ size_t WalletGreen::getAddressCount() const {
   return m_walletsContainer.get<RandomAccessIndex>().size();
 }
 
-std::string WalletGreen::getAddress(size_t index) const {
+AccountPublicAddress WalletGreen::getAccountPublicAddress(size_t index) const {
   throwIfNotInitialized();
   throwIfStopped();
 
@@ -964,7 +964,11 @@ std::string WalletGreen::getAddress(size_t index) const {
   }
 
   const WalletRecord& wallet = m_walletsContainer.get<RandomAccessIndex>()[index];
-  return m_currency.accountAddressAsString({ wallet.spendPublicKey, m_viewPublicKey });
+  return { wallet.spendPublicKey, m_viewPublicKey };
+}
+
+std::string WalletGreen::getAddress(size_t index) const {
+  return m_currency.accountAddressAsString(getAccountPublicAddress(index));
 }
 
 KeyPair WalletGreen::getAddressSpendKey(size_t index) const {
@@ -2463,6 +2467,25 @@ std::vector<size_t> WalletGreen::getDelayedTransactionIds() const {
   }
 
   return result;
+}
+
+std::vector<TransactionOutputInformation> WalletGreen::getTransfers(size_t index, uint32_t flags) const {
+  throwIfNotInitialized();
+  throwIfStopped();
+  throwIfTrackingMode();
+
+  std::vector<TransactionOutputInformation> allTransfers;
+  auto& walletsIndex = m_walletsContainer.get<RandomAccessIndex>();
+  for (const auto& wallet: walletsIndex) {
+    if (wallet.actualBalance == 0) {
+      continue;
+    }
+
+    ITransfersContainer* container = wallet.container;
+    container->getOutputs(allTransfers, flags /*ITransfersContainer::IncludeKeyUnlocked*/);
+  };
+
+  return allTransfers;
 }
 
 Crypto::SecretKey WalletGreen::getTransactionSecretKey(size_t transactionIndex) const {

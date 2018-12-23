@@ -354,7 +354,7 @@ namespace Crypto {
     if (ge_frombytes_vartime(&A_p3, reinterpret_cast<const unsigned char*>(&A)) != 0) throw std::runtime_error("recipient view pubkey is invalid");
     if (ge_frombytes_vartime(&D_p3, reinterpret_cast<const unsigned char*>(&D)) != 0) throw std::runtime_error("key derivation is invalid");
 
-    assert(sc_check(&r) == 0);
+    assert(sc_check(reinterpret_cast<const unsigned char*>(&r)) == 0);
     // check R == r*G
     ge_p3 dbg_R_p3;
     ge_scalarmult_base(&dbg_R_p3, reinterpret_cast<const unsigned char*>(&r));
