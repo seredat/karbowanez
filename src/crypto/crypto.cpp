@@ -371,11 +371,11 @@ namespace Crypto {
     // pick random k
     EllipticCurveScalar k;
     random_scalar(k);
-    
+
     // compute X = k*G
     ge_p3 X_p3;
     ge_scalarmult_base(&X_p3, reinterpret_cast<unsigned char*>(&k));
-    
+
     // compute Y = k*A
     ge_p2 Y_p2;
     ge_scalarmult(&Y_p2, reinterpret_cast<unsigned char*>(&k), &A_p3);
