@@ -744,6 +744,10 @@ uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
 uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
+	if (height == 0 || m_blocks.size() <= 1) {
+	    return 0;
+	}
+
 	if (height > m_blocks.size() - 1) {
 		height = m_blocks.size() - 1;
 	}
