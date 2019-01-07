@@ -154,6 +154,35 @@ bool parseUrlAddress(const std::string& url, std::string& address, uint16_t& por
   return true;
 }
 
+void seedFormater(std::string& seed){
+  const unsigned int word_width = 12;
+  const unsigned int seed_col = 5;
+  std::string word_buff;
+  std::vector<std::string> seed_array;
+  unsigned int word_n = 0;
+  for (unsigned int n = 0; n <= seed.length(); n++){
+    if (seed[n] != 0x20 && seed[n] != 0x0A && seed[n] != 0x00){
+      word_buff.push_back(seed[n]);
+    } else {
+      if (!word_buff.empty()){
+        seed_array.push_back(word_buff);
+        word_buff.clear();
+      }
+    }
+  }
+  seed.clear();
+  seed.append("\n ");
+  for (std::string word : seed_array){
+    seed.append(word);
+    for (unsigned int k = 2; k <= word_width - word.length() && word.length() <= word_width; k++) seed.append(" ");
+    seed.append(" ");
+    word_n++;
+    if (word_n >= seed_col){
+      word_n = 0;
+      seed.append("\n ");
+    }
+  }
+}
 
 inline std::string interpret_rpc_response(bool ok, const std::string& status) {
   std::string err;
@@ -637,6 +666,7 @@ bool simple_wallet::seed(const std::vector<std::string> &args/* = std::vector<st
 
   if (success)
   {
+    seedFormater(electrum_words);
     std::cout << "\nPLEASE NOTE: the following 25 words can be used to recover access to your wallet. Please write them down and store them somewhere safe and secure. Please do not store them in your email or on file storage services outside of your immediate control.\n";
     std::cout << electrum_words << std::endl;
   }
@@ -1425,6 +1455,7 @@ bool simple_wallet::gen_wallet(const std::string &wallet_file, const std::string
 
 	if (!two_random)
 	{
+		seedFormater(electrum_words);
 		std::cout << "\nPLEASE NOTE: the following 25 words can be used to recover access to your wallet. " <<
 			"Please write them down and store them somewhere safe and secure. Please do not store them in your email or " <<
 			"on file storage services outside of your immediate control.\n\n";
@@ -1490,6 +1521,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 	// convert rng value to electrum-style word list
 	std::string electrum_words;
 	Crypto::ElectrumWords::bytes_to_words(keys.spendSecretKey, electrum_words, "English");
+	seedFormater(electrum_words);
 	std::string print_electrum = "";
 
 	success_msg_writer() <<
