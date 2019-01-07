@@ -259,6 +259,7 @@ namespace CryptoNote {
     std::string m_config_folder;
     Checkpoints m_checkpoints;
     std::atomic<bool> m_is_in_checkpoint_zone;
+    std::time_t m_checkpoints_update_time;
 
     typedef SwappedVector<BlockEntry> Blocks;
     typedef std::unordered_map<Crypto::Hash, uint32_t> BlockMap;
