@@ -2,20 +2,20 @@
 // Copyright (c) 2018, The BBSCoin Developers
 // Copyright (c) 2017-2018, Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "WalletGreen.h"
 
@@ -954,7 +954,7 @@ size_t WalletGreen::getAddressCount() const {
   return m_walletsContainer.get<RandomAccessIndex>().size();
 }
 
-std::string WalletGreen::getAddress(size_t index) const {
+AccountPublicAddress WalletGreen::getAccountPublicAddress(size_t index) const {
   throwIfNotInitialized();
   throwIfStopped();
 
@@ -964,7 +964,11 @@ std::string WalletGreen::getAddress(size_t index) const {
   }
 
   const WalletRecord& wallet = m_walletsContainer.get<RandomAccessIndex>()[index];
-  return m_currency.accountAddressAsString({ wallet.spendPublicKey, m_viewPublicKey });
+  return { wallet.spendPublicKey, m_viewPublicKey };
+}
+
+std::string WalletGreen::getAddress(size_t index) const {
+  return m_currency.accountAddressAsString(getAccountPublicAddress(index));
 }
 
 KeyPair WalletGreen::getAddressSpendKey(size_t index) const {
@@ -2463,6 +2467,25 @@ std::vector<size_t> WalletGreen::getDelayedTransactionIds() const {
   }
 
   return result;
+}
+
+std::vector<TransactionOutputInformation> WalletGreen::getTransfers(size_t index, uint32_t flags) const {
+  throwIfNotInitialized();
+  throwIfStopped();
+  throwIfTrackingMode();
+
+  std::vector<TransactionOutputInformation> allTransfers;
+  auto& walletsIndex = m_walletsContainer.get<RandomAccessIndex>();
+  for (const auto& wallet: walletsIndex) {
+    if (wallet.actualBalance == 0) {
+      continue;
+    }
+
+    ITransfersContainer* container = wallet.container;
+    container->getOutputs(allTransfers, flags /*ITransfersContainer::IncludeKeyUnlocked*/);
+  };
+
+  return allTransfers;
 }
 
 Crypto::SecretKey WalletGreen::getTransactionSecretKey(size_t transactionIndex) const {

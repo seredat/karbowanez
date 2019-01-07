@@ -2,20 +2,20 @@
 // Copyright (c) 2016-2018  zawy12
 // Copyright (c) 2016-2018, The Karbowanec developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Currency.h"
 #include <cctype>
@@ -75,9 +75,10 @@ namespace CryptoNote {
 		}
 
 		if (isTestnet()) {
-			m_upgradeHeightV2 = 0;
-			m_upgradeHeightV3 = 1;
-			m_upgradeHeightV4 = static_cast<uint32_t>(-1);
+			m_upgradeHeightV2 = 10;
+			m_upgradeHeightV3 = 60;
+			m_upgradeHeightV4 = 70;
+			m_upgradeHeightV5 = 80;
 			m_blocksFileName = "testnet_" + m_blocksFileName;
 			m_blocksCacheFileName = "testnet_" + m_blocksCacheFileName;
 			m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
@@ -129,14 +130,17 @@ namespace CryptoNote {
 	}
 
 	uint32_t Currency::upgradeHeight(uint8_t majorVersion) const {
-		if (majorVersion == BLOCK_MAJOR_VERSION_2) {
+		if (majorVersion == BLOCK_MAJOR_VERSION_5) {
+			return m_upgradeHeightV5;
+		}
+		else if (majorVersion == BLOCK_MAJOR_VERSION_4) {
+			return m_upgradeHeightV4;
+		}
+		else if (majorVersion == BLOCK_MAJOR_VERSION_2) {
 			return m_upgradeHeightV2;
 		}
 		else if (majorVersion == BLOCK_MAJOR_VERSION_3) {
 			return m_upgradeHeightV3;
-		}
-		else if (majorVersion == BLOCK_MAJOR_VERSION_4) {
-			return m_upgradeHeightV4;
 		}
 		else {
 			return static_cast<uint32_t>(-1);
@@ -559,7 +563,7 @@ namespace CryptoNote {
 		uint64_t nextDiffZ = low / timeSpan;
 
 		// minimum limit
-		if (nextDiffZ < 100000) {
+		if (!isTestnet() && nextDiffZ < 100000) {
 			nextDiffZ = 100000;
 		}
 
@@ -622,7 +626,7 @@ namespace CryptoNote {
 		next_difficulty = static_cast<uint64_t>(nextDifficulty);
 		
 		// minimum limit
-		if (next_difficulty < 100000) {
+		if (!isTestnet() && next_difficulty < 100000) {
 			next_difficulty = 100000;
 		}
 
@@ -652,7 +656,7 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_V5;
+		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_LWMA3;
 		
 		for (int64_t i = 1; i <= N; i++) {
 			if (height < lwma3_height) { // LWMA-2
@@ -685,7 +689,7 @@ namespace CryptoNote {
 		}
 
 		// minimum limit
-		if (next_D < 100000) {
+		if (!isTestnet() && next_D < 100000) {
 			next_D = 100000;
 		}
 
@@ -750,6 +754,7 @@ namespace CryptoNote {
 		switch (block.majorVersion) {
 		case BLOCK_MAJOR_VERSION_1:
 		case BLOCK_MAJOR_VERSION_4:
+		case BLOCK_MAJOR_VERSION_5:
 			return checkProofOfWorkV1(context, block, currentDiffic, proofOfWork);
 
 		case BLOCK_MAJOR_VERSION_2:
@@ -838,6 +843,7 @@ namespace CryptoNote {
 		upgradeHeightV2(parameters::UPGRADE_HEIGHT_V2);
 		upgradeHeightV3(parameters::UPGRADE_HEIGHT_V3);
 		upgradeHeightV4(parameters::UPGRADE_HEIGHT_V4);
+		upgradeHeightV5(parameters::UPGRADE_HEIGHT_V5);
 		upgradeVotingThreshold(parameters::UPGRADE_VOTING_THRESHOLD);
 		upgradeVotingWindow(parameters::UPGRADE_VOTING_WINDOW);
 		upgradeWindow(parameters::UPGRADE_WINDOW);

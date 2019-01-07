@@ -1040,7 +1040,7 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 
 		for (int i = 0; i < 2; ++i)	{
 			Crypto::KeyImage sk = Crypto::scalarmultKey(*reinterpret_cast<const Crypto::KeyImage*>(&txPubKey), *reinterpret_cast<const Crypto::KeyImage*>(&viewSecretKey));
-			proof.shared_secret = *reinterpret_cast<const PublicKey *>(&sk);
+            proof.shared_secret = *reinterpret_cast<const Crypto::PublicKey *>(&sk);
 
 			Crypto::KeyDerivation derivation;
 			if (!Crypto::generate_key_derivation(proof.shared_secret, viewSecretKey, derivation)) {
