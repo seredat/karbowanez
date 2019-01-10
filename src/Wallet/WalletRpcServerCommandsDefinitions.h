@@ -23,6 +23,7 @@
 #include "crypto/hash.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "WalletRpcServerErrorCodes.h"
+#include "../CryptoNoteConfig.h"
 
 namespace Tools {
 namespace wallet_rpc {
@@ -67,14 +68,10 @@ using CryptoNote::ISerializer;
 		struct request
 		{
 			std::list<transfer_destination> destinations;
-			uint64_t fee;
-			uint64_t mixin;
-			uint64_t unlock_time;
+			uint64_t fee = CryptoNote::parameters::MINIMUM_FEE_V2;
+			uint64_t mixin = 0;
+			uint64_t unlock_time = 0;
 			std::string payment_id;
-
-			request() :fee(0),
-					   mixin(0),
-					   unlock_time(0){}
 
 			void serialize(ISerializer& s)
 			{
