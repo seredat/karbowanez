@@ -34,6 +34,7 @@ void serialize(MultisignatureInputDetails& inputMultisig, ISerializer& serialize
 void serialize(transaction_input_details& input, ISerializer& serializer);
 
 void serialize(TransactionExtraDetails& extra, ISerializer& serializer);
+void serialize(TransactionExtraDetails2& extra, ISerializer& serializer);
 //void serialize(TransactionDetails& transaction, ISerializer& serializer);
 void serialize(TransactionDetails2& transaction, ISerializer& serializer);
 
