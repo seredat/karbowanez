@@ -1082,6 +1082,23 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
     res.txDetails.paymentId = "";
   }
 
+  res.txDetails.extra.raw = res.tx.extra;
+
+  std::vector<CryptoNote::TransactionExtraField> txExtraFields;
+  parseTransactionExtra(res.tx.extra, txExtraFields);
+  for (const CryptoNote::TransactionExtraField& field : txExtraFields) {
+    if (typeid(CryptoNote::TransactionExtraPadding) == field.type()) {
+      res.txDetails.extra.padding.push_back(std::move(boost::get<CryptoNote::TransactionExtraPadding>(field).size));
+    }
+    else if (typeid(CryptoNote::TransactionExtraPublicKey) == field.type()) {
+      //res.txDetails.extra.publicKey = std::move(boost::get<CryptoNote::TransactionExtraPublicKey>(field).publicKey);
+      res.txDetails.extra.publicKey = CryptoNote::getTransactionPublicKeyFromExtra(res.tx.extra);
+    }
+    else if (typeid(CryptoNote::TransactionExtraNonce) == field.type()) {
+      res.txDetails.extra.nonce.push_back(Common::toHex(boost::get<CryptoNote::TransactionExtraNonce>(field).nonce.data(), boost::get<CryptoNote::TransactionExtraNonce>(field).nonce.size()));
+    }
+  }
+
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }

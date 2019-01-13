@@ -489,6 +489,20 @@ struct f_transaction_short_response {
   }
 };
 
+struct f_transaction_details_extra_response {
+  std::vector<size_t> padding;
+  Crypto::PublicKey publicKey; 
+  std::vector<std::string> nonce;
+  std::vector<uint8_t> raw;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(padding)
+    KV_MEMBER(publicKey)
+    KV_MEMBER(nonce)
+    KV_MEMBER(raw)
+  }
+};
+
 struct f_transaction_details_response {
   std::string hash;
   size_t size;
@@ -497,6 +511,7 @@ struct f_transaction_details_response {
   uint64_t fee;
   uint64_t amount_out;
   uint32_t confirmations = 0;
+  f_transaction_details_extra_response extra;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(hash)
@@ -506,6 +521,7 @@ struct f_transaction_details_response {
     KV_MEMBER(fee)
     KV_MEMBER(amount_out)
     KV_MEMBER(confirmations)
+    KV_MEMBER(extra)
   }
 };
 
