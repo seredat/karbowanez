@@ -454,9 +454,10 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
         logger(ERROR, BRIGHT_RED) << "Failed to append merge mining tag to extra of the parent block miner transaction";
         return false;
       }
-    }
-    else if (b.majorVersion >= BLOCK_MAJOR_VERSION_4) {
+    } else if (b.majorVersion == BLOCK_MAJOR_VERSION_4) {
       b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_4) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
+    } else if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+      b.minorVersion = m_currency.upgradeHeight(BLOCK_MAJOR_VERSION_5) == UpgradeDetectorBase::UNDEF_HEIGHT ? BLOCK_MINOR_VERSION_1 : BLOCK_MINOR_VERSION_0;
     }
 
     b.previousBlockHash = get_tail_id();
