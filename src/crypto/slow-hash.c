@@ -51,7 +51,7 @@
 
 #define AN_PAGE_SIZE    (1 << 21) // 2MB
 #define AN_SCRATCHPAD   (1 << 21)
-#define AN_ITERATIONS   (1 << 20)
+#define AN_ITERATIONS   (1 << 12) // 0x1000 or 4096 iterations
 
 //extern void aesb_single_round(const uint8_t *in, uint8_t*out, const uint8_t *expandedKey);
 //extern void aesb_pseudo_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey);
