@@ -748,24 +748,10 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 			_a = _mm_load_si128(R128(a));
 			aesb_single_round((uint8_t *)&_c, (uint8_t *)&_c, (uint8_t *)&_a);
 			_mm_store_si128(R128(c), _c);
-			_mm_store_si128(R128(c1), _mm_load_si128(R128(&hp_state[j])));
-			j = state_index(c);
-			c[0] ^= b[0]; c[1] ^= b[1];
-			_mm_store_si128(R128(&hp_state[j]), _mm_load_si128(c));
-			j = state_index(c);
-			_mm_store_si128(R128(&hp_state[j]), _mm_load_si128(c1));
-			c1[0] ^= c[0]; c1[1] ^= c[1];
-			j = state_index(c1);
-			_mm_store_si128(R128(&hp_state[j]), _mm_load_si128(c1));
 			p = U64(&hp_state[j]);
 			b[0] = p[0]; b[1] = p[1];
-			__mul();
-			a[0] += hi; a[1] += lo;
-			p = U64(&hp_state[j]);
-			p[0] = a[0];  p[1] = a[1];
-			a[0] ^= b[0]; a[1] ^= b[1];
-			_b1 = _b;
-			_b = _c;
+			p[0] = a[0]; p[1] = a[1];
+			a[0] = b[0]; a[1] = b[1];
 		}
 	}
 
@@ -1068,11 +1054,7 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 
 	RDATA_ALIGN16 uint8_t expandedKey[240];
 
-#ifndef FORCE_USE_HEAP
 	RDATA_ALIGN16 uint8_t hp_state[AN_PAGE_SIZE];
-#else
-	uint8_t *hp_state = (uint8_t *)aligned_malloc(AN_PAGE_SIZE, 16);
-#endif
 
 	uint8_t text[INIT_SIZE_BYTE];
 	RDATA_ALIGN16 uint64_t a[2];
