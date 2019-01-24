@@ -65,10 +65,10 @@ inline int argon2d_hash(const void *in, const size_t size, const void *salt, con
 	context.allocate_cbk = NULL;
 	context.free_cbk = NULL;
 	context.flags = 2;
-	context.m_cost = 2000;  // Memory in KiB (2048KB)
-	context.lanes = 8;      // Degree of Parallelism
-	context.threads = 1;    // Threads
-	context.t_cost = 1;     // Iterations
+	context.m_cost = (1 << 13);  // Memory in KiB (~8192KB)
+	context.lanes = 2;           // Degree of Parallelism
+	context.threads = 1;         // Threads
+	context.t_cost = 2;          // Iterations
 	return argon2_ctx(&context, Argon2_d);
 }
 
@@ -690,7 +690,6 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
 	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
-
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
