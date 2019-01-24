@@ -64,8 +64,8 @@ namespace Crypto {
 	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  inline void an_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
-    an_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+  inline void an_slow_hash(cn_context &context, const void *data, size_t length, const void *salt, Hash &hash) {
+    an_slow_hash(data, length, salt, reinterpret_cast<char *>(&hash));
   }
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {

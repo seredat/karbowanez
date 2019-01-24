@@ -33,6 +33,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include "stdio.h"
 
 #include "Common/int-util.h"
 #include "hash-ops.h"
@@ -49,12 +50,27 @@
 #define INIT_SIZE_BLK   8
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
-#define AN_PAGE_SIZE    (1 << 32) // 4GB - unlikely for GPU Botnets, since it'd need 50% to 100% of the total memory
-#define AN_SCRATCHPAD   (1 << 32) 
-#define AN_ITERATIONS   (1 << 1)  // As low as possible for best speed
-
-//extern void aesb_single_round(const uint8_t *in, uint8_t*out, const uint8_t *expandedKey);
-//extern void aesb_pseudo_round(const uint8_t *in, uint8_t *out, const uint8_t *expandedKey);
+inline int argon2d_hash(const void *in, const size_t size, const void *salt, const void *out) {
+	argon2_context context;
+	context.out = (uint8_t *)out;
+	context.outlen = (uint32_t)32;
+	context.pwd = (uint8_t *)in;
+	context.pwdlen = (uint32_t)size;
+	context.salt = (uint8_t *)salt;
+	context.saltlen = (uint32_t)size;
+	context.secret = NULL;
+	context.secretlen = 0;
+	context.ad = NULL;
+	context.adlen = 0;
+	context.allocate_cbk = NULL;
+	context.free_cbk = NULL;
+	context.flags = 2;
+	context.m_cost = 2000;  // Memory in KiB (2048KB)
+	context.lanes = 8;      // Degree of Parallelism
+	context.threads = 1;    // Threads
+	context.t_cost = 1;     // Iterations
+	return argon2_ctx(&context, Argon2_d);
+}
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
 // Optimised code below, uses x86-specific intrinsics, SSE2, AES-NI
@@ -660,7 +676,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 		slow_hash_free_state();
 }
 
-void an_slow_hash(const void *data, size_t length, char *hash)
+void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 {
 
 	union cn_slow_hash_state state;
@@ -671,10 +687,10 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	};
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
+
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
@@ -964,7 +980,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 	aligned_free(hp_state);
 }
 
-void an_slow_hash(const void *data, size_t length, char *hash)
+void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 {
 
 	union cn_slow_hash_state state;
@@ -975,10 +991,9 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	};
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 #else /* aarch64 && crypto */
@@ -1176,7 +1191,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 	free(long_state);
 }
 
-void an_slow_hash(const void *data, size_t length, char *hash)
+void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 {
 
 	union cn_slow_hash_state state;
@@ -1187,10 +1202,9 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	};
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
@@ -1345,7 +1359,7 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
   free(long_state);
 }
 
-void an_slow_hash(const void *data, size_t length, char *hash)
+void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 {
 
 	union cn_slow_hash_state state;
@@ -1356,10 +1370,9 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	};
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
