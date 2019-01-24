@@ -674,7 +674,7 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(2, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
@@ -978,7 +978,7 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(2, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 #else /* aarch64 && crypto */
@@ -1190,7 +1190,7 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(2, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
@@ -1359,7 +1359,7 @@ void an_slow_hash(const void *data, size_t length, char *hash)
 	char* salt = (char*)&state.hs;
 	char* pw = (char*)&state.hs;
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
-	argon2d_hash_encoded(2, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
+	argon2d_hash_encoded(AN_ITERATIONS, AN_SCRATCHPAD / 1024, 2, pw, 64, salt, 64, 64, (uint8_t*)&state.hs, 64);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
