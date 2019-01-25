@@ -51,13 +51,17 @@
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
 inline int argon2d_hash(const void *in, const size_t size, const void *salt, const void *out) {
+	uint8_t salted[sizeof(salt) + sizeof(in)];
+	memcpy(salted, salt, sizeof(salt));
+	memcpy(&salted[sizeof(salt)], in, sizeof(in));
+
 	argon2_context context;
 	context.out = (uint8_t *)out;
 	context.outlen = (uint32_t)32;
 	context.pwd = (uint8_t *)in;
 	context.pwdlen = (uint32_t)size;
-	context.salt = (uint8_t *)salt;
-	context.saltlen = (uint32_t)size;
+	context.salt = (uint8_t *)salted;
+	context.saltlen = sizeof(context.salt);
 	context.secret = NULL;
 	context.secretlen = 0;
 	context.ad = NULL;
