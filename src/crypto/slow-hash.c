@@ -692,7 +692,8 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
 	char* pw = (char*)&state.hs;
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
+	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
+							      // without having any security issues.
 	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
@@ -995,7 +996,8 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
 	char* pw = (char*)&state.hs;
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
+	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
+							      // without having any security issues.
 	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
@@ -1206,7 +1208,8 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
 	char* pw = (char*)&state.hs;
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
+	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
+							      // without having any security issues.
 	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
@@ -1374,7 +1377,8 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
 	char* pw = (char*)&state.hs;
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw);
+	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
+							      // without having any security issues.
 	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
