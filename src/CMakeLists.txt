@@ -80,9 +80,9 @@ target_link_libraries(PaymentGateService PaymentGate JsonRpcServer Wallet NodeRp
 target_link_libraries(Miner CryptoNoteCore Rpc System Http Logging Common Crypto ${Boost_LIBRARIES} Serialization ${EXTRA_LIBRARIES})
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR APPLE AND NOT ANDROID)
-  target_link_libraries(SimpleWallet -lresolv)
-  target_link_libraries(Daemon -lresolv)
-  target_link_libraries(PaymentGateService -lresolv)
+  target_link_libraries(SimpleWallet -lresolv -lcrypto -lssl)
+  target_link_libraries(Daemon -lresolv -lcrypto -lssl)
+  target_link_libraries(PaymentGateService -lresolv -lcrypto -lssl)
 endif ()
 
 if (FREEBSD)
