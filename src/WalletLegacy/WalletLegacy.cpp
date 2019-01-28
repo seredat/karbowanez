@@ -47,9 +47,11 @@
 #include "WalletLegacy/WalletLegacySerialization.h"
 #include "WalletLegacy/WalletLegacySerializer.h"
 #include "WalletLegacy/WalletUtils.h"
+#include "WalletLegacy/WalletRequest.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "mnemonics/electrum-words.h"
+#include "Serialization/SerializationTools.h"
 
 extern "C"
 {
@@ -757,6 +759,66 @@ TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOut
 	return txId;
 }
 
+bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, SecretKey& stakeKey) {
+	TransactionId txId = 0;
+	std::deque<std::shared_ptr<WalletLegacyEvent>> events;
+	std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
+
+	throwIfNotInitialised();
+
+	// select inputs
+	std::vector<TransactionOutputInformation> allOutputs;
+	m_transferDetails->getOutputs(allOutputs, ITransfersContainer::IncludeKeyUnlocked);
+	context->foundMoney = m_sender->selectTransfersToSend(stake, true, m_currency.defaultDustThreshold(), context->selectedTransfers);
+	throwIf(context->foundMoney < stake, error::WRONG_AMOUNT);
+
+	// prepare transfers
+	std::vector<WalletLegacyTransfer> transfers;
+	WalletLegacyTransfer destination;
+	destination.amount = 0;
+	for (auto& out : context->selectedTransfers) {
+		destination.amount += out.amount;
+	}
+	destination.address = address;
+	transfers.push_back(destination);
+		
+	std::string extra;
+
+	//prepare transaction
+	txId = m_transactionsCache.addNewTransaction(context->foundMoney, 0, extra, transfers, unlockTimestamp);
+	context->transactionId = txId;
+	context->mixIn = mixin;
+
+	// prepare outputs
+	if (context->mixIn) {
+		std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> outs;
+		uint64_t outsCount = mixin + 1;// add one to make possible (if need) to skip real output key
+		std::vector<uint64_t> amounts;
+
+		for (const auto& td : context->selectedTransfers) {
+			amounts.push_back(td.amount);
+		}
+
+		auto scanty_it = std::find_if(outs.begin(), outs.end(),
+			[&](COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& out) {return out.outs.size() < mixin; });
+
+		if (scanty_it != outs.end()) {
+			throw std::system_error(make_error_code(error::MIXIN_COUNT_TOO_BIG));
+			return false;
+		}
+		WalletRequest::Callback callback;
+		std::function<void(WalletRequest::Callback, std::error_code)> cb;
+		m_node.getRandomOutsByAmounts(std::move(amounts), outsCount, std::ref(outs), std::bind(cb, callback, std::placeholders::_1));
+
+		context->outs = outs;
+	}
+
+	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, 0, extra, mixin, unlockTimestamp)) {
+		return false;
+	}
+
+  return true;
+}
 
 void WalletLegacy::sendTransactionCallback(WalletRequest::Callback callback, std::error_code ec) {
   ContextCounterHolder counterHolder(m_asyncContextCounter);

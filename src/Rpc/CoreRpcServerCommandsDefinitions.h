@@ -252,10 +252,14 @@ struct COMMAND_RPC_START_MINING {
   struct request {
     std::string miner_address;
     uint64_t threads_count;
+	std::string wallet_host;
+	uint16_t wallet_port;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(miner_address)
       KV_MEMBER(threads_count)
+      KV_MEMBER(wallet_host)
+      KV_MEMBER(wallet_port)
     }
   };
 
@@ -393,10 +397,14 @@ struct COMMAND_RPC_GETBLOCKTEMPLATE {
   struct request {
     uint64_t reserve_size; //max 255 bytes
     std::string wallet_address;
+    std::string tx_as_hex;
+    std::string tx_key;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(reserve_size)
       KV_MEMBER(wallet_address)
+      KV_MEMBER(tx_as_hex)
+      KV_MEMBER(tx_key)
     }
   };
 

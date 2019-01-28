@@ -112,6 +112,7 @@ public:
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) = 0;
   virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
   virtual uint64_t getMinimalFee() = 0;
+  virtual uint64_t getNextBlockDifficulty() = 0;
   
   virtual uint32_t get_current_blockchain_height() = 0;
   virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) = 0;

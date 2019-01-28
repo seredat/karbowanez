@@ -1058,27 +1058,32 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
 
 bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) {
 
-  if (!(b.baseTransaction.inputs.size() == 1)) {
+  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !(b.baseTransaction.inputs.size() == 1)) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction in the block has no inputs";
     return false;
   }
 
-  if (!(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
+  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction in the block has the wrong type";
     return false;
   }
 
-  if (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex != height) {
+  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex != height) {
     logger(INFO, BRIGHT_RED) << "The miner transaction in block has invalid height: " <<
       boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex << ", expected: " << height;
     return false;
   }
 
+  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !checkTransactionInputs(b.baseTransaction)) {
+    logger(INFO, BRIGHT_WHITE) << "coinbase stake transaction has wrong inputs";
+    return false;
+  }
+
   if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction transaction have wrong unlock time="
+      << "coinbase transaction have wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
       << height + m_currency.minedMoneyUnlockWindow();
     return false;
@@ -1096,8 +1101,22 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   uint64_t alreadyGeneratedCoins, uint64_t fee, uint64_t& reward, int64_t& emissionChange) {
 
   uint64_t minerReward = 0;
+  uint64_t outputsAmount = 0;
   for (auto& o : b.baseTransaction.outputs) {
-    minerReward += o.amount;
+    outputsAmount += o.amount;
+  }
+
+  uint64_t inputsAmount = 0;
+  if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+    for (const auto& in : b.baseTransaction.inputs) {
+      if (in.type() == typeid(KeyInput)) {
+        inputsAmount += boost::get<KeyInput>(in).amount;
+      }
+    }
+    minerReward = outputsAmount - inputsAmount;
+  }
+  else {
+    minerReward = outputsAmount;
   }
 
   std::vector<size_t> lastBlocksSizes;
@@ -1870,7 +1889,7 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
   uint32_t height = get_block_height(b);
   const uint8_t expectedBlockVersion = getBlockMajorVersionForHeight(height);
   if (b.majorVersion != expectedBlockVersion) {
-    logger(TRACE) << "Block " << blockHash << " has wrong major version: " << static_cast<int>(b.majorVersion) <<
+    logger(INFO) << "Block " << blockHash << " has wrong major version: " << static_cast<int>(b.majorVersion) <<
       ", at height " << height << " expected version is " << static_cast<int>(expectedBlockVersion);
     return false;
   }
@@ -1966,7 +1985,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     std::lock_guard<decltype(m_blockchain_lock)> bcLock(m_blockchain_lock);
 
     if (haveBlock(id)) {
-      logger(TRACE) << "block with id = " << id << " already exists";
+      logger(INFO) << "block with id = " << id << " already exists";
       bvc.m_already_exists = true;
       return false;
     }
@@ -1974,7 +1993,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     //check that block refers to chain tail
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
-      logger(DEBUGGING) << "handling alternative block " << Common::podToHex(id)
+      logger(INFO) << "handling alternative block " << Common::podToHex(id)
                    << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
                    << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
                    << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
@@ -2044,7 +2063,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
     return false;
   }
-  
+
   if (blockData.previousBlockHash != getTailId()) {
     logger(INFO, BRIGHT_WHITE) <<
       "Block " << blockHash << " has wrong previousBlockHash: " << blockData.previousBlockHash << ", expected: " << getTailId();
@@ -2069,7 +2088,6 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     logger(ERROR, BRIGHT_RED) << "!!!!!!!!! difficulty overhead !!!!!!!!!";
     return false;
   }
-
 
   auto longhashTimeStart = std::chrono::steady_clock::now();
   Crypto::Hash proof_of_work = NULL_HASH;

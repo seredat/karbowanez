@@ -37,6 +37,30 @@ namespace {
     std::cout << CryptoNote::storeToJson(obj) << ENDL;
     return true;
   }
+
+bool parseUrlAddress(const std::string& url, std::string& address, uint16_t& port) {
+  auto pos = url.find("://");
+  size_t addrStart = 0;
+
+  if (pos != std::string::npos) {
+    addrStart = pos + 3;
+  }
+
+  auto addrEnd = url.find(':', addrStart);
+
+  if (addrEnd != std::string::npos) {
+    auto portEnd = url.find('/', addrEnd);
+    port = Common::fromString<uint16_t>(url.substr(
+      addrEnd + 1, portEnd == std::string::npos ? std::string::npos : portEnd - addrEnd - 1));
+  } else {
+    addrEnd = url.find('/');
+    port = 80;
+  }
+
+  address = url.substr(addrStart, addrEnd - addrStart);
+  return true;
+}
+
 }
 
 
@@ -373,8 +397,8 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
 }
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
-  if (!args.size()) {
-    std::cout << "Please, specify wallet address to mine for: start_mining <addr> [threads=1]" << std::endl;
+  if (args.size() != 3) {
+    std::cout << "usage: start_mining <addr> <threads[=1]> <wallet_host:port>" << std::endl;
     return true;
   }
 
@@ -385,12 +409,19 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
   }
 
   size_t threads_count = 1;
-  if (args.size() > 1) {
-    bool ok = Common::fromString(args[1], threads_count);
-    threads_count = (ok && 0 < threads_count) ? threads_count : 1;
+  bool ok = Common::fromString(args[1], threads_count);
+  threads_count = (ok && 0 < threads_count) ? threads_count : 1;
+
+  std::string walletHost;
+  uint16_t walletPort;
+
+  if (!parseUrlAddress(args[2], walletHost, walletPort))
+  {
+    std::cout << "failed to parse wallet address" << std::endl;
+    return false;
   }
 
-  m_core.get_miner().start(adr, threads_count);
+  m_core.get_miner().start(adr, threads_count, walletHost, walletPort);
   return true;
 }
 

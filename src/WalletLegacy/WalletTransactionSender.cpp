@@ -185,6 +185,48 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(Tr
 	return doSendTransaction(context, events);
 }
 
+bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransactionContext>& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+	const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+	if (m_isStoping) {
+		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
+		return false;
+	}
+
+	try
+	{
+		WalletLegacyTransaction& transaction = m_transactionsCache.getTransaction(context->transactionId);
+
+		std::vector<TransactionSourceEntry> sources;
+		prepareInputs(context->selectedTransfers, context->outs, sources, context->mixIn);
+
+		TransactionDestinationEntry changeDts;
+		changeDts.amount = 0;
+		uint64_t totalAmount = -transaction.totalAmount;
+		createChangeDestinations(m_keys.address, totalAmount, context->foundMoney, changeDts);
+
+		std::vector<TransactionDestinationEntry> splittedDests;
+		splitDestinations(transaction.firstTransferId, transaction.transferCount, changeDts, context->dustPolicy, splittedDests);
+
+		constructTx(m_keys, sources, splittedDests, transaction.extra, transaction.unlockTime, m_upperTransactionSizeLimit, stakeTx, context->tx_key);
+		getObjectHash(stakeTx, transaction.hash);
+		stakeTxKey = context->tx_key;
+
+		m_transactionsCache.updateTransaction(context->transactionId, stakeTx, totalAmount, context->selectedTransfers, context->tx_key);
+
+		notifyBalanceChanged(events);
+	}
+	catch (std::system_error& ec) {
+		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, ec.code()));
+		return false;
+	}
+	catch (std::exception&) {
+		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::INTERNAL_WALLET_ERROR)));
+		return false;
+	}
+
+	return true;
+}
+
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeGetRandomOutsRequest(std::shared_ptr<SendTransactionContext> context) {
   uint64_t outsCount = context->mixIn + 1;// add one to make possible (if need) to skip real output key
   std::vector<uint64_t> amounts;

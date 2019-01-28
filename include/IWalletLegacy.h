@@ -150,6 +150,8 @@ public:
   virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
 
   virtual bool isTrackingWallet() = 0;
+
+  virtual bool constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, Crypto::SecretKey& stakeKey) = 0;
 };
 
 }

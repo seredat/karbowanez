@@ -95,6 +95,37 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	/* PoW Stake transaction */
+	struct COMMAND_RPC_CONSTRUCT_STAKE_TX
+	{
+		struct request
+		{
+			std::string address;
+			uint64_t stake;
+			uint64_t mixin = 0;
+			uint64_t unlock_time = 0;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(address)
+				KV_MEMBER(stake)
+				KV_MEMBER(mixin)
+				KV_MEMBER(unlock_time)
+			}
+		};
+		struct response
+		{
+			std::string tx_as_hex;
+			std::string tx_key;
+
+			void serialize(ISerializer& s)
+			{
+				KV_MEMBER(tx_as_hex)
+				KV_MEMBER(tx_key)
+			}
+		};
+	};
+
 	/* Command: store */
 	struct COMMAND_RPC_STORE
 	{

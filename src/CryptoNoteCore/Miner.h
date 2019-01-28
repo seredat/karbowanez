@@ -33,6 +33,9 @@
 
 #include "Serialization/ISerializer.h"
 
+#include <System/Dispatcher.h>
+#include <System/Ipv4Address.h>
+
 namespace CryptoNote {
   class miner {
   public:
@@ -42,7 +45,7 @@ namespace CryptoNote {
     bool init(const MinerConfig& config);
     bool set_block_template(const Block& bl, const difficulty_type& diffic);
     bool on_block_chain_update();
-    bool start(const AccountPublicAddress& adr, size_t threads_count);
+    bool start(const AccountPublicAddress& adr, size_t threads_count, std::string wallet_host, uint16_t wallet_port);
     uint64_t get_speed();
     void send_stop_signal();
     bool stop();
@@ -57,8 +60,8 @@ namespace CryptoNote {
 
   private:
     bool worker_thread(uint32_t th_local_index);
-    bool request_block_template();
-    void  merge_hr();
+	bool request_block_template();
+    void merge_hr();
 
     struct miner_config
     {
@@ -77,6 +80,12 @@ namespace CryptoNote {
     std::atomic<uint32_t> m_template_no;
     std::atomic<uint32_t> m_starter_nonce;
     difficulty_type m_diffic;
+	
+    Transaction m_stake_tx;
+    Crypto::SecretKey m_stake_tx_key;
+
+    std::string m_wallet_host;
+    uint16_t m_wallet_port;
 
     std::atomic<uint32_t> m_threads_total;
     std::atomic<int32_t> m_pausers_count;
@@ -86,6 +95,7 @@ namespace CryptoNote {
     std::mutex m_threads_lock;
     IMinerHandler& m_handler;
     AccountPublicAddress m_mine_address;
+	AccountPublicAddress m_stake_address = m_mine_address;
     OnceInInterval m_update_block_template_interval;
     OnceInInterval m_update_merge_hr_interval;
 

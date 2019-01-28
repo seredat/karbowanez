@@ -271,13 +271,13 @@ bool get_inputs_money_amount(const Transaction& tx, uint64_t& money) {
   return true;
 }
 
-uint32_t get_block_height(const Block& b) {
+uint32_t get_block_height(const Block& b) { // TODO change this to look for blockIndex in block header
   if (b.baseTransaction.inputs.size() != 1) {
-    return 0;
+    return b.blockIndex; //return 0;
   }
   const auto& in = b.baseTransaction.inputs[0];
   if (in.type() != typeid(BaseInput)) {
-    return 0;
+    return b.blockIndex; //return 0;
   }
   return boost::get<BaseInput>(in).blockIndex;
 }

@@ -86,6 +86,7 @@ struct BlockHeader {
   uint32_t nonce;
   uint64_t timestamp;
   Crypto::Hash previousBlockHash;
+  uint32_t blockIndex;
 };
 
 struct Block : public BlockHeader {

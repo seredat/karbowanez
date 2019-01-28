@@ -75,6 +75,40 @@ void invokeJsonCommand(HttpClient& client, const std::string& url, const Request
 }
 
 template <typename Request, typename Response>
+void invokeJsonRpcCommand(HttpClient& client, const std::string& method, const Request& req, Response& res) {
+  try {
+
+    JsonRpc::JsonRpcRequest jsReq;
+
+    jsReq.setMethod(method);
+    jsReq.setParams(req);
+
+    HttpRequest httpReq;
+    HttpResponse httpRes;
+
+    httpReq.addHeader("Content-Type", "application/json");
+    httpReq.setUrl("/json_rpc");
+    httpReq.setBody(jsReq.getBody());
+
+    client.request(httpReq, httpRes);
+
+    JsonRpc::JsonRpcResponse jsRes;
+
+    //if (httpRes.getStatus() == HttpResponse::STATUS_200) {
+      jsRes.parse(httpRes.getBody());
+      if (!jsRes.getResult(res)) {
+        throw std::runtime_error("HTTP status: " + std::to_string(httpRes.getStatus()));
+      }
+    //}
+
+  } catch (const ConnectException&) {
+    throw std::runtime_error("HTTP status: CONNECT_ERROR");
+  } catch (const std::exception&) {
+    throw std::runtime_error("HTTP status: NETWORK_ERROR");
+  }
+}
+
+template <typename Request, typename Response>
 void invokeBinaryCommand(HttpClient& client, const std::string& url, const Request& req, Response& res) {
   HttpRequest hreq;
   HttpResponse hres;

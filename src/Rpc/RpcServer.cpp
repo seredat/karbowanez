@@ -757,7 +757,7 @@ bool RpcServer::on_start_mining(const COMMAND_RPC_START_MINING::request& req, CO
     return true;
   }
 
-  if (!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count))) {
+  if (!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count), req.wallet_host, req.wallet_port)) {
     res.status = "Failed, mining not started";
     return true;
   }
@@ -1268,7 +1268,27 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
   Block b = boost::value_initialized<Block>();
   CryptoNote::BinaryArray blob_reserve;
   blob_reserve.resize(req.reserve_size, 0);
-  if (!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve)) {
+
+  Transaction stakeTx;
+  Crypto::SecretKey stakeTxKey;
+  BinaryArray tx_blob;
+  if (!Common::fromHex(req.tx_as_hex, tx_blob))
+  {
+	  throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Failed to parse tx from hexbuff" };
+  }
+  Crypto::Hash tx_hash = NULL_HASH;
+  Crypto::Hash tx_prefixt_hash = NULL_HASH;
+  if (!parseAndValidateTransactionFromBinaryArray(tx_blob, stakeTx, tx_hash, tx_prefixt_hash)) {
+	  throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Could not parse tx from blob" };
+  }
+  Crypto::Hash tx_key_hash;
+  size_t size;
+  if (!Common::fromHex(req.tx_key, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash)) {
+	  throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Failed to parse tx_key" };
+  }
+  stakeTxKey = *(struct Crypto::SecretKey *) &tx_key_hash;
+
+  if (!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve, stakeTx, stakeTxKey)) {
     logger(ERROR) << "Failed to create block template";
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
   }

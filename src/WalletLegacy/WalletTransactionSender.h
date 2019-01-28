@@ -47,6 +47,12 @@ public:
   std::shared_ptr<WalletRequest> makeSendFusionRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
 	  const std::vector<WalletLegacyTransfer>& transfers, const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0);
 
+  bool makeStakeTransaction(std::shared_ptr<SendTransactionContext>& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
+	  const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0);
+
+  uint64_t selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers);
+  uint64_t selectDustTransfersToSend(uint64_t neededMoney, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers);
+
 private:
   std::shared_ptr<WalletRequest> makeGetRandomOutsRequest(std::shared_ptr<SendTransactionContext> context);
   std::shared_ptr<WalletRequest> doSendTransaction(std::shared_ptr<SendTransactionContext> context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events);
@@ -64,9 +70,6 @@ private:
 
   void validateTransfersAddresses(const std::vector<WalletLegacyTransfer>& transfers);
   bool validateDestinationAddress(const std::string& address);
-
-  uint64_t selectTransfersToSend(uint64_t neededMoney, bool addDust, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers);
-  uint64_t selectDustTransfersToSend(uint64_t neededMoney, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers);
 
   const Currency& m_currency;
   AccountKeys m_keys;

@@ -25,6 +25,9 @@ namespace {
 const command_line::arg_descriptor<std::string> arg_extra_messages =  {"extra-messages-file", "Specify file for extra messages to include into coinbase transactions", "", true};
 const command_line::arg_descriptor<std::string> arg_start_mining =    {"start-mining", "Specify wallet address to mining for", "", true};
 const command_line::arg_descriptor<uint32_t>    arg_mining_threads =  {"mining-threads", "Specify mining threads count", 0, true};
+const command_line::arg_descriptor<std::string>    arg_wallet_host =  {"wallet-host", "Specify wallet RPC host", "", true};
+const command_line::arg_descriptor<uint16_t>    arg_wallet_port =  {"wallet-port", "Specify wallet RPC port", 0, true};
+const command_line::arg_descriptor<std::string>    arg_stake_address =  {"stake-address", "Specify stake transaction destination", "", true};
 }
 
 MinerConfig::MinerConfig() {
@@ -35,6 +38,9 @@ void MinerConfig::initOptions(boost::program_options::options_description& desc)
   command_line::add_arg(desc, arg_extra_messages);
   command_line::add_arg(desc, arg_start_mining);
   command_line::add_arg(desc, arg_mining_threads);
+  command_line::add_arg(desc, arg_wallet_host);
+  command_line::add_arg(desc, arg_wallet_port);
+  command_line::add_arg(desc, arg_stake_address);
 }
 
 void MinerConfig::init(const boost::program_options::variables_map& options) {
@@ -48,6 +54,18 @@ void MinerConfig::init(const boost::program_options::variables_map& options) {
 
   if (command_line::has_arg(options, arg_mining_threads)) {
     miningThreads = command_line::get_arg(options, arg_mining_threads);
+  }
+
+  if (command_line::has_arg(options, arg_wallet_host)) {
+    walletHost = command_line::get_arg(options, arg_wallet_host);
+  }
+
+  if (command_line::has_arg(options, arg_wallet_port)) {
+    walletPort = command_line::get_arg(options, arg_wallet_port);
+  }
+
+  if (command_line::has_arg(options, arg_stake_address)) {
+    stakeAddress = command_line::get_arg(options, arg_stake_address);
   }
 }
 

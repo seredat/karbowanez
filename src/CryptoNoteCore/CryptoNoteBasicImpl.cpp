@@ -36,7 +36,7 @@ namespace CryptoNote {
   //-----------------------------------------------------------------------------------------------
   uint64_t getPenalizedAmount(uint64_t amount, size_t medianSize, size_t currentBlockSize) {
     static_assert(sizeof(size_t) >= sizeof(uint32_t), "size_t is too small");
-    assert(currentBlockSize <= 2 * medianSize);
+    //assert(currentBlockSize <= 2 * medianSize);
     assert(medianSize <= std::numeric_limits<uint32_t>::max());
     assert(currentBlockSize <= std::numeric_limits<uint32_t>::max());
 

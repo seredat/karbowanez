@@ -70,7 +70,8 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort)
     m_peerCount(0),
     m_networkHeight(0),
 	m_nodeHeight(0),
-	m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE) {
+	m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE),
+	m_nextDifficulty(0) {
   resetInternalState();
 }
 
@@ -272,6 +273,7 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
 	m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
 	m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
+	m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
   }
 
   if (m_connected != m_httpClient->isConnected()) {
@@ -347,6 +349,10 @@ uint64_t NodeRpcProxy::getLastLocalBlockTimestamp() const {
 
 uint64_t NodeRpcProxy::getMinimalFee() const {
   return m_minimalFee.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getNextDifficulty() const {
+  return m_nextDifficulty.load(std::memory_order_relaxed);
 }
 
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {

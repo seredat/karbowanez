@@ -33,9 +33,12 @@
 #include "CryptoNoteFormatUtils.h"
 #include "CryptoNoteTools.h"
 #include "CryptoNoteStatInfo.h"
+#include "CryptoNote.h"
+#include "CryptoTypes.h"
 #include "Miner.h"
 #include "TransactionExtra.h"
 #include "IBlock.h"
+#include "Serialization/SerializationTools.h"
 
 #undef ERROR
 
@@ -420,7 +423,8 @@ bool core::add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t
   return m_mempool.add_tx(tx, tx_hash, blob_size, tvc, keeped_by_block);
 }
 
-bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) {
+// add Transaction miner_tx to args received from wallet
+bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce, Transaction& stake_tx, Crypto::SecretKey& stake_tx_key) {
   size_t median_size;
   uint64_t already_generated_coins;
 
@@ -463,6 +467,10 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     b.previousBlockHash = get_tail_id();
     b.timestamp = time(NULL);
 
+	if (height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+		b.blockIndex = height;
+	}
+
     // Don't generate a block template with invalid timestamp
     // Fix by Jagerman
     // https://github.com/graft-project/GraftNetwork/pull/118/commits
@@ -493,16 +501,16 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
      block size, so first miner transaction generated with fake amount of money, and with phase we know think we know expected block size
      */
   //make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
-  bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+  bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, stake_tx, stake_tx_key, ex_nonce, 14);
   if (!r) { 
     logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance"; 
     return false; 
   }
-
   size_t cumulative_size = txs_size + getObjectBinarySize(b.baseTransaction);
-  for (size_t try_count = 0; try_count != 10; ++try_count) {
-    r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 14);
 
+  // now after we estimated the size of coinbase tx with stake let's attempt to create real one
+  for (size_t try_count = 0; try_count != 10; ++try_count) {
+    r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, stake_tx, stake_tx_key, ex_nonce, 14);
     if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, second chance"; return false; }
     size_t coinbase_blob_size = getObjectBinarySize(b.baseTransaction);
     if (coinbase_blob_size > cumulative_size - txs_size) {
@@ -1174,11 +1182,6 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   blockDetails.nonce = block.nonce;
   blockDetails.hash = hash;
 
-  blockDetails.reward = 0;
-  for (const TransactionOutput& out : block.baseTransaction.outputs) {
-    blockDetails.reward += out.amount;
-  }
-
   if (block.baseTransaction.inputs.front().type() != typeid(BaseInput))
     return false;
   blockDetails.height = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
@@ -1189,6 +1192,12 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   if (!getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {
     return false;
   }
+
+  blockDetails.reward = 0;
+  for (const TransactionOutput& out : block.baseTransaction.outputs) {
+	  blockDetails.reward += out.amount;
+  }
+  blockDetails.reward = blockDetails.reward - blockDetails.difficulty * 100000; // TODO replace with proper const
 
   std::vector<size_t> blocksSizes;
   if (!getBackwardBlocksSizes(blockDetails.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
