@@ -318,13 +318,6 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
         return false;
       }
       keys_seen.insert(boost::get<KeyOutput>(out.target).key);
-
-      if (!is_valid_decomposed_amount(out.amount)) {
-        if (error) {
-          *error = "Invalid decomposed output amount";
-        }
-        return false;
-      }
     } else if (out.target.type() == typeid(MultisignatureOutput)) {
       const MultisignatureOutput& multisignatureOutput = ::boost::get<MultisignatureOutput>(out.target);
       if (multisignatureOutput.requiredSignatureCount > multisignatureOutput.keys.size()) {
@@ -349,13 +342,6 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
         }
 		keys_seen.insert(key);
 
-      }
-
-      if (!is_valid_decomposed_amount(out.amount)) {
-        if (error) {
-          *error = "Invalid decomposed output amount";
-        }
-        return false;
       }
     } else {
       if (error) {

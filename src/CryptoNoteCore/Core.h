@@ -187,6 +187,8 @@ namespace CryptoNote {
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
 	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height, bool loose_check);
+	 //check if tx is not sending unmixable outputs
+	 bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 
      bool check_tx_ring_signature(const KeyInput& tx, const Crypto::Hash& tx_prefix_hash, const std::vector<Crypto::Signature>& sig);
      bool is_tx_spendtime_unlocked(uint64_t unlock_time);
