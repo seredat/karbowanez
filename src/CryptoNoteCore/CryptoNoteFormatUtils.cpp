@@ -318,7 +318,6 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
         return false;
       }
       keys_seen.insert(boost::get<KeyOutput>(out.target).key);
-
     } else if (out.target.type() == typeid(MultisignatureOutput)) {
       const MultisignatureOutput& multisignatureOutput = ::boost::get<MultisignatureOutput>(out.target);
       if (multisignatureOutput.requiredSignatureCount > multisignatureOutput.keys.size()) {
