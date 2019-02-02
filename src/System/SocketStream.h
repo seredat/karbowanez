@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2017-2019 The Karbowanec developers
 //
 // This file is part of Karbo.
 //
@@ -15,29 +15,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #pragma once
 
-#include <boost/program_options.hpp>
+#include <array>
+#include <cstdint>
+#include <streambuf>
 
-namespace CryptoNote {
 
-class RpcServerConfig {
-public:
+namespace System {
 
-  RpcServerConfig();
-
-  static void initOptions(boost::program_options::options_description& desc);
-  void init(const boost::program_options::variables_map& options);
-
-  std::string getBindAddress() const;
-
-  std::string bindIp;
-  uint16_t bindPort;
-  bool EnableSSL;
-  uint16_t bindPortSSL;
-  std::string chain_file;
-  std::string key_file;
-  std::string dh_file;
+class SocketStreambuf: public std::streambuf {
+  public:
+    SocketStreambuf(char *data, size_t lenght);
+    ~SocketStreambuf();
+    char o_buff[65536];
+  private:
+    size_t lenght;
+    bool read_t;
+    std::array<char, 2048> readBuf;
+    std::array<uint8_t, 65536> writeBuf;
+    std::streambuf::int_type underflow() override;
+    int sync() override;
 };
 
 }
+

@@ -150,6 +150,8 @@ int main(int argc, char* argv[])
     desc_options.add(desc_cmd_only).add(desc_cmd_sett);
 
     po::variables_map vm;
+    boost::system::error_code ec;
+    std::string data_dir = "";
     bool r = command_line::handle_error_helper(desc_options, [&]()
     {
       po::store(po::parse_command_line(argc, argv, desc_options), vm);
@@ -161,7 +163,7 @@ int main(int argc, char* argv[])
         return false;
       }
 
-      std::string data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
+      data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
       std::string config = command_line::get_arg(vm, arg_config_file);
 
       boost::filesystem::path data_dir_path(data_dir);
@@ -170,7 +172,6 @@ int main(int argc, char* argv[])
         config_path = data_dir_path / config_path;
       }
 
-      boost::system::error_code ec;
       if (boost::filesystem::exists(config_path, ec)) {
         po::store(po::parse_config_file<char>(config_path.string<std::string>().c_str(), desc_cmd_sett), vm);
       }
@@ -290,12 +291,26 @@ int main(int argc, char* argv[])
       }
     }
 
+    boost::filesystem::path data_dir_path(data_dir);
+    boost::filesystem::path chain_file_path(rpcConfig.chain_file);
+    boost::filesystem::path key_file_path(rpcConfig.key_file);
+    boost::filesystem::path dh_file_path(rpcConfig.dh_file);
+    if (!chain_file_path.has_parent_path()) {
+      chain_file_path = data_dir_path / chain_file_path;
+    }
+    if (!key_file_path.has_parent_path()) {
+      key_file_path = data_dir_path / key_file_path;
+    }
+    if (!dh_file_path.has_parent_path()) {
+      dh_file_path = data_dir_path / dh_file_path;
+    }
+
     System::Dispatcher dispatcher;
 
     CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
     CryptoNote::NodeServer p2psrv(dispatcher, cprotocol, logManager);
     CryptoNote::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol);
-	
+
     cprotocol.set_p2p_endpoint(&p2psrv);
     ccore.set_cryptonote_protocol(&cprotocol);
     DaemonCommandsHandler dch(ccore, p2psrv, logManager, cprotocol, &rpcServer);
@@ -341,8 +356,22 @@ int main(int argc, char* argv[])
       dch.start_handling();
     }
 
+    bool server_ssl_enable = false;
+    if (rpcConfig.EnableSSL){
+      if (boost::filesystem::exists(chain_file_path, ec) &&
+          boost::filesystem::exists(key_file_path, ec) &&
+          boost::filesystem::exists(dh_file_path, ec)){
+        rpcServer.setCerts(boost::filesystem::canonical(chain_file_path).string(),
+                           boost::filesystem::canonical(key_file_path).string(),
+                           boost::filesystem::canonical(dh_file_path).string());
+        server_ssl_enable = true;
+      } else {
+        logger(ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
+      }
+    }
+
     logger(INFO) << "Starting core rpc server on address " << rpcConfig.getBindAddress();
-    rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
+    rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort, rpcConfig.bindPortSSL, server_ssl_enable);
     rpcServer.restrictRPC(command_line::get_arg(vm, arg_restricted_rpc));
     rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
 	if (command_line::has_arg(vm, arg_set_fee_address)) {
