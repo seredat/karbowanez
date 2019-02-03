@@ -83,6 +83,7 @@ HttpServer::HttpServer(System::Dispatcher& dispatcher, Logging::ILogger& log)
   this->key_file = "";
   this->dh_file = "";
   this->server_ssl_port = 0;
+  this->server_ssl_clients = 0;
 }
 
 void HttpServer::setCerts(const std::string& chain_file, const std::string& key_file, const std::string& dh_file){
@@ -157,31 +158,41 @@ void HttpServer::do_session_ssl(boost::asio::ip::tcp::socket &socket, boost::asi
   boost::system::error_code ec;
   boost::asio::ssl::stream<tcp::socket&> stream(socket, ctx);
   stream.handshake(boost::asio::ssl::stream_base::server, ec);
-  if (!ec){
-    char i_buff[i_buff_size];
-    size_t length = stream.read_some(boost::asio::buffer(i_buff, i_buff_size), ec);
+  this->server_ssl_clients++;
 
-    System::SocketStreambuf streambuf((char *) i_buff, length);
-    std::iostream io_stream(&streambuf);
+  try {
+    if (!ec){
+      char i_buff[i_buff_size];
+      size_t length = stream.read_some(boost::asio::buffer(i_buff, i_buff_size), ec);
+      if (length > 0 && length < i_buff_size){
+        System::SocketStreambuf streambuf((char *) i_buff, length);
+        std::iostream io_stream(&streambuf);
 
-    HttpParser parser;
-    HttpRequest req;
-    HttpResponse resp;
-    resp.addHeader("Access-Control-Allow-Origin", "*");
-    resp.addHeader("content-type", "application/json");
+        HttpParser parser;
+        HttpRequest req;
+        HttpResponse resp;
+        resp.addHeader("Access-Control-Allow-Origin", "*");
+        resp.addHeader("content-type", "application/json");
 
-    parser.receiveRequest(io_stream, req);
+        parser.receiveRequest(io_stream, req);
 
-    if (authenticate(req)) {
-      processRequest(req, resp);
-    } else {
-      logger(WARNING) << "Authorization required" << std::endl;
+        if (authenticate(req)) {
+          processRequest(req, resp);
+        } else {
+          logger(WARNING) << "Authorization required" << std::endl;
+        }
+        io_stream << resp;
+        io_stream.flush();
+
+        stream.write_some(boost::asio::buffer(streambuf.o_buff), ec);
+      } else {
+        logger(WARNING) << "Unable to process request (SSL server)" << std::endl;
+      }
     }
-    io_stream << resp;
-    io_stream.flush();
-
-    stream.write_some(boost::asio::buffer(streambuf.o_buff), ec);
+  } catch (std::exception& e) {
+    logger(ERROR, BRIGHT_RED) << "SSL server error: " << e.what() << std::endl;
   }
+  this->server_ssl_clients--;
 }
 
 void HttpServer::server_ssl(){
@@ -199,9 +210,8 @@ void HttpServer::server_ssl(){
     while(srv_loop){
       tcp::socket sock(this->io_service);
       accept.accept(sock);
-      this->do_session_ssl(sock, ctx);
-      //std::thread t(&HttpServer::do_session_ssl, this, std::ref(sock), std::ref(ctx));
-      //t.detach();
+      std::thread t(std::bind(&HttpServer::do_session_ssl, this, std::move(sock), std::ref(ctx)));
+      t.detach();
     }
   } catch (std::exception& e) {
     logger(ERROR, BRIGHT_RED) << "SSL server error: " << e.what() << std::endl;
@@ -299,7 +309,7 @@ bool HttpServer::authenticate(const HttpRequest& request) const {
 }
 
 size_t HttpServer::get_connections_count() const {
-	return m_connections.size();
+	return m_connections.size() + this->server_ssl_clients;
 }
 
 }

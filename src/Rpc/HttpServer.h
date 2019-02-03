@@ -66,6 +66,7 @@ private:
   void server();
   void server_ssl();
   void do_session_ssl(boost::asio::ip::tcp::socket &socket, boost::asio::ssl::context &ctx);
+  unsigned int server_ssl_clients;
   void acceptLoop();
   void connectionHandler(System::TcpConnection&& conn);
   bool authenticate(const HttpRequest& request) const;
