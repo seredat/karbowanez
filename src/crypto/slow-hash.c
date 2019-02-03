@@ -69,11 +69,43 @@ inline int argon2d_hash(const void *in, const size_t size, const void *salt, con
 	context.allocate_cbk = NULL;
 	context.free_cbk = NULL;
 	context.flags = 2;
-	context.m_cost = (1 << 13);  // Memory in KiB (~8192KB)
+	context.m_cost = (1 << 12);  // Memory in KiB (~4Mb)
 	context.lanes = 2;           // Degree of Parallelism
 	context.threads = 1;         // Threads
 	context.t_cost = 2;          // Iterations
 	return argon2_ctx(&context, Argon2_d);
+}
+
+#pragma pack(push, 1)
+union cn_slow_hash_state
+{
+	union hash_state hs;
+	struct
+	{
+		uint8_t k[64];
+		uint8_t init[INIT_SIZE_BYTE];
+	};
+};
+#pragma pack(pop)
+
+void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
+{
+	union cn_slow_hash_state state;
+	static void(*const extra_hashes[4])(const void *, size_t, char *) =
+	{
+		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+	};
+
+	keccak1600(data, (int)length, (uint8_t*)&state.hs);
+	char* pw = (char*)&state.hs;
+
+	uint8_t salted[sizeof(salt) + sizeof(pw)];
+	memcpy(salted, salt, sizeof(salt));
+	memcpy(&salted[sizeof(salt)], pw, sizeof(pw));
+
+	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
+	
+	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
@@ -169,18 +201,6 @@ inline int argon2d_hash(const void *in, const size_t size, const void *salt, con
 #else
 #define THREADV __thread
 #endif
-
-#pragma pack(push, 1)
-union cn_slow_hash_state
-{
-    union hash_state hs;
-    struct
-    {
-        uint8_t k[64];
-        uint8_t init[INIT_SIZE_BYTE];
-    };
-};
-#pragma pack(pop)
 
 THREADV uint8_t *hp_state = NULL;
 THREADV int hp_allocated = 0;
@@ -680,24 +700,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 		slow_hash_free_state();
 }
 
-void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
-{
-
-	union cn_slow_hash_state state;
-
-	static void(*const extra_hashes[4])(const void *, size_t, char *) =
-	{
-		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-	};
-
-	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* pw = (char*)&state.hs;
-	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
-							      // without having any security issues.
-	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
-}
-
 #elif !defined NO_AES && (defined(__arm__) || defined(__aarch64__))
 void slow_hash_allocate_state(void)
 {
@@ -722,18 +724,6 @@ void slow_hash_free_state(void)
 #endif
 
 #define U64(x) ((uint64_t *) (x))
-
-#pragma pack(push, 1)
-union cn_slow_hash_state
-{
-    union hash_state hs;
-    struct
-    {
-        uint8_t k[64];
-        uint8_t init[INIT_SIZE_BYTE];
-    };
-};
-#pragma pack(pop)
 
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRYPTO)
 
@@ -984,23 +974,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 	aligned_free(hp_state);
 }
 
-void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
-{
-
-	union cn_slow_hash_state state;
-
-	static void(*const extra_hashes[4])(const void *, size_t, char *) =
-	{
-		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-	};
-
-	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* pw = (char*)&state.hs;
-	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
-							      // without having any security issues.
-	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
-}
 #else /* aarch64 && crypto */
 
 // ND: Some minor optimizations for ARMv7 (raspberrry pi 2), effect seems to be ~40-50% faster.
@@ -1196,24 +1169,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash)
 	free(long_state);
 }
 
-void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
-{
-
-	union cn_slow_hash_state state;
-
-	static void(*const extra_hashes[4])(const void *, size_t, char *) =
-	{
-		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-	};
-
-	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* pw = (char*)&state.hs;
-	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
-							      // without having any security issues.
-	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
-}
-
 #endif /* !aarch64 || !crypto */
 
 #else
@@ -1282,16 +1237,6 @@ static void xor_blocks(uint8_t* a, const uint8_t* b) {
     a[i] ^= b[i];
   }
 }
-
-#pragma pack(push, 1)
-union cn_slow_hash_state {
-  union hash_state hs;
-  struct {
-    uint8_t k[64];
-    uint8_t init[INIT_SIZE_BYTE];
-  };
-};
-#pragma pack(pop)
 
 void cn_slow_hash(const void *data, size_t length, char *hash) {
   uint8_t* long_state = (uint8_t*)malloc(MEMORY);
@@ -1363,24 +1308,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
   extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
   oaes_free((OAES_CTX **) &aes_ctx);
   free(long_state);
-}
-
-void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
-{
-
-	union cn_slow_hash_state state;
-
-	static void(*const extra_hashes[4])(const void *, size_t, char *) =
-	{
-		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-	};
-
-	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* pw = (char*)&state.hs;
-	//extra_hashes[state.hs.b[0] & 3](&state.hs, 64, pw); // Not needed, can be removed for additional speed, 
-							      // without having any security issues.
-	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 
 #endif
