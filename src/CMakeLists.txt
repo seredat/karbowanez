@@ -86,9 +86,9 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux" OR APPLE AND NOT ANDROID)
 endif ()
 
 if (FREEBSD)
-  target_link_libraries(SimpleWallet -lthr)
-  target_link_libraries(Daemon -lthr)
-  target_link_libraries(PaymentGateService -lthr)
+  target_link_libraries(SimpleWallet -lthr -lcrypto -lssl)
+  target_link_libraries(Daemon -lthr -lcrypto -lssl)
+  target_link_libraries(PaymentGateService -lthr -lcrypto -lssl)
   target_link_libraries(Miner -lthr)
 endif ()
 
