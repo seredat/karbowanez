@@ -755,6 +755,10 @@ bool core::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockHeight(blockId, blockHeight);
 }
 
+bool core::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  return m_blockchain.getBlockLongHash(context, b, res);
+}
+
 //void core::get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid) {
 //  m_blockchain.get_all_known_block_ids(main, alt, invalid);
 //}

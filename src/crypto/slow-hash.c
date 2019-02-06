@@ -50,17 +50,13 @@
 #define INIT_SIZE_BLK   8
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
-inline int argon2d_hash(const void *in, const size_t size, const void *salt, const void *out) {
-	uint8_t salted[sizeof(salt) + sizeof(in)];
-	memcpy(salted, salt, sizeof(salt));
-	memcpy(&salted[sizeof(salt)], in, sizeof(in));
-
+inline int argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, const void *out) {
 	argon2_context context;
 	context.out = (uint8_t *)out;
 	context.outlen = (uint32_t)32;
 	context.pwd = (uint8_t *)in;
 	context.pwdlen = (uint32_t)size;
-	context.salt = (uint8_t *)salted;
+	context.salt = (uint8_t *)salt;
 	context.saltlen = sizeof(context.salt);
 	context.secret = NULL;
 	context.secretlen = 0;
@@ -69,10 +65,10 @@ inline int argon2d_hash(const void *in, const size_t size, const void *salt, con
 	context.allocate_cbk = NULL;
 	context.free_cbk = NULL;
 	context.flags = 2;
-	context.m_cost = (1 << 12);  // Memory in KiB (~4Mb)
-	context.lanes = 2;           // Degree of Parallelism
-	context.threads = 1;         // Threads
-	context.t_cost = 2;          // Iterations
+	context.m_cost = m_cost;        // Memory in KiB
+	context.lanes = lanes;          // Degree of Parallelism
+	context.threads = threads;      // Threads
+	context.t_cost = t_cost;        // Iterations
 	return argon2_ctx(&context, Argon2_d);
 }
 
@@ -88,7 +84,7 @@ union cn_slow_hash_state
 };
 #pragma pack(pop)
 
-void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
+void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_cost, uint32_t t_cost, char *hash)
 {
 	union cn_slow_hash_state state;
 	static void(*const extra_hashes[4])(const void *, size_t, char *) =
@@ -103,7 +99,7 @@ void an_slow_hash(const void *data, size_t length, const void *salt, char *hash)
 	memcpy(salted, salt, sizeof(salt));
 	memcpy(&salted[sizeof(salt)], pw, sizeof(pw));
 
-	argon2d_hash(pw, 64, salt, (uint8_t*)&state.hs);
+	argon2d_hash(pw, 64, salt, m_cost, 2, 1, t_cost, (uint8_t*)&state.hs);
 	
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }

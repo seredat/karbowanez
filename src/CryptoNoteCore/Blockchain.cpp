@@ -34,6 +34,10 @@
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
 
+#include "../crypto/hash.h"
+#include "../crypto/argon2/argon2.h"
+#include "../crypto/argon2/blake2.h"
+
 using namespace Logging;
 using namespace Common;
 
@@ -1152,6 +1156,105 @@ uint64_t Blockchain::getCurrentCumulativeBlocksizeLimit() {
   return m_current_block_cumul_sz_limit;
 }
 
+bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) {
+  if (block.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return m_currency.checkProofOfWork(context, block, currentDiffic, proofOfWork);
+  }
+
+  if (!getBlockLongHash(context, block, proofOfWork)) {
+    return false;
+  }
+
+  return check_hash(proofOfWork, currentDiffic);
+}
+
+inline int argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, const void *out) {
+	argon2_context context;
+	context.out = (uint8_t *)out;
+	context.outlen = (uint32_t)32;
+	context.pwd = (uint8_t *)in;
+	context.pwdlen = (uint32_t)size;
+	context.salt = (uint8_t *)salt;
+	context.saltlen = sizeof(context.salt);
+	context.secret = NULL;
+	context.secretlen = 0;
+	context.ad = NULL;
+	context.adlen = 0;
+	context.allocate_cbk = NULL;
+	context.free_cbk = NULL;
+	context.flags = 2;
+	context.m_cost = m_cost;        // Memory in KiB
+	context.lanes = lanes;          // Degree of Parallelism
+	context.threads = threads;      // Threads
+	context.t_cost = t_cost;        // Iterations
+	return argon2_ctx(&context, Argon2_d);
+}
+
+bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+	BinaryArray bd;
+	if (!get_block_hashing_blob(b, bd)) {
+		return false;
+	}
+
+	// Phase 1
+
+	uint32_t m_cost1 = (1 << 14); // Memory in KiB
+	uint32_t lanes = 2;           // Degree of Parallelism
+	uint32_t threads = 1;         // Threads
+	uint32_t t_cost = 2;         // Iterations
+	Crypto::Hash hash_1;
+
+	// Hashing the current blockdata (preprocessing it)
+	argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, &hash_1);
+
+	// Splitting the hash into 8 chunks
+	// Getting the corresponding 8 blocks from blockchain
+	BinaryArray scratchpad;
+	for (uint8_t i = 1; i <= 8; i++) {
+		uint8_t chunk[4];
+		memcpy(chunk, &hash_1.data[i * 4 - 4], sizeof(chunk));
+		uint64_t cd = *reinterpret_cast<uint32_t *>(&chunk);
+		uint32_t height_i = cd % (getCurrentBlockchainHeight() - 1);
+		Crypto::Hash hash_i = getBlockIdByHeight(height_i);
+		Block b;
+		if (!getBlockByHash(hash_i, b)) {
+			return false;
+		}
+		BinaryArray ba;
+		if (!toBinaryArray(b, ba)) {
+			return false;
+		}
+		scratchpad.insert(std::end(scratchpad), std::begin(ba), std::end(ba));
+	}
+
+	// Phase 2
+	
+	uint32_t m_cost2 = (1 << 13);
+	Crypto::Hash hash_2;
+
+	// Hashing the eight blocks as one continous block
+	argon2d_hash(scratchpad.data(), 64, hash_1.data, m_cost2, lanes, threads, t_cost, &hash_2);
+
+	// Phase 3
+	
+	uint32_t m_cost3 = (1 << 12);
+	Crypto::Hash hash_3;
+
+	// Hashing using the generated hash2 as a salt for argon, taking the previous hash1 as the password for argon
+	argon2d_hash(hash_1.data, 64, hash_2.data, m_cost3, lanes, threads, t_cost, &hash_3);
+
+	// Phase 4
+	
+	uint32_t m_cost4 = (1 << 11);
+	BinaryArray salt;
+	fromHex(CryptoNote::GENESIS_COINBASE_TX_HEX, salt);
+
+	// finalizer hash
+	an_slow_hash(hash_3.data, sizeof(hash_3), salt.data(), m_cost4, t_cost, res);
+
+	return true;
+}
+
 bool Blockchain::complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
   if (timestamps.size() >= m_currency.timestampCheckWindow(blockMajorVersion))
     return true;
@@ -1284,7 +1387,7 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
     if (!(current_diff)) { logger(ERROR, BRIGHT_RED) << "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!"; return false; }
     Crypto::Hash proof_of_work = NULL_HASH;
-    if (!m_currency.checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
       logger(INFO, BRIGHT_RED) <<
         "Block with id: " << id
         << ENDL << " for alternative chain, have not enough proof of work: " << proof_of_work
@@ -2081,7 +2184,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
       return false;
     }
   } else {
-    if (!m_currency.checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
       logger(INFO, BRIGHT_WHITE) <<
         "Block " << blockHash << ", has too weak proof of work: " << proof_of_work << ", expected difficulty: " << currentDifficulty;
       bvc.m_verification_failed = true;
