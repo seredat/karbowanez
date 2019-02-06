@@ -50,9 +50,9 @@
 #define INIT_SIZE_BLK   8
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
-inline int argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, const void *out) {
+void argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, char *hash) {
 	argon2_context context;
-	context.out = (uint8_t *)out;
+	context.out = (uint8_t *)hash;
 	context.outlen = (uint32_t)32;
 	context.pwd = (uint8_t *)in;
 	context.pwdlen = (uint32_t)size;
@@ -69,7 +69,7 @@ inline int argon2d_hash(const void *in, const size_t size, const void *salt, uin
 	context.lanes = lanes;          // Degree of Parallelism
 	context.threads = threads;      // Threads
 	context.t_cost = t_cost;        // Iterations
-	return argon2_ctx(&context, Argon2_d);
+	argon2_ctx(&context, Argon2_d);
 }
 
 #pragma pack(push, 1)
@@ -94,13 +94,7 @@ void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_
 
 	keccak1600(data, (int)length, (uint8_t*)&state.hs);
 	char* pw = (char*)&state.hs;
-
-	uint8_t salted[sizeof(salt) + sizeof(pw)];
-	memcpy(salted, salt, sizeof(salt));
-	memcpy(&salted[sizeof(salt)], pw, sizeof(pw));
-
 	argon2d_hash(pw, 64, salt, m_cost, 2, 1, t_cost, (uint8_t*)&state.hs);
-	
 	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
 }
 

@@ -35,8 +35,6 @@
 #include "TransactionExtra.h"
 
 #include "../crypto/hash.h"
-#include "../crypto/argon2/argon2.h"
-#include "../crypto/argon2/blake2.h"
 
 using namespace Logging;
 using namespace Common;
@@ -1165,29 +1163,16 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
     return false;
   }
 
-  return check_hash(proofOfWork, currentDiffic);
-}
+  if (!check_hash(proofOfWork, currentDiffic)) {
 
-inline int argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, const void *out) {
-	argon2_context context;
-	context.out = (uint8_t *)out;
-	context.outlen = (uint32_t)32;
-	context.pwd = (uint8_t *)in;
-	context.pwdlen = (uint32_t)size;
-	context.salt = (uint8_t *)salt;
-	context.saltlen = sizeof(context.salt);
-	context.secret = NULL;
-	context.secretlen = 0;
-	context.ad = NULL;
-	context.adlen = 0;
-	context.allocate_cbk = NULL;
-	context.free_cbk = NULL;
-	context.flags = 2;
-	context.m_cost = m_cost;        // Memory in KiB
-	context.lanes = lanes;          // Degree of Parallelism
-	context.threads = threads;      // Threads
-	context.t_cost = t_cost;        // Iterations
-	return argon2_ctx(&context, Argon2_d);
+	  std::string dummy;
+	  std::cout << "Enter to continue..." << std::endl;
+	  std::getline(std::cin, dummy);
+
+	  return false;
+  }
+
+  return true;
 }
 
 bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
@@ -1198,14 +1183,16 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
 	// Phase 1
 
-	uint32_t m_cost1 = (1 << 14); // Memory in KiB
-	uint32_t lanes = 2;           // Degree of Parallelism
-	uint32_t threads = 1;         // Threads
-	uint32_t t_cost = 2;         // Iterations
+	uint32_t m_cost1 = (1 << 12);
+	uint32_t lanes = 2;
+	uint32_t threads = 1;
+	uint32_t t_cost = 2;
 	Crypto::Hash hash_1;
 
 	// Hashing the current blockdata (preprocessing it)
-	argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, &hash_1);
+	Crypto::argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, hash_1);
+
+	std::cout << "Hash 1: " << Common::podToHex(hash_1) << ENDL;
 
 	// Splitting the hash into 8 chunks
 	// Getting the corresponding 8 blocks from blockchain
@@ -1214,8 +1201,13 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 		uint8_t chunk[4];
 		memcpy(chunk, &hash_1.data[i * 4 - 4], sizeof(chunk));
 		uint64_t cd = *reinterpret_cast<uint32_t *>(&chunk);
-		uint32_t height_i = cd % (getCurrentBlockchainHeight() - 1);
+		uint32_t height_b = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
+		uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+		//uint32_t height_i = cd % (getCurrentBlockchainHeight() - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
 		Crypto::Hash hash_i = getBlockIdByHeight(height_i);
+
+		std::cout << "Chunk: " << Common::podToHex(chunk) << ", height: " << height_b << ", block i: " << height_i << ", with hash: " << Common::podToHex(hash_i) << ENDL;
+
 		Block b;
 		if (!getBlockByHash(hash_i, b)) {
 			return false;
@@ -1229,28 +1221,25 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
 	// Phase 2
 	
-	uint32_t m_cost2 = (1 << 13);
+	uint32_t m_cost2 = (1 << 11);
 	Crypto::Hash hash_2;
 
-	// Hashing the eight blocks as one continous block
-	argon2d_hash(scratchpad.data(), 64, hash_1.data, m_cost2, lanes, threads, t_cost, &hash_2);
+	// Hashing the eight blocks as one continous block, salt is hash1
+	Crypto::argon2d_hash(scratchpad.data(), 64, hash_1.data, m_cost2, lanes, threads, t_cost, hash_2);
+
+	std::cout << "Hash 2: " << Common::podToHex(hash_2) << ENDL;
 
 	// Phase 3
 	
-	uint32_t m_cost3 = (1 << 12);
-	Crypto::Hash hash_3;
+	uint32_t m_cost3 = (1 << 10);
 
 	// Hashing using the generated hash2 as a salt for argon, taking the previous hash1 as the password for argon
-	argon2d_hash(hash_1.data, 64, hash_2.data, m_cost3, lanes, threads, t_cost, &hash_3);
+	Crypto::an_slow_hash(hash_1.data, 64, hash_2.data, m_cost3, t_cost, res);
 
-	// Phase 4
+	std::cout << "Hash 3: " << Common::podToHex(res) << ENDL;
+
+	std::cout << " --- " << ENDL;
 	
-	uint32_t m_cost4 = (1 << 11);
-	BinaryArray salt;
-	fromHex(CryptoNote::GENESIS_COINBASE_TX_HEX, salt);
-
-	// finalizer hash
-	an_slow_hash(hash_3.data, sizeof(hash_3), salt.data(), m_cost4, t_cost, res);
 
 	return true;
 }
