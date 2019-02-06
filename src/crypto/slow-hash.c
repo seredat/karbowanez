@@ -86,16 +86,18 @@ union cn_slow_hash_state
 
 void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_cost, uint32_t t_cost, char *hash)
 {
-	union cn_slow_hash_state state;
+	uint8_t hs1[200];
 	static void(*const extra_hashes[4])(const void *, size_t, char *) =
 	{
 		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
 	};
 
-	keccak1600(data, (int)length, (uint8_t*)&state.hs);
-	char* pw = (char*)&state.hs;
-	argon2d_hash(pw, 64, salt, m_cost, 2, 1, t_cost, (uint8_t*)&state.hs);
-	extra_hashes[state.hs.b[0] & 3](&state.hs, 64, hash);
+	keccak1600(data, (int)length, (uint8_t*)hs1);
+	
+	uint8_t hs2[32];
+	argon2d_hash(hs1, 64, salt, m_cost, 2, 1, t_cost, (uint8_t*)hs2);
+
+	extra_hashes[hs1[0] & 3](&hs2, 64, hash);
 }
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
