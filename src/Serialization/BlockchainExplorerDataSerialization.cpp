@@ -103,7 +103,7 @@ void serialize(BaseInputDetails& inputBase, ISerializer& serializer) {
 void serialize(KeyInputDetails& inputToKey, ISerializer& serializer) {
   serializer(inputToKey.input, "input");
   serializer(inputToKey.mixin, "mixin");
-  serializer(inputToKey.output, "output");
+  serializer(inputToKey.outputs, "outputs");
 }
 
 void serialize(MultisignatureInputDetails& inputMultisig, ISerializer& serializer) {
