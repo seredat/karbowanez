@@ -1156,7 +1156,7 @@ bool core::fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDet
     if (typeid(TransactionExtraPublicKey) == field.type()) {
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
-      extraDetails.nonce = Common::asBinaryArray(Common::toHex(boost::get<TransactionExtraNonce>(field).nonce.data(), boost::get<TransactionExtraNonce>(field).nonce.size()));
+      extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
     }
   }
   return true;
