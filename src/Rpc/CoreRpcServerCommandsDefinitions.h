@@ -1043,7 +1043,7 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
   };
 };
 
-struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
+struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES {
   struct request {
     std::vector<Crypto::Hash> transactionHashes;
 
@@ -1061,6 +1061,26 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
       KV_MEMBER(transactions)
     }
   };
+};
+
+struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
+	struct request {
+		Crypto::Hash hash;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(hash);
+		}
+	};
+
+	struct response {
+		TransactionDetails2 transaction;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(status)
+			KV_MEMBER(transaction)
+		}
+	};
 };
 
 //-----------------------------------------------
