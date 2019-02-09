@@ -339,6 +339,7 @@ m_blockchainIndexesEnabled(blockchainIndexesEnabled) {
   m_outputs.set_deleted_key(0);
   Crypto::KeyImage nullImage = boost::value_initialized<decltype(nullImage)>();
   m_spent_keys.set_deleted_key(nullImage);
+  m_checkpoints_update_time = 0;
 }
 
 bool Blockchain::addObserver(IBlockchainStorageObserver* observer) {
@@ -2186,6 +2187,21 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   m_upgradeDetectorV5.blockPushed();
 
   update_next_cumulative_size_limit();
+
+#ifndef __ANDROID__
+  std::time_t timestamp_now = std::time(nullptr);
+  if (m_checkpoints_update_time + 24 * 60 * 60 < timestamp_now){
+    std::vector<uint32_t> checkpointHeights = m_checkpoints.getCheckpointHeights();
+    if (!checkpointHeights.empty()){
+      uint32_t checkpoint_last_height = checkpointHeights.back();
+      if (checkpoint_last_height < block.height){
+        m_checkpoints.load_checkpoints_from_dns();
+        m_checkpoints_update_time = timestamp_now;
+        logger(INFO, BRIGHT_GREEN) << "Autoupdate DNS checkpoints";
+      }
+    }
+  }
+#endif
 
   return true;
 }

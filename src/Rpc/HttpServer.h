@@ -19,9 +19,12 @@
 #pragma once 
 
 #include <unordered_set>
+#include <string.h>
 
 #include <HTTP/HttpRequest.h>
 #include <HTTP/HttpResponse.h>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl/stream.hpp>
 
 #include <System/ContextGroup.h>
 #include <System/Dispatcher.h>
@@ -31,6 +34,7 @@
 
 #include <Logging/LoggerRef.h>
 
+
 namespace CryptoNote {
 
 class HttpServer {
@@ -39,18 +43,30 @@ public:
 
   HttpServer(System::Dispatcher& dispatcher, Logging::ILogger& log);
 
-  void start(const std::string& address, uint16_t port, const std::string& user = "", const std::string& password = "");
+  void setCerts(const std::string& chain_file, const std::string& key_file, const std::string& dh_file);
+  void start(const std::string& address, uint16_t port, uint16_t port_ssl = 0,
+             bool server_ssl_enable = false, const std::string& user = "", const std::string& password = "");
   void stop();
 
   virtual void processRequest(const HttpRequest& request, HttpResponse& response) = 0;
   virtual size_t get_connections_count() const;
+
+  uint16_t server_ssl_port;
+  bool server_ssl_start;
 
 protected:
 
   System::Dispatcher& m_dispatcher;
 
 private:
-
+  boost::asio::io_service io_service;
+  std::string chain_file;
+  std::string key_file;
+  std::string dh_file;
+  void server();
+  void server_ssl();
+  void do_session_ssl(boost::asio::ip::tcp::socket &socket, boost::asio::ssl::context &ctx);
+  unsigned int server_ssl_clients;
   void acceptLoop();
   void connectionHandler(System::TcpConnection&& conn);
   bool authenticate(const HttpRequest& request) const;

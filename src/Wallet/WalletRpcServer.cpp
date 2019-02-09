@@ -81,7 +81,7 @@ wallet_rpc_server::wallet_rpc_server(
 
 bool wallet_rpc_server::run()
 {
-	start(m_bind_ip, m_port, m_rpcUser, m_rpcPassword);
+	start(m_bind_ip, m_port, 0, false, m_rpcUser, m_rpcPassword);
 	m_stopComplete.wait();
 	return true;
 }
