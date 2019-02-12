@@ -601,7 +601,7 @@ std::error_code NodeRpcProxy::doQueryBlocksLite(const std::vector<Crypto::Hash>&
 
     bse.blockHash = std::move(item.blockId);
     if (!item.block.empty()) {
-      if (!fromBinaryArray(bse.block, asBinaryArray(item.block))) {
+      if (!fromBinaryArray(bse.block, asBinaryArray(item.block))) { //TODO fix wallet sync
         return std::make_error_code(std::errc::invalid_argument);
       }
 

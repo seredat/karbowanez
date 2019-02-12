@@ -467,9 +467,9 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     b.previousBlockHash = get_tail_id();
     b.timestamp = time(NULL);
 
-	if (height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
-		b.blockIndex = height;
-	}
+    if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      b.blockIndex = height;
+    }
 
     // Don't generate a block template with invalid timestamp
     // Fix by Jagerman
@@ -495,6 +495,8 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   if (!m_mempool.fill_block_template(b, median_size, m_currency.maxBlockCumulativeSize(height), already_generated_coins, txs_size, fee)) {
     return false;
   }
+
+  /// TODO Move miner tx construct to wallet
 
   /*
      two-phase miner transaction generation: we don't know exact block size until we prepare block, but we don't know reward until we know

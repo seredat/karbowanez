@@ -386,6 +386,10 @@ void serializeBlockHeader(BlockHeader& header, ISerializer& serializer) {
 
   serializer(header.minorVersion, "minor_version");
   
+  if (header.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+	  serializer(header.blockIndex, "block_index");
+  }
+
   if (header.majorVersion == BLOCK_MAJOR_VERSION_2 || header.majorVersion == BLOCK_MAJOR_VERSION_3) {
     serializer(header.previousBlockHash, "prev_id");
   } else if (header.majorVersion == BLOCK_MAJOR_VERSION_1 || header.majorVersion >= BLOCK_MAJOR_VERSION_4) {

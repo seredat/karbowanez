@@ -190,12 +190,18 @@ namespace CryptoNote {
 	}
 
 	bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
-		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, Transaction& stake_tx, Crypto::SecretKey& secKey, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
+		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, Transaction& stake_tx, Crypto::SecretKey& secKey, 
+		const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
-		//tx.inputs.clear();
-		//tx.outputs.clear();
-		//tx.extra.clear();
-		tx = stake_tx; // add stake
+		tx.inputs.clear();
+		tx.outputs.clear();
+		tx.extra.clear();
+
+		//tx = stake_tx; // add stake
+		tx.inputs = stake_tx.inputs;
+		tx.outputs = stake_tx.outputs;
+		tx.signatures = stake_tx.signatures;
+		
 
 		//KeyPair txkey = generateKeyPair();
 		Crypto::PublicKey pubKey;
@@ -203,14 +209,13 @@ namespace CryptoNote {
 			return false;
 		}
 
-		//addTransactionPublicKeyToExtra(tx.extra, /*txkey.publicKey*/ pubKey);
+		addTransactionPublicKeyToExtra(tx.extra, /*txkey.publicKey*/ pubKey);
 		if (!extraNonce.empty()) {
 			if (!addExtraNonceToTransactionExtra(tx.extra, extraNonce)) {
 				return false;
 			}
 		}
 
-		// this is replaced by blockIndex in block header
 		if (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
 			BaseInput in;
 			in.blockIndex = height;
@@ -236,7 +241,7 @@ namespace CryptoNote {
 		}
 
 		uint64_t summaryAmounts = 0;
-		for (size_t no = 0; no < outAmounts.size(); no++) {
+		for (size_t no = stake_tx.outputs.size(); no < (outAmounts.size() + stake_tx.outputs.size()); no++) {
 			Crypto::KeyDerivation derivation = boost::value_initialized<Crypto::KeyDerivation>();
 			Crypto::PublicKey outEphemeralPubKey = boost::value_initialized<Crypto::PublicKey>();
 
@@ -263,7 +268,7 @@ namespace CryptoNote {
 			tk.key = outEphemeralPubKey;
 
 			TransactionOutput out;
-			summaryAmounts += out.amount = outAmounts[no];
+			summaryAmounts += out.amount = outAmounts[no - stake_tx.outputs.size()];
 			out.target = tk;
 			tx.outputs.push_back(out);
 		}

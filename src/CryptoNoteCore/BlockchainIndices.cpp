@@ -22,6 +22,7 @@
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "BlockchainExplorer/BlockchainExplorerDataBuilder.h"
 #include "CryptoNoteBasicImpl.h"
+#include "../CryptoNoteConfig.h"
 
 namespace CryptoNote {
 
@@ -249,7 +250,7 @@ bool GeneratedTransactionsIndex::add(const Block& block) {
     return false;
   }
 
-  uint32_t blockHeight = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  uint32_t blockHeight = block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
 
   if (index.size() != blockHeight) {
     return false;

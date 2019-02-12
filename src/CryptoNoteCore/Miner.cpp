@@ -122,7 +122,7 @@ namespace CryptoNote
 	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
     req.address = m_currency.accountAddressAsString(m_stake_address);
 	m_diffic = m_handler.getNextBlockDifficulty();
-	req.stake =  m_diffic * 1000000; // TODO replace by const
+	req.stake =  m_diffic * 10000000; // TODO replace by const
 	uint64_t mixin = 3; // TODO replace by params or settings
 
 	System::Dispatcher dispatcher;

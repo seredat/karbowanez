@@ -1058,25 +1058,26 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
 
 bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) {
 
-  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !(b.baseTransaction.inputs.size() == 1)) {
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5 && !(b.baseTransaction.inputs.size() == 1)) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction in the block has no inputs";
     return false;
   }
 
-  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5 && !(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction in the block has the wrong type";
     return false;
   }
 
-  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex != height) {
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5 && boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex != height) {
     logger(INFO, BRIGHT_RED) << "The miner transaction in block has invalid height: " <<
       boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex << ", expected: " << height;
     return false;
   }
 
-  if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && !checkTransactionInputs(b.baseTransaction)) {
+  // starting block v5 there are inputs in coinbase tx because of stake so we check them
+  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 && !checkTransactionInputs(b.baseTransaction)) {
     logger(INFO, BRIGHT_WHITE) << "coinbase stake transaction has wrong inputs";
     return false;
   }
@@ -1107,17 +1108,17 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   }
 
   uint64_t inputsAmount = 0;
-  if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+ // if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
     for (const auto& in : b.baseTransaction.inputs) {
       if (in.type() == typeid(KeyInput)) {
         inputsAmount += boost::get<KeyInput>(in).amount;
       }
     }
     minerReward = outputsAmount - inputsAmount;
-  }
-  else {
-    minerReward = outputsAmount;
-  }
+//  }
+//  else {
+//    minerReward = outputsAmount;
+//  }
 
   std::vector<size_t> lastBlocksSizes;
   get_last_n_blocks_sizes(lastBlocksSizes, m_currency.rewardBlocksWindow());
