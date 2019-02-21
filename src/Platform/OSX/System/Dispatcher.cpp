@@ -146,7 +146,7 @@ void Dispatcher::dispatch() {
     if (firstResumingContext != nullptr) {
       context = firstResumingContext;
       firstResumingContext = context->next;
-      assert(context->inExecutionQueue);
+      //assert(context->inExecutionQueue);
       context->inExecutionQueue = false;
       break;
     }
