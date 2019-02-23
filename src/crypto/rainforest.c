@@ -29,12 +29,11 @@
 //               CRC32 and AES extensions.
 //
 // Note: always use the same options to build all files!
-//
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
-#include <stddef.h>
+#include <stdio.h>
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
@@ -42,10 +41,223 @@ typedef unsigned long   ulong;
 #else
 #include <unistd.h>
 #endif
-#include "rainforest.h"
 
-// from aes2r.c
-void aes2r_encrypt(uint8_t * state, uint8_t * key);
+#define __attribute__(X)
+
+//#define DEBUG_ALGO
+
+/* Rijndael's substitution box for sub_bytes step */
+static uint8_t SBOX[256] = {
+     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
+     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
+     0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
+     0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75,
+     0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84,
+     0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf,
+     0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8,
+     0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2,
+     0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73,
+     0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb,
+     0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79,
+     0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08,
+     0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a,
+     0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e,
+     0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
+     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
+};
+
+/*--- The parts below are not used when crypto extensions are available ---*/
+/* Use -march=armv8-a+crypto on ARMv8 to use crypto extensions */
+/* Use -maes on x86_64 to use AES-NI */
+#if defined(RF_NOASM) || (!defined(__aarch64__) || !defined(__ARM_FEATURE_CRYPTO)) && (!defined(__x86_64__) || !defined(__AES__))
+
+/* shifts to do for shift_rows step */
+static uint8_t shifts[16] = {
+     0,  5, 10, 15,
+     4,  9, 14,  3,
+     8, 13,  2,  7,
+    12,  1,  6, 11
+};
+
+/* add the round key to the state with simple XOR operation */
+static void add_round_key(uint8_t * state, uint8_t * rkey) {
+    uint8_t i;
+    for (i = 0; i < 16; i++)
+        state[i] ^= rkey[i];
+}
+
+/* substitute all bytes using Rijndael's substitution box */
+static void sub_bytes(uint8_t * state) {
+    uint8_t i;
+    for (i = 0; i < 16; i++)
+        state[i] = SBOX[state[i]];
+}
+
+/* imagine the state not as 1-dimensional, but a 4x4 grid;
+ * this step shifts the rows of this grid around */
+static void shift_rows(uint8_t * state) {
+    uint8_t temp[16];
+    uint8_t i;
+
+    for (i = 0; i < 16; i++) {
+        temp[i] = state[shifts[i]];
+    }
+
+    for (i = 0; i < 16; i++) {
+        state[i] = temp[i];
+    }
+}
+
+/* mix columns */
+static void mix_columns(uint8_t * state) {
+    uint8_t a[4];
+    uint8_t b[4];
+    uint8_t h, i, k;
+
+    for (k = 0; k < 4; k++) {
+        for (i = 0; i < 4; i++) {
+            a[i] = state[i + 4 * k];
+            h = state[i + 4 * k] & 0x80; /* hi bit */
+            b[i] = state[i + 4 * k] << 1;
+
+            if (h == 0x80) {
+                b[i] ^= 0x1b; /* Rijndael's Galois field */
+            }
+        }
+
+        state[4 * k]     = b[0] ^ a[3] ^ a[2] ^ b[1] ^ a[1];
+        state[1 + 4 * k] = b[1] ^ a[0] ^ a[3] ^ b[2] ^ a[2];
+        state[2 + 4 * k] = b[2] ^ a[1] ^ a[0] ^ b[3] ^ a[3];
+        state[3 + 4 * k] = b[3] ^ a[2] ^ a[1] ^ b[0] ^ a[0];
+    }
+}
+#endif // (!defined(__aarch64__) || !defined(__ARM_FEATURE_CRYPTO)) && (!defined(__x86_64__) || !defined(__AES__))
+
+
+/* key schedule stuff */
+
+/* simple function to rotate 4 byte array */
+static inline uint32_t rotate32(uint32_t in) {
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    in = (in >> 8) | (in << 24);
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    in = (in << 8) | (in >> 24);
+#else
+    uint8_t *b = (uint8_t *)&in, temp = b[0];
+    b[0] = b[1]; b[1] = b[2]; b[2] = b[3]; b[3] = temp;
+#endif
+    return in;
+}
+
+/* key schedule core operation */
+static inline uint32_t sbox(uint32_t in, uint8_t n) {
+	in = (SBOX[in & 255]) | (SBOX[(in >> 8) & 255] << 8) | (SBOX[(in >> 16) & 255] << 16) | (SBOX[(in >> 24) & 255] << 24);
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	in ^= n;
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	in ^= n << 24;
+#else
+	*(uint8_t *)&in ^= n;
+#endif
+	return in;
+}
+
+// this version is optimized for exactly two rounds.
+// _state_ must be 16-byte aligned.
+static void aes2r_encrypt(uint8_t * state, uint8_t * key) {
+    uint32_t key_schedule[12] __attribute__((aligned(16)));
+    uint32_t t;
+
+    /* initialize key schedule; its first 16 bytes are the key */
+    key_schedule[0] = ((uint32_t *)key)[0];
+    key_schedule[1] = ((uint32_t *)key)[1];
+    key_schedule[2] = ((uint32_t *)key)[2];
+    key_schedule[3] = ((uint32_t *)key)[3];
+    t = key_schedule[3];
+
+    t = rotate32(t);
+    t = sbox(t, 1);
+    t = key_schedule[4]  = key_schedule[0] ^ t;
+    t = key_schedule[5]  = key_schedule[1] ^ t;
+    t = key_schedule[6]  = key_schedule[2] ^ t;
+    t = key_schedule[7]  = key_schedule[3] ^ t;
+
+    t = rotate32(t);
+    t = sbox(t, 2);
+    t = key_schedule[8]  = key_schedule[4] ^ t;
+    t = key_schedule[9]  = key_schedule[5] ^ t;
+    t = key_schedule[10] = key_schedule[6] ^ t;
+    t = key_schedule[11] = key_schedule[7] ^ t;
+
+// Use -march=armv8-a+crypto+crc to get this one
+#if defined(__aarch64__) && defined(__ARM_FEATURE_CRYPTO)
+    asm volatile(
+        "ld1   {v0.16b},[%0]        \n"
+	"ld1   {v1.16b,v2.16b,v3.16b},[%1]  \n"
+	"aese  v0.16b,v1.16b        \n" // round1: add_round_key,sub_bytes,shift_rows
+	"aesmc v0.16b,v0.16b        \n" // round1: mix_columns
+	"aese  v0.16b,v2.16b        \n" // round2: add_round_key,sub_bytes,shift_rows
+	"eor   v0.16b,v0.16b,v3.16b \n" // finish: add_round_key
+	"st1   {v0.16b},[%0]        \n"
+	: /* only output is in *state */
+	: "r"(state), "r"(key_schedule)
+	: "v0", "v1", "v2", "v3", "cc", "memory");
+
+// Use -maes to get this one
+#elif defined(__x86_64__) && defined(__AES__)
+    asm volatile(
+        "movups (%0),  %%xmm0     \n"
+	"movups (%1),  %%xmm1     \n"
+	"pxor   %%xmm1,%%xmm0     \n" // add_round_key(state, key_schedule)
+	"movups 16(%1),%%xmm2     \n"
+	"movups 32(%1),%%xmm1     \n"
+	"aesenc %%xmm2,%%xmm0     \n" // first round
+	"aesenclast %%xmm1,%%xmm0 \n" // final round
+	"movups %%xmm0, (%0)  \n"
+	: /* only output is in *state */
+	: "r"(state), "r" (key_schedule)
+	: "xmm0", "xmm1", "xmm2", "cc", "memory");
+
+#else
+    /* first round of the algorithm */
+    add_round_key(state, (void*)&key_schedule[0]);
+    sub_bytes(state);
+    shift_rows(state);
+    mix_columns(state);
+    add_round_key(state, (void*)&key_schedule[4]);
+
+    /* final round of the algorithm */
+    sub_bytes(state);
+    shift_rows(state);
+    add_round_key(state, (void*)&key_schedule[8]);
+
+#endif
+}
+
+// this seems necessary only for gcc, otherwise hash is bogus
+typedef __attribute__((may_alias)) uint8_t  rf_u8;
+typedef __attribute__((may_alias)) uint16_t rf_u16;
+typedef __attribute__((may_alias)) uint32_t rf_u32;
+typedef __attribute__((may_alias)) uint64_t rf_u64;
+
+// 2048 entries for the rambox => 16kB
+#define RAMBOX_SIZE 2048
+#define RAMBOX_LOOPS 4
+
+typedef union {
+  rf_u8  b[32];
+  rf_u16 w[16];
+  rf_u32 d[8];
+  rf_u64 q[4];
+} hash256_t;
+
+typedef struct __attribute__((aligned(16))) rf_ctx {
+  uint64_t rambox[RAMBOX_SIZE];
+  hash256_t hash;
+  uint32_t crc;
+  uint32_t word;  // LE pending message
+  uint32_t len;   // total message length
+} rf256_ctx_t;
 
 // these archs are fine with unaligned reads
 #if defined(__x86_64__)||defined(__aarch64__)
@@ -198,39 +410,39 @@ static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
   return crc;
 }
 
-static inline uint32_t rf_crc32_24(uint32_t crc, uint32_t msg) {
-#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
-  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg>>8));
-#else
-  crc=crc^msg;
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-#endif
-  return crc;
-}
-
-static inline uint32_t rf_crc32_16(uint32_t crc, uint32_t msg) {
-#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
-#else
-  crc=crc^msg;
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-#endif
-  return crc;
-}
-
-static inline uint32_t rf_crc32_8(uint32_t crc, uint32_t msg) {
-#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
-#else
-  crc=crc^msg;
-  crc=rf_crc32_table[crc&0xff]^(crc>>8);
-#endif
-  return crc;
-}
+//static inline uint32_t rf_crc32_24(uint32_t crc, uint32_t msg) {
+//#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
+//  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg>>8));
+//#else
+//  crc=crc^msg;
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//#endif
+//  return crc;
+//}
+//
+//static inline uint32_t rf_crc32_16(uint32_t crc, uint32_t msg) {
+//#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
+//  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//#else
+//  crc=crc^msg;
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//#endif
+//  return crc;
+//}
+//
+//static inline uint32_t rf_crc32_8(uint32_t crc, uint32_t msg) {
+//#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
+//  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//#else
+//  crc=crc^msg;
+//  crc=rf_crc32_table[crc&0xff]^(crc>>8);
+//#endif
+//  return crc;
+//}
 
 // add to _msg_ its own crc32. use -mcpu=cortex-a53+crc to enable native CRC
 // instruction on ARM.
@@ -446,11 +658,13 @@ static inline uint32_t rf256_scramble(rf256_ctx_t *ctx) {
 
 // mix the state with the crc and the pending text, and update the crc
 static inline void rf256_inject(rf256_ctx_t *ctx) {
-  ctx->crc=
-    (ctx->len&3)==0?rf_crc32_32(rf256_scramble(ctx), ctx->word):
-    (ctx->len&3)==3?rf_crc32_24(rf256_scramble(ctx), ctx->word):
-    (ctx->len&3)==2?rf_crc32_16(rf256_scramble(ctx), ctx->word):
-                    rf_crc32_8(rf256_scramble(ctx), ctx->word);
+  // BS: never <4 bytes with 80 input bytes
+  //ctx->crc=
+  //  (ctx->bytes&3)==0?rf_crc32_32(rf256_scramble(ctx), ctx->word):
+  //  (ctx->bytes&3)==3?rf_crc32_24(rf256_scramble(ctx), ctx->word):
+  //  (ctx->bytes&3)==2?rf_crc32_16(rf256_scramble(ctx), ctx->word):
+  //                    rf_crc32_8(rf256_scramble(ctx), ctx->word);
+  ctx->crc=rf_crc32_32(rf256_scramble(ctx), ctx->word);
   ctx->word=0;
 }
 
@@ -540,7 +754,7 @@ static inline void rf256_one_round(rf256_ctx_t *ctx) {
 }
 
 // initialize the hash state
-void rf256_init(rf256_ctx_t *ctx) {
+static void rf256_init(rf256_ctx_t *ctx) {
   rf_raminit(ctx->rambox);
   memcpy(ctx->hash.b, rf256_iv, sizeof(ctx->hash.b));
   ctx->crc=RF256_INIT_CRC;
@@ -548,7 +762,7 @@ void rf256_init(rf256_ctx_t *ctx) {
 }
 
 // update the hash context _ctx_ with _len_ bytes from message _msg_
-void rf256_update(rf256_ctx_t *ctx, const char *msg, size_t len) {
+static void rf256_update(rf256_ctx_t *ctx, const char *msg, size_t len) {
   while (len > 0) {
 #ifdef RF_UNALIGNED_LE32
     if (!(ctx->len&3) && len>=4) {
@@ -568,22 +782,23 @@ void rf256_update(rf256_ctx_t *ctx, const char *msg, size_t len) {
 }
 
 // finalize the hash and copy the result into _out_ if not null (256 bits)
-void rf256_final(void *out, rf256_ctx_t *ctx) {
-  uint32_t pad;
+static void rf256_final(void *out, rf256_ctx_t *ctx) {
+  // BS: never happens with 80 input bytes
+  //uint32_t pad;
 
-  if (ctx->len&3)
-    rf256_one_round(ctx);
+  //if (ctx->len&3)
+  //  rf256_one_round(ctx);
 
   // always work on at least 256 bits of input
-  for (pad=0; pad+ctx->len < 32;pad+=4)
-    rf256_one_round(ctx);
+  //for (pad=0; pad+ctx->len < 32;pad+=4)
+  //  rf256_one_round(ctx);
 
   // always run 4 extra rounds to complete the last 128 bits
   rf256_one_round(ctx);
   rf256_one_round(ctx);
   rf256_one_round(ctx);
   rf256_one_round(ctx);
-  if (out)
+  //if (out)
     memcpy(out, ctx->hash.b, 32);
 }
 
@@ -594,61 +809,3 @@ void rf256_hash(void *out, const void *in, size_t len) {
   rf256_update(&ctx, in, len);
   rf256_final(out, &ctx);
 }
-
-// hash _len_ bytes from _in_ into _out_, using _seed_
-void rf256_hash2(void *out, const void *in, size_t len, uint32_t seed) {
-  rf256_ctx_t ctx;
-  rf256_init(&ctx);
-  ctx.crc = seed;
-  rf256_update(&ctx, in, len);
-  rf256_final(out, &ctx);
-}
-
-#ifdef RAINFOREST_TEST
-static void print256(const uint8_t *b, const char *tag) {
-  printf("%s: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x"
-	 ".%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-         tag,
-         b[0],  b[1],  b[2],  b[3],  b[4],  b[5],  b[6],  b[7],
-         b[8],  b[9],  b[10], b[11], b[12], b[13], b[14], b[15],
-         b[16], b[17], b[18], b[19], b[20], b[21], b[22], b[23],
-         b[24], b[25], b[26], b[27], b[28], b[29], b[30], b[31]);
-}
-
-int main(int argc, char **argv) {
-  unsigned int loops;
-  uint8_t msg[80];
-  unsigned char md[32];
-
-  if (argc>1) {
-    rf256_ctx_t ctx;
-    int arg;
-
-    rf256_init(&ctx);
-    for (arg=1; arg<argc; arg++)
-      rf256_update(&ctx, (uint8_t*)argv[arg], strlen(argv[arg]));
-    rf256_final(md, &ctx);
-    print256(md, "3step(argv1)   ");
-
-    rf256_hash(md, (uint8_t*)argv[1], strlen(argv[1]));
-    print256(md, "1step(argv1)   ");
-
-    rf256_hash(md, (uint8_t*)argv[1], strlen(argv[1])+1);
-    print256(md, "1step(argv1+\\0)");
-    return 0;
-  }
-
-  for (loops=0;loops<80;loops++)
-    msg[loops]=loops;
-
-  for (loops=0; loops<100000/*0*/; loops++) {
-    if (!(loops&0x3ffff))
-      printf("%u\n", loops);
-    rf256_hash(md, msg, sizeof(msg));
-    memcpy(msg, md, 32);
-  }
-  printf("%u\n", loops);
-  print256(md, "md");
-  exit(0);
-}
-#endif
