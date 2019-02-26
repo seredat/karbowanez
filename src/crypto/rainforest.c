@@ -191,7 +191,7 @@ static void aes2r_encrypt(uint8_t * state, uint8_t * key) {
 
 // Use -march=armv8-a+crypto+crc to get this one
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRYPTO)
-    asm volatile(
+    __asm__ volatile(
         "ld1   {v0.16b},[%0]        \n"
 	"ld1   {v1.16b,v2.16b,v3.16b},[%1]  \n"
 	"aese  v0.16b,v1.16b        \n" // round1: add_round_key,sub_bytes,shift_rows
@@ -205,7 +205,7 @@ static void aes2r_encrypt(uint8_t * state, uint8_t * key) {
 
 // Use -maes to get this one
 #elif defined(__x86_64__) && defined(__AES__)
-    asm volatile(
+    __asm__ volatile(
         "movups (%0),  %%xmm0     \n"
 	"movups (%1),  %%xmm1     \n"
 	"pxor   %%xmm1,%%xmm0     \n" // add_round_key(state, key_schedule)
@@ -399,7 +399,7 @@ const uint32_t rf_crc32_table[256] = {
 // build with -mcpu=cortex-a53+crc to enable native CRC instruction on ARM
 static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-  asm("crc32w %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+  __asm__("crc32w %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
 #else
   crc=crc^msg;
   crc=rf_crc32_table[crc&0xff]^(crc>>8);
@@ -412,8 +412,8 @@ static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
 
 //static inline uint32_t rf_crc32_24(uint32_t crc, uint32_t msg) {
 //#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-//  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
-//  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg>>8));
+//  __asm__("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//  __asm__("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg>>8));
 //#else
 //  crc=crc^msg;
 //  crc=rf_crc32_table[crc&0xff]^(crc>>8);
@@ -425,7 +425,7 @@ static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
 //
 //static inline uint32_t rf_crc32_16(uint32_t crc, uint32_t msg) {
 //#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-//  asm("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//  __asm__("crc32h %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
 //#else
 //  crc=crc^msg;
 //  crc=rf_crc32_table[crc&0xff]^(crc>>8);
@@ -436,7 +436,7 @@ static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
 //
 //static inline uint32_t rf_crc32_8(uint32_t crc, uint32_t msg) {
 //#if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-//  asm("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
+//  __asm__("crc32b %w0,%w0,%w1\n":"+r"(crc):"r"(msg));
 //#else
 //  crc=crc^msg;
 //  crc=rf_crc32_table[crc&0xff]^(crc>>8);
@@ -449,7 +449,7 @@ static inline uint32_t rf_crc32_32(uint32_t crc, uint32_t msg) {
 static inline uint64_t rf_add64_crc32(uint64_t msg) {
   uint64_t crc=0;
 #if defined(__aarch64__) && defined(__ARM_FEATURE_CRC32)
-  asm("crc32x %w0,%w0,%x1\n":"+r"(crc):"r"(msg));
+  __asm__("crc32x %w0,%w0,%x1\n":"+r"(crc):"r"(msg));
 #else
   crc^=(uint32_t)msg;
   crc=rf_crc32_table[crc&0xff]^(crc>>8);
@@ -517,9 +517,9 @@ static inline uint64_t rf_rotr64(uint64_t v, uint8_t bits) {
 // reverse all bytes in the word _v_
 static inline uint64_t rf_bswap64(uint64_t v) {
 #if defined(__x86_64__)
-  asm("bswap %0":"+r"(v));
+  __asm__("bswap %0":"+r"(v));
 #elif defined(__aarch64__)
-  asm("rev %0,%0\n":"+r"(v));
+  __asm__("rev %0,%0\n":"+r"(v));
 #else
   v=((v&0xff00ff00ff00ff00ULL)>>8)|((v&0x00ff00ff00ff00ffULL)<<8);
   v=((v&0xffff0000ffff0000ULL)>>16)|((v&0x0000ffff0000ffffULL)<<16);
@@ -550,7 +550,7 @@ static inline void rf_w128(uint64_t *cell, ulong ofs, uint64_t x, uint64_t y) {
 #if defined(__ARM_ARCH_8A) || defined(__AARCH64EL__)
   // 128 bit at once is faster when exactly two parallelizable instructions are
   // used between two calls to keep the pipe full.
-  asm volatile("stp %0, %1, [%2,#%3]\n\t"
+  __asm__ volatile("stp %0, %1, [%2,#%3]\n\t"
                : /* no output */
                : "r"(x), "r"(y), "r" (cell), "I" (ofs*8));
 #else
