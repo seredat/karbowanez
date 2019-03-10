@@ -806,14 +806,3 @@ void rf256_hash(void *out, const void *in, size_t len) {
   rf256_update(&ctx, in, len);
   rf256_final(out, &ctx);
 }
-
-void rainforest_hash(const void* input, void* output, uint32_t len) {
-  rf256_ctx_t ctx;
-  uint8_t hash[32];
-
-  rf256_init(&ctx);
-  rf256_update(&ctx, input, len);
-  rf256_final(hash, &ctx);
-  rf256_update(&ctx, (char *)hash, sizeof(hash));
-  rf256_final(output, &ctx);
-}

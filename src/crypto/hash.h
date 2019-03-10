@@ -64,7 +64,6 @@ namespace Crypto {
   }
 
   inline void rf_slow_hash(const void* input, Hash &hash, uint32_t len) {
-    //rainforest_hash(reinterpret_cast<char *>(&input), reinterpret_cast<char *>(&hash), len);
     uint8_t state[32];
     rf256_hash(state, input, len);
     rf256_hash(reinterpret_cast<char *>(&hash), state, sizeof(state));
