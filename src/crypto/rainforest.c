@@ -783,14 +783,14 @@ static void rf256_update(rf256_ctx_t *ctx, const char *msg, size_t len) {
 // finalize the hash and copy the result into _out_ if not null (256 bits)
 static void rf256_final(void *out, rf256_ctx_t *ctx) {
   // BS: never happens with 80 input bytes
-  //uint32_t pad;
+  uint32_t pad;
 
-  //if (ctx->len&3)
-  //  rf256_one_round(ctx);
+  if (ctx->len&3)
+    rf256_one_round(ctx);
 
   // always work on at least 256 bits of input
-  //for (pad=0; pad+ctx->len < 32;pad+=4)
-  //  rf256_one_round(ctx);
+  for (pad=0; pad+ctx->len < 32;pad+=4)
+    rf256_one_round(ctx);
 
   // always run 4 extra rounds to complete the last 128 bits
   rf256_one_round(ctx);
@@ -807,4 +807,15 @@ void rf256_hash(void *out, const void *in, size_t len) {
   rf256_init(&ctx);
   rf256_update(&ctx, in, len);
   rf256_final(out, &ctx);
+}
+
+void rainforest_hash(const void* input, void* output, uint32_t len) {
+  rf256_ctx_t ctx;
+  uint8_t hash[32];
+
+  rf256_init(&ctx);
+  rf256_update(&ctx, input, len);
+  rf256_final(hash, &ctx);
+  rf256_update(&ctx, (char *)hash, 64);
+  rf256_final(output, &ctx);
 }

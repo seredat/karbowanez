@@ -530,7 +530,7 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
     return false;
   }
   if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    rainforest_hash(bd.data(), res, bd.size());
+    rf_slow_hash(bd.data(), res, bd.size());
   }
   else {
     cn_slow_hash(context, bd.data(), bd.size(), res);
