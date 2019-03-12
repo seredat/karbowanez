@@ -251,11 +251,11 @@ typedef union {
 } hash256_t;
 
 typedef struct __attribute__((aligned(16))) rf_ctx {
-  uint64_t rambox[RAMBOX_SIZE];
-  hash256_t hash;
-  uint32_t crc;
   uint32_t word;  // LE pending message
   uint32_t len;   // total message length
+  uint32_t crc;
+  hash256_t __attribute__((aligned(32))) hash;
+  uint64_t __attribute__((aligned(64))) rambox[RAMBOX_SIZE];
 } rf256_ctx_t;
 
 // these archs are fine with unaligned reads
@@ -327,6 +327,7 @@ const uint8_t rf256_iv[32] = {
 };
 
 // crc32 lookup tables
+#if !defined(__ARM_FEATURE_CRC32)
 const uint32_t rf_crc32_table[256] = {
   /* 0x00 */ 0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
   /* 0x04 */ 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
@@ -393,6 +394,7 @@ const uint32_t rf_crc32_table[256] = {
   /* 0xf8 */ 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
   /* 0xfc */ 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 };
+#endif
 
 // compute the crc32 of 32-bit message _msg_ from previous crc _crc_.
 // build with -mcpu=cortex-a53+crc to enable native CRC instruction on ARM
@@ -530,16 +532,15 @@ static inline uint64_t rf_bswap64(uint64_t v) {
 // lookup _old_ in _rambox_, update it and perform a substitution if a matching
 // value is found.
 static inline uint32_t rf_rambox(uint64_t *rambox, uint64_t old) {
-  uint64_t *p;
+  uint64_t *p, k;
   int loops;
 
   for (loops=0; loops<RAMBOX_LOOPS; loops++) {
     old=rf_add64_crc32(old);
     p=&rambox[old&(RAMBOX_SIZE-1)];
-    old+=rf_rotr64(*p, old/RAMBOX_SIZE);
-    // 0x80 below gives a write ratio of 50%
-    if ((old>>56)<0x80)
-      *p = old;
+    k = *p;
+    old+=rf_rotr64(k, (uint8_t) (old/RAMBOX_SIZE));
+    *p = (int64_t)old < 0 ? k : old;
   }
   return old;
 }
