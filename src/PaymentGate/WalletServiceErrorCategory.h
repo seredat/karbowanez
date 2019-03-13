@@ -1,4 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018-2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -27,7 +28,8 @@ enum class WalletServiceErrorCode {
   WRONG_KEY_FORMAT = 1,
   WRONG_PAYMENT_ID_FORMAT,
   WRONG_HASH_FORMAT,
-  OBJECT_NOT_FOUND
+  OBJECT_NOT_FOUND,
+  DUPLICATE_KEY
 };
 
 // custom category:
@@ -51,6 +53,7 @@ public:
       case WalletServiceErrorCode::WRONG_PAYMENT_ID_FORMAT: return "Wrong payment id format";
       case WalletServiceErrorCode::WRONG_HASH_FORMAT: return "Wrong block id format";
       case WalletServiceErrorCode::OBJECT_NOT_FOUND: return "Requested object not found";
+      case WalletServiceErrorCode::DUPLICATE_KEY: return "Duplicate key";
       default: return "Unknown error";
     }
   }
