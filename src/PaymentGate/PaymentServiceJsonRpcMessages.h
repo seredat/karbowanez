@@ -130,7 +130,7 @@ struct CreateAddress {
   struct Request {
     std::string spendSecretKey;
     std::string spendPublicKey;
-	bool reset;
+  	bool reset;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
@@ -145,6 +145,7 @@ struct CreateAddress {
 struct CreateAddressList {
   struct Request {
     std::vector<std::string> spendSecretKeys;
+    bool reset;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };

@@ -102,6 +102,8 @@ void CreateAddressList::Request::serialize(CryptoNote::ISerializer& serializer) 
     //TODO: replace it with error codes
     throw RequestSerializationError();
   }
+  if (!serializer(reset, "reset"))
+    reset = true;
 }
 
 void CreateAddressList::Response::serialize(CryptoNote::ISerializer& serializer) {

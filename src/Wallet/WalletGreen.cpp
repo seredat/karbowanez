@@ -1054,7 +1054,7 @@ std::string WalletGreen::createAddress(const Crypto::PublicKey& spendPublicKey) 
   return doCreateAddress(spendPublicKey, NULL_SECRET_KEY, 0);
 }
 
-std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys) {
+std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, bool reset) {
   std::vector<NewAddressData> addressDataList(spendSecretKeys.size());
   for (size_t i = 0; i < spendSecretKeys.size(); ++i) {
     Crypto::PublicKey spendPublicKey;
@@ -1065,7 +1065,7 @@ std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto
 
     addressDataList[i].spendSecretKey = spendSecretKeys[i];
     addressDataList[i].spendPublicKey = spendPublicKey;
-    addressDataList[i].creationTimestamp = 0;
+    addressDataList[i].creationTimestamp = reset ? 0 : static_cast<uint64_t>(time(nullptr));
   }
 
   return doCreateAddressList(addressDataList);
