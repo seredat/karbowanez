@@ -1195,9 +1195,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 	// Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
 	BinaryArray scratchpad;
 	for (uint8_t i = 1; i <= 8; i++) {
-		uint8_t chunk[4];
-		memcpy(chunk, &hash_1.data[i * 4 - 4], sizeof(chunk));
-		uint64_t cd = *reinterpret_cast<uint32_t *>(&chunk);
+		uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
 		uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
 		Crypto::Hash hash_i = getBlockIdByHeight(height_i);
 
