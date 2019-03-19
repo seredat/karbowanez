@@ -582,6 +582,7 @@ struct f_block_details_response {
   uint64_t depth;
   std::string hash;
   difficulty_type difficulty;
+  difficulty_type cumulativeDifficulty;
   uint64_t reward;
   uint64_t blockSize;
   size_t sizeMedian;
@@ -605,6 +606,7 @@ struct f_block_details_response {
     KV_MEMBER(depth)
     KV_MEMBER(hash)
     KV_MEMBER(difficulty)
+    KV_MEMBER(cumulativeDifficulty)
     KV_MEMBER(reward)
     KV_MEMBER(blockSize)
     KV_MEMBER(sizeMedian)
@@ -614,8 +616,8 @@ struct f_block_details_response {
     KV_MEMBER(alreadyGeneratedTransactions)
     KV_MEMBER(baseReward)
     KV_MEMBER(penalty)
-    KV_MEMBER(transactions)
     KV_MEMBER(totalFeeAmount)
+    KV_MEMBER(transactions)
   }
 };
 
@@ -1041,7 +1043,7 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
   };
 };
 
-struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
+struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES {
   struct request {
     std::vector<Crypto::Hash> transactionHashes;
 
@@ -1059,6 +1061,26 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
       KV_MEMBER(transactions)
     }
   };
+};
+
+struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
+	struct request {
+		Crypto::Hash hash;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(hash);
+		}
+	};
+
+	struct response {
+		TransactionDetails2 transaction;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(status)
+			KV_MEMBER(transaction)
+		}
+	};
 };
 
 //-----------------------------------------------

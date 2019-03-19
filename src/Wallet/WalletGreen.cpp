@@ -1331,7 +1331,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   preparedTransaction.neededMoney = countNeededMoney(preparedTransaction.destinations, fee);
 
   std::vector<OutputToTransfer> selectedTransfers;
-  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, m_currency.defaultDustThreshold(), std::move(wallets), selectedTransfers);
+  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, 0, std::move(wallets), selectedTransfers);
 
   if (foundMoney < preparedTransaction.neededMoney) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to create transaction: not enough money. Needed " << m_currency.formatAmount(preparedTransaction.neededMoney) <<
@@ -1352,7 +1352,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   uint64_t donationAmount = pushDonationTransferIfPossible(donation, foundMoney - preparedTransaction.neededMoney, m_currency.defaultDustThreshold(), preparedTransaction.destinations);
   preparedTransaction.changeAmount = foundMoney - preparedTransaction.neededMoney - donationAmount;
 
-  std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, m_currency.defaultDustThreshold(), m_currency);
+  std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, 0, m_currency);
   if (preparedTransaction.changeAmount != 0) {
     WalletTransfer changeTransfer;
     changeTransfer.type = WalletTransferType::CHANGE;
@@ -1360,7 +1360,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
     changeTransfer.amount = static_cast<int64_t>(preparedTransaction.changeAmount);
     preparedTransaction.destinations.emplace_back(std::move(changeTransfer));
 
-    auto splittedChange = splitAmount(preparedTransaction.changeAmount, changeDestination, m_currency.defaultDustThreshold());
+    auto splittedChange = splitAmount(preparedTransaction.changeAmount, changeDestination, 0);
     decomposedOutputs.emplace_back(std::move(splittedChange));
   }
 
@@ -2294,7 +2294,7 @@ std::vector<CryptoNote::WalletGreen::ReceiverAmounts> WalletGreen::splitDestinat
   std::vector<ReceiverAmounts> decomposedOutputs;
   for (const auto& destination: destinations) {
     AccountPublicAddress address = parseAccountAddressString(destination.address);
-    decomposedOutputs.push_back(splitAmount(destination.amount, address, dustThreshold));
+    decomposedOutputs.push_back(splitAmount(destination.amount, address, 0));
   }
 
   return decomposedOutputs;
@@ -2308,7 +2308,7 @@ CryptoNote::WalletGreen::ReceiverAmounts WalletGreen::splitAmount(
   ReceiverAmounts receiverAmounts;
 
   receiverAmounts.receiver = destination;
-  decomposeAmount(amount, dustThreshold, receiverAmounts.amounts);
+  decomposeAmount(amount, 0, receiverAmounts.amounts);
   return receiverAmounts;
 }
 

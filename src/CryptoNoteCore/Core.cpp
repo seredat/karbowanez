@@ -308,6 +308,16 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	return true;
 }
 
+bool core::check_tx_unmixable(const Transaction& tx, uint32_t height) {
+  for (const auto& out : tx.outputs) {
+    if (!is_valid_decomposed_amount(out.amount) && height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+      logger(ERROR) << "Invalid decomposed output amount " << out.amount << " for tx id= " << getObjectHash(tx);
+      return false;
+    }
+  }
+  return true;
+}
+
 bool core::check_tx_semantic(const Transaction& tx, bool keeped_by_block) {
   if (!tx.inputs.size()) {
     logger(ERROR) << "tx with empty inputs, rejected for tx id= " << getObjectHash(tx);
@@ -999,6 +1009,11 @@ bool core::getBlockDifficulty(uint32_t height, difficulty_type& difficulty) {
   return true;
 }
 
+bool core::getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) {
+  difficulty = m_blockchain.blockCumulativeDifficulty(height);
+  return true;
+}
+
 bool core::getBlockContainingTx(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockContainingTransaction(txId, blockId, blockHeight);
 }
@@ -1145,7 +1160,7 @@ bool core::fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDet
     if (typeid(TransactionExtraPublicKey) == field.type()) {
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
-      extraDetails.nonce = Common::asBinaryArray(Common::toHex(boost::get<TransactionExtraNonce>(field).nonce.data(), boost::get<TransactionExtraNonce>(field).nonce.size()));
+      extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
     }
   }
   return true;
@@ -1360,8 +1375,12 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
         return false;
       }
       txInToKeyDetails.mixin = txInToKey.outputIndexes.size();
-      txInToKeyDetails.output.number = outputReferences.back().second;
-      txInToKeyDetails.output.transactionHash = outputReferences.back().first;
+	  for (const auto& r : outputReferences) {
+		  TransactionOutputReferenceDetails d;
+		  d.number = r.second;
+		  d.transactionHash = r.first;
+		  txInToKeyDetails.outputs.push_back(d);
+	  }
 	  txInDetails = txInToKeyDetails;
     } else if (txIn.type() == typeid(MultisignatureInput)) {
       MultisignatureInputDetails txInMultisigDetails;
@@ -1427,6 +1446,13 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
       tvc.m_verification_failed = true;
       return false;
     }
+
+    if (!check_tx_unmixable(tx, height)) {
+      logger(ERROR) << "Transaction verification failed: unmixable output for transaction " << txHash << ", rejected";
+      tvc.m_verification_failed = true;
+      return false;
+	}
+
   }
 
   if (!check_tx_semantic(tx, keptByBlock)) {

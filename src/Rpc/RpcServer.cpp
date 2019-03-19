@@ -123,7 +123,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/get_blocks_details_by_heights", { jsonMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS>(&RpcServer::onGetBlocksDetailsByHeights), false } },
   { "/get_blocks_details_by_hashes", { jsonMethod<COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES>(&RpcServer::onGetBlocksDetailsByHashes), false } },
   { "/get_blocks_hashes_by_timestamps", { jsonMethod<COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS>(&RpcServer::onGetBlocksHashesByTimestamps), false } },
-  { "/get_transaction_details_by_hashes", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES>(&RpcServer::onGetTransactionDetailsByHashes), false } },
+  { "/get_transaction_details_by_hashes", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES>(&RpcServer::onGetTransactionsDetailsByHashes), false } },
   { "/get_transaction_hashes_by_payment_id", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::onGetTransactionHashesByPaymentId), false } },
   
   // disabled in restricted rpc mode
@@ -195,7 +195,8 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
 	  { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::k_on_transactions_by_payment_id), false } },
 	  { "get_transaction_hashes_by_payment_id", { makeMemberMethod(&RpcServer::onGetTransactionHashesByPaymentId), false } },
 	  { "get_transaction_hashes_by_payment_id", { makeMemberMethod(&RpcServer::onGetTransactionHashesByPaymentId), false } },
-	  { "get_transaction_details_by_hashes", { makeMemberMethod(&RpcServer::onGetTransactionDetailsByHashes), false } },
+	  { "get_transaction_details_by_hashes", { makeMemberMethod(&RpcServer::onGetTransactionsDetailsByHashes), false } },
+	  { "k_transaction_details_by_hash", { makeMemberMethod(&RpcServer::onGetTransactionDetailsByHash), false } },
 	  { "get_blocks_details_by_heights", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHeights), false } },
 	  { "get_block_details_by_height", { makeMemberMethod(&RpcServer::onGetBlockDetailsByHeight), false } },
 	  { "get_blocks_details_by_hashes", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHashes), false } },
@@ -554,7 +555,7 @@ bool RpcServer::onGetBlocksHashesByTimestamps(const COMMAND_RPC_GET_BLOCKS_HASHE
   return true;
 }
 
-bool RpcServer::onGetTransactionDetailsByHashes(const COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES::response& rsp) {
+bool RpcServer::onGetTransactionsDetailsByHashes(const COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::response& rsp) {
   try {
     std::vector<TransactionDetails2> transactionsDetails;
     transactionsDetails.reserve(req.transactionHashes.size());
@@ -573,6 +574,33 @@ bool RpcServer::onGetTransactionDetailsByHashes(const COMMAND_RPC_GET_TRANSACTIO
     }
 
     rsp.transactions = std::move(transactionsDetails);
+  } catch (std::system_error& e) {
+    rsp.status = e.what();
+    return false;
+  } catch (std::exception& e) {
+    rsp.status = "Error: " + std::string(e.what());
+    return false;
+  }
+
+  rsp.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::onGetTransactionDetailsByHash(const COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::request& req, COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::response& rsp) {
+  try {
+	std::list<Crypto::Hash> missed_txs;
+	std::list<Transaction> txs;
+	std::vector<Crypto::Hash> hashes;
+	hashes.push_back(req.hash);
+	m_core.getTransactions(hashes, txs, missed_txs, true);
+
+    TransactionDetails2 transactionsDetails;
+    if (!m_core.fillTransactionDetails(txs.back(), transactionsDetails)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't fill transaction details." };
+    }
+
+    rsp.transaction = std::move(transactionsDetails);
   } catch (std::system_error& e) {
     rsp.status = e.what();
     return false;
@@ -921,6 +949,7 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   res.block.hash = block_header.hash;
   res.block.depth = block_header.depth;
   m_core.getBlockDifficulty(static_cast<uint32_t>(res.block.height), res.block.difficulty);
+  m_core.getBlockCumulativeDifficulty(static_cast<uint32_t>(res.block.height), res.block.cumulativeDifficulty);
 
   res.block.reward = block_header.reward;
 
