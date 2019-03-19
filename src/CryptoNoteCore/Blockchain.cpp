@@ -1164,11 +1164,6 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
   }
 
   if (!check_hash(proofOfWork, currentDiffic)) {
-
-	  std::string dummy;
-	  std::cout << "Enter to continue..." << std::endl;
-	  std::getline(std::cin, dummy);
-
 	  return false;
   }
 
@@ -1176,58 +1171,59 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
 }
 
 bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
-	BinaryArray bd;
-	if (!get_block_hashing_blob(b, bd)) {
-		return false;
-	}
+  BinaryArray bd;
+  if (!get_block_hashing_blob(b, bd)) {
+    return false;
+  }
 
-	// Phase 1
+  // Phase 1
 
-	uint32_t m_cost1 = (1 << 12);
-	uint32_t lanes = 2;
-	uint32_t threads = 1;
-	uint32_t t_cost = 2;
-	Crypto::Hash hash_1;
+  uint32_t m_cost1 = (1 << 7);
+  uint32_t lanes = 2;
+  uint32_t threads = 1;
+  uint32_t t_cost = 2;
+  Crypto::Hash hash_1;
 
-	// Hashing the current blockdata (preprocessing it)
-	Crypto::argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, hash_1);
+  // Hashing the current blockdata (preprocessing it)
+  //cn_fast_hash(bd.data(), bd.size(), hash_1);
+  Crypto::argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, hash_1);
 
-	// Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
-	BinaryArray scratchpad;
-	for (uint8_t i = 1; i <= 8; i++) {
-		uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
-		uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
-		Crypto::Hash hash_i = getBlockIdByHeight(height_i);
+  // Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
+  BinaryArray scratchpad;
+  for (uint8_t i = 1; i <= 8; i++) {
+    uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
+    uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+    Crypto::Hash hash_i = getBlockIdByHeight(height_i);
 
-		Block b;
-		if (!getBlockByHash(hash_i, b)) {
-			return false;
-		}
-		BinaryArray ba;
-		if (!toBinaryArray(b, ba)) {
-			return false;
-		}
-		scratchpad.insert(std::end(scratchpad), std::begin(ba), std::end(ba));
-	}
+    Block b;
+    if (!getBlockByHash(hash_i, b)) {
+      return false;
+    }
+    BinaryArray ba;
+    if (!toBinaryArray(b, ba)) {
+      return false;
+    }
+    scratchpad.insert(std::end(scratchpad), std::begin(ba), std::end(ba));
+  }
 
-	// Phase 2
+  // Phase 2
+
+  uint32_t m_cost2 = (1 << 6);
+  Crypto::Hash hash_2;
+
+  // Hashing the eight blocks as one continous block, salt is hash_1
+  Crypto::argon2d_hash(scratchpad.data(), 64, &hash_1, m_cost2, lanes, threads, t_cost, hash_2);
+
+  // Phase 3
 	
-	uint32_t m_cost2 = (1 << 11);
-	Crypto::Hash hash_2;
+  uint32_t m_cost3 = (1 << 5);
 
-	// Hashing the eight blocks as one continous block, salt is hash_1
-	Crypto::argon2d_hash(scratchpad.data(), 64, &hash_1, m_cost2, lanes, threads, t_cost, hash_2);
+  // Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
+  // Crypto::argon2d_hash(&hash_1, 64, &hash_2, m_cost3, lanes, threads, t_cost, res);
+  // additionally using keccak and pseudorandom finalizer function
+  Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, m_cost3, t_cost, res);
 
-	// Phase 3
-	
-	uint32_t m_cost3 = (1 << 10);
-
-	// Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
-	// Crypto::argon2d_hash(&hash_1, 64, &hash_2, m_cost3, lanes, threads, t_cost, res);
-	// additionally using keccak and pseudorandom finalizer function
-	Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, m_cost3, t_cost, res);
-
-	return true;
+  return true;
 }
 
 bool Blockchain::complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
