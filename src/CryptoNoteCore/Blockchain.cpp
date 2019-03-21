@@ -34,6 +34,8 @@
 #include "CryptoNoteTools.h"
 #include "TransactionExtra.h"
 
+#include "../crypto/hash.h"
+
 using namespace Logging;
 using namespace Common;
 
@@ -1158,6 +1160,83 @@ uint64_t Blockchain::getCurrentCumulativeBlocksizeLimit() {
   return m_current_block_cumul_sz_limit;
 }
 
+bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) {
+  if (block.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return m_currency.checkProofOfWork(context, block, currentDiffic, proofOfWork);
+  }
+
+  if (!getBlockLongHash(context, block, proofOfWork)) {
+    return false;
+  }
+
+  if (!check_hash(proofOfWork, currentDiffic)) {
+	  return false;
+  }
+
+  return true;
+}
+
+bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  BinaryArray bd;
+  if (!get_block_hashing_blob(b, bd)) {
+    return false;
+  }
+
+  // Phase 1
+
+  uint32_t m_cost = 128;
+  uint32_t lanes = 2;
+  uint32_t threads = 1;
+  uint32_t t_cost = 2;
+  Crypto::Hash hash_1;
+
+  // Hashing the current blockdata (preprocessing it)
+  //Crypto::argon2d_hash(bd.data(), bd.size(), bd.data(), bd.size(), m_cost, lanes, threads, t_cost, hash_1);
+  Crypto::rainforest_hash(bd.data(), bd.size(), hash_1);
+
+  // Phase 2
+
+  BinaryArray pot, ba;
+  // throw our full block into common pot (not hashing blob)
+  if (!toBinaryArray(b, ba)) {
+    return false;
+  }
+  pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+
+  // Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
+  // and throwing them into the pot too
+  for (uint8_t i = 1; i <= 8; i++) {
+    uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
+    uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+    Crypto::Hash hash_i = getBlockIdByHeight(height_i);
+
+    Block bl;
+    if (!getBlockByHash(hash_i, bl)) {
+      return false;
+    }
+    BinaryArray ba;
+    if (!toBinaryArray(bl, ba)) {
+      return false;
+    }
+    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+  }
+
+  // Phase 3
+
+  Crypto::Hash hash_2;
+
+  // stir the pot - hashing the 1 + 8 blocks as one continous data, salt is hash_1
+  Crypto::argon2d_hash(pot.data(), pot.size(), &hash_1, sizeof(&hash_1), m_cost, lanes, threads, t_cost, hash_2);
+
+  // Phase 4
+
+  // Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
+  // with pseudorandom finalizer function
+  Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, sizeof(&hash_2), m_cost, t_cost, res);
+
+  return true;
+}
+
 bool Blockchain::complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
   if (timestamps.size() >= m_currency.timestampCheckWindow(blockMajorVersion))
     return true;
@@ -1290,7 +1369,7 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
     if (!(current_diff)) { logger(ERROR, BRIGHT_RED) << "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!"; return false; }
     Crypto::Hash proof_of_work = NULL_HASH;
-    if (!m_currency.checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
       logger(INFO, BRIGHT_RED) <<
         "Block with id: " << id
         << ENDL << " for alternative chain, have not enough proof of work: " << proof_of_work
@@ -2094,7 +2173,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
       return false;
     }
   } else {
-    if (!m_currency.checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
       logger(INFO, BRIGHT_WHITE) <<
         "Block " << blockHash << ", has too weak proof of work: " << proof_of_work << ", expected difficulty: " << currentDifficulty;
       bvc.m_verification_failed = true;

@@ -197,7 +197,10 @@ namespace CryptoNote {
     };
 
     void rollbackBlockchainTo(uint32_t height);
-	bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+    bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+
+    bool checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork);
+    bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res);
 
   private:
 
