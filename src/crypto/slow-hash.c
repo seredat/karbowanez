@@ -50,14 +50,14 @@
 #define INIT_SIZE_BLK   8
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
-void argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, char *hash) {
+void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, char *hash) {
 	argon2_context context;
 	context.out = (uint8_t *)hash;
 	context.outlen = (uint32_t)32;
 	context.pwd = (uint8_t *)in;
-	context.pwdlen = (uint32_t)size;
+	context.pwdlen = (uint32_t)inlen;
 	context.salt = (uint8_t *)salt;
-	context.saltlen = sizeof(context.salt);
+	context.saltlen = (uint32_t)saltlen;
 	context.secret = NULL;
 	context.secretlen = 0;
 	context.ad = NULL;
@@ -84,7 +84,7 @@ union cn_slow_hash_state
 };
 #pragma pack(pop)
 
-void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_cost, uint32_t t_cost, char *hash)
+void an_slow_hash(const void *data, size_t datalen, const void *salt, size_t saltlen, uint32_t m_cost, uint32_t t_cost, char *hash)
 {
 	uint8_t hs1[200];
 	static void(*const extra_hashes[4])(const void *, size_t, char *) =
@@ -92,10 +92,10 @@ void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_
 		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
 	};
 
-	keccak1600(data, (int)length, (uint8_t*)hs1);
+	keccak1600(data, (int)datalen, (uint8_t*)hs1);
 	
 	uint8_t hs2[32];
-	argon2d_hash(hs1, 64, salt, m_cost, 2, 1, t_cost, (uint8_t*)hs2);
+	argon2d_hash(data, datalen, salt, saltlen, m_cost, 2, 1, t_cost, (uint8_t*)hs2);
 
 	extra_hashes[hs1[0] & 3](&hs2, 64, hash);
 }
