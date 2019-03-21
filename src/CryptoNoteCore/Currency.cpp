@@ -167,6 +167,13 @@ namespace CryptoNote {
 			return false;
 		}
 
+		if (blockMajorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+			emissionChange = baseReward - fee;
+			reward = baseReward;
+
+			return true;
+		}
+
 		uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
 		uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_2 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
 		if (cryptonoteCoinVersion() == 1) {
