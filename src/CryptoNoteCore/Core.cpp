@@ -513,6 +513,17 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     return false;
   }
 
+  // After block v 5 don't penalize reward and simplify miner tx generation.
+  if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+    if (!r) {
+      logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance";
+      return false;
+    }
+
+    return true;
+  }
+
   /*
      two-phase miner transaction generation: we don't know exact block size until we prepare block, but we don't know reward until we know
      block size, so first miner transaction generated with fake amount of money, and with phase we know think we know expected block size
