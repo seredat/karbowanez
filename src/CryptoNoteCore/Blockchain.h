@@ -94,7 +94,6 @@ namespace CryptoNote {
 	uint64_t getMinimalFee(uint32_t height);
     uint64_t getCoinsInCirculation();
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
-	uint8_t blockMajorVersion;
     bool addNewBlock(const Block& bl_, block_verification_context& bvc);
     bool resetAndSetGenesisBlock(const Block& b);
     bool haveBlock(const Crypto::Hash& id);
@@ -197,7 +196,10 @@ namespace CryptoNote {
     };
 
     void rollbackBlockchainTo(uint32_t height);
-	bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+    bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+
+    bool checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork);
+    bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res);
 
   private:
 
