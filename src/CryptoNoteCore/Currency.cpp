@@ -167,12 +167,16 @@ namespace CryptoNote {
 		const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
 		double circulating = static_cast<double>(alreadyGeneratedCoins);
-		double L = (circulating + static_cast<double>(height) / static_cast<double>(blocksInOneYear) * circulating) / circulating - 1; // ~1% every 12 month is lost
-		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
+		double L = (circulating + static_cast<double>(height) / static_cast<double>(blocksInOneYear) * circulating) / circulating - 1; // ~1% every 12 months is lost
+		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears)); // Moores's law
 
-		uint64_t adaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / avgRefDifficulty * L);
+		uint64_t cleanAdaptiveReward = baseReward / avgRefDifficulty * difficulty;
+		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / avgRefDifficulty * L);
 
-		logger(INFO, BRIGHT_CYAN) << "L: " << L << ", M: " << M << ", DDD REWARD: " << formatAmount(adaptiveReward); // TODO remove this logging
+		double difference = (double)(cleanAdaptiveReward - compensatedAdaptiveReward) / ((double)(cleanAdaptiveReward + compensatedAdaptiveReward) / 2) * 100;
+
+		logger(INFO, BRIGHT_CYAN) << "L: " << L << ", M: " << M << ", D-REWARD clean: " << formatAmount(cleanAdaptiveReward) << ", compensated: " 
+			<< formatAmount(compensatedAdaptiveReward) << ", % difference: " << difference; // TODO remove this logging
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
