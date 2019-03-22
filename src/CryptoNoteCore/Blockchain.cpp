@@ -1191,9 +1191,8 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   Crypto::Hash hash_1;
 
   // Hashing the current blockdata (preprocessing it)
-  //Crypto::argon2d_hash(bd.data(), bd.size(), bd.data(), bd.size(), m_cost, lanes, threads, t_cost, hash_1);
-  Crypto::rainforest_hash(bd.data(), bd.size(), hash_1);
-
+  cn_fast_hash(bd.data(), bd.size(), hash_1); // hash it with keccak to speed up
+  
   // Phase 2
 
   BinaryArray pot, ba;
@@ -1231,7 +1230,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   // Phase 4
 
   // Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
-  // with pseudorandom finalizer function
+  // with pseudorandom finalizer function as in CN
   Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, sizeof(&hash_2), m_cost, t_cost, res);
 
   return true;
