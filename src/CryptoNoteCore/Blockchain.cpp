@@ -728,12 +728,17 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
 }
 
 difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
-  //std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  
+  if (window == height) {
+    return m_blocks[height].cumulative_difficulty / height;
+  }
+  
   size_t offset;
   offset = height - std::min(height, std::min<uint32_t>(m_blocks.size(), window));
-  //if (offset == 0) {
-  //  ++offset;
-  //}
+  if (offset == 0) {
+    ++offset;
+  }
   difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
   return cumulDiffForPeriod / std::min<uint32_t>(m_blocks.size(), window);
 }
