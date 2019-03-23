@@ -514,8 +514,8 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   }
 
   // get avg recent diff for reward
-  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, height);
-  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height - 1, height - 1);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height - 1, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
 
   // After block v 5 don't penalize reward and simplify miner tx generation.
   if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
