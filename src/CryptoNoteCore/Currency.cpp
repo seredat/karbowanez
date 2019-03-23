@@ -63,54 +63,6 @@ namespace CryptoNote {
 		10000000000000000000ull
 	};
 
-#if defined(_MSC_VER)
-#include <intrin.h>
-
-#pragma intrinsic(_umul128)
-
-	static inline void mul(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high) {
-		low = _umul128(a, b, &high);
-	}
-#else
-	static inline void mul(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high) {
-		typedef unsigned __int128 uint128_t;
-		uint128_t res = (uint128_t)a * (uint128_t)b;
-		low = (uint64_t)res;
-		high = (uint64_t)(res >> 64);
-	}
-#endif
-
-	const size_t log_fix_precision = 20; // Monetaverde
-	static_assert(1 <= log_fix_precision && log_fix_precision < sizeof(uint64_t) * 8 / 2 - 1, "Invalid log precision");
-	uint64_t log2_fix(uint64_t x)
-	{
-		assert(x != 0);
-
-		uint64_t b = UINT64_C(1) << (log_fix_precision - 1);
-		uint64_t y = 0;
-
-		while (x >= (UINT64_C(2) << log_fix_precision))
-		{
-			x >>= 1;
-			y += UINT64_C(1) << log_fix_precision;
-		}
-
-		// 64 bits are enough, because of x < 2 * (1 << log_fix_precision) <= 2^32
-		uint64_t z = x;
-		for (size_t i = 0; i < log_fix_precision; i++)
-		{
-			z = (z * z) >> log_fix_precision;
-			if (z >= (UINT64_C(2) << log_fix_precision))
-			{
-				z >>= 1;
-				y += b;
-			}
-			b >>= 1;
-		}
-
-		return y;
-	}
-
 	bool Currency::init() {
 		if (!generateGenesisBlock()) {
 			logger(ERROR, BRIGHT_RED) << "Failed to generate genesis block";
@@ -195,7 +147,7 @@ namespace CryptoNote {
 		}
 	}
 
-	bool Currency::getBlockReward(difficulty_type avgRefDifficulty, difficulty_type difficulty, uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+	bool Currency::getBlockReward(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
 		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 		// assert(alreadyGeneratedCoins <= m_moneySupply);
 		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
@@ -205,14 +157,14 @@ namespace CryptoNote {
 		// Tail emission
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
+			// flat rate tail emission reward
 			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
 		}
 		
-		logger(INFO, WHITE) << "Avg D: " << avgRefDifficulty << ", Cur D: " << difficulty;
 
-		logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
+		//logger(INFO, WHITE) << "Avg D: " << allTimeAvgDifficulty << ", Cur D: " << difficulty;
 
-		assert(difficulty != 0);
+		//logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
 
 		// Difficulty driven reward
 		// R2 = R1 * (D2 / M) / D1 * L1 / L2 in whitepaper
@@ -223,19 +175,19 @@ namespace CryptoNote {
 		double L = (circulating + static_cast<double>(height) / static_cast<double>(blocksInOneYear) * circulating) / circulating - 1; // ~1% every 12 months is lost
 		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears)); // Moores's law
 
-		uint64_t cleanAdaptiveReward = baseReward / avgRefDifficulty * difficulty;
-		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / avgRefDifficulty * L);
+		uint64_t cleanAdaptiveReward = baseReward / allTimeAvgDifficulty * difficulty;
+		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / allTimeAvgDifficulty * L);
 
-		logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward); // TODO remove this logging
+		//logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward); // TODO remove this logging
+
 
 		// Log approach by Luke inspired by MonetaVerde
 
-		assert(static_cast<uint64_t>(difficulty) < (UINT64_C(1) << (sizeof(uint64_t) * 8 - log_fix_precision)));
-
 		uint64_t logReward2 = baseReward * static_cast<uint64_t>(pow(2, log10(static_cast<double>(difficulty))))
-			/ static_cast<uint64_t>(pow(2, log10(static_cast<double>(avgRefDifficulty))));
+			/ static_cast<uint64_t>(pow(2, log10(static_cast<double>(allTimeAvgDifficulty))));
 
-		logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward2);
+		//logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward2);
+
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
@@ -271,7 +223,7 @@ namespace CryptoNote {
 		return maxSize;
 	}
 
-	bool Currency::constructMinerTx(difficulty_type avgRefDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+	bool Currency::constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
 		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
 		tx.inputs.clear();
@@ -291,7 +243,7 @@ namespace CryptoNote {
 
 		uint64_t blockReward;
 		int64_t emissionChange;
-		if (!getBlockReward(avgRefDifficulty, difficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+		if (!getBlockReward(allTimeAvgDifficulty, difficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
 			logger(INFO) << "Block is too big";
 			return false;
 		}
