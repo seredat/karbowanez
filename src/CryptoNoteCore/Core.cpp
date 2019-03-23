@@ -513,9 +513,13 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     return false;
   }
 
+  // get avg recent diff for reward
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, height);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+
   // After block v 5 don't penalize reward and simplify miner tx generation.
   if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+    bool r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
     if (!r) {
       logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance";
       return false;
@@ -529,7 +533,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
      block size, so first miner transaction generated with fake amount of money, and with phase we know think we know expected block size
      */
   //make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
-  bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+  bool r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 11);
   if (!r) { 
     logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance"; 
     return false; 
@@ -537,7 +541,7 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
 
   size_t cumulative_size = txs_size + getObjectBinarySize(b.baseTransaction);
   for (size_t try_count = 0; try_count != 10; ++try_count) {
-    r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+    r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 11);
 
     if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, second chance"; return false; }
     size_t coinbase_blob_size = getObjectBinarySize(b.baseTransaction);
@@ -1008,9 +1012,11 @@ bool core::getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generate
   return m_blockchain.getAlreadyGeneratedCoins(hash, generatedCoins);
 }
 
-bool core::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+bool core::getBlockReward(uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
                           uint64_t& reward, int64_t& emissionChange) {
-  return m_currency.getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange);
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, height);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  return m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange);
 }
 
 bool core::scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) {
@@ -1269,11 +1275,11 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
-  if (!getBlockReward(block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
+  if (!getBlockReward(blockDetails.height, block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
     return false;
   }
 
-  if (!getBlockReward(block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
+  if (!getBlockReward(blockDetails.height, block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
     return false;
   }
 
