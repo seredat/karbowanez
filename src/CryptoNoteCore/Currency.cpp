@@ -63,6 +63,54 @@ namespace CryptoNote {
 		10000000000000000000ull
 	};
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+
+#pragma intrinsic(_umul128)
+
+	static inline void mul(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high) {
+		low = _umul128(a, b, &high);
+	}
+#else
+	static inline void mul(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high) {
+		typedef unsigned __int128 uint128_t;
+		uint128_t res = (uint128_t)a * (uint128_t)b;
+		low = (uint64_t)res;
+		high = (uint64_t)(res >> 64);
+	}
+#endif
+
+	const size_t log_fix_precision = 20; // Monetaverde
+	static_assert(1 <= log_fix_precision && log_fix_precision < sizeof(uint64_t) * 8 / 2 - 1, "Invalid log precision");
+	uint64_t log2_fix(uint64_t x)
+	{
+		assert(x != 0);
+
+		uint64_t b = UINT64_C(1) << (log_fix_precision - 1);
+		uint64_t y = 0;
+
+		while (x >= (UINT64_C(2) << log_fix_precision))
+		{
+			x >>= 1;
+			y += UINT64_C(1) << log_fix_precision;
+		}
+
+		// 64 bits are enough, because of x < 2 * (1 << log_fix_precision) <= 2^32
+		uint64_t z = x;
+		for (size_t i = 0; i < log_fix_precision; i++)
+		{
+			z = (z * z) >> log_fix_precision;
+			if (z >= (UINT64_C(2) << log_fix_precision))
+			{
+				z >>= 1;
+				y += b;
+			}
+			b >>= 1;
+		}
+
+		return y;
+	}
+
 	bool Currency::init() {
 		if (!generateGenesisBlock()) {
 			logger(ERROR, BRIGHT_RED) << "Failed to generate genesis block";
@@ -159,6 +207,10 @@ namespace CryptoNote {
 		{
 			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
 		}
+		
+		logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
+
+		assert(difficulty != 0);
 
 		// Difficulty driven reward
 		// R2 = R1 * (D2 / M) / D1 * L1 / L2 in whitepaper
@@ -177,6 +229,15 @@ namespace CryptoNote {
 
 		logger(INFO, BRIGHT_CYAN) << "L: " << L << ", M: " << M << ", D-REWARD clean: " << formatAmount(cleanAdaptiveReward) << ", compensated: " 
 			<< formatAmount(compensatedAdaptiveReward) << ", % difference: " << difference; // TODO remove this logging
+
+		// Log approach by Luke inspired by MonetaVerde
+
+		assert(static_cast<uint64_t>(difficulty) < (UINT64_C(1) << (sizeof(uint64_t) * 8 - log_fix_precision)));
+
+		// =BASE*POW(2;LOG(DIFF;10))/1024
+		uint64_t logReward = baseReward * static_cast<uint64_t>(pow(2, log10(static_cast<double>(difficulty)))) / 1024;
+
+		logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward);
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
