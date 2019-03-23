@@ -162,9 +162,9 @@ namespace CryptoNote {
 		}
 		
 
-		logger(INFO, WHITE) << "Avg D: " << allTimeAvgDifficulty << ", Cur D: " << difficulty;
+		//logger(INFO, WHITE) << "Avg D: " << allTimeAvgDifficulty << ", Cur D: " << difficulty;
 
-		logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
+		//logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
 
 		// Difficulty driven reward
 		// R2 = R1 * (D2 / M) / D1 * L1 / L2 in whitepaper
@@ -178,7 +178,7 @@ namespace CryptoNote {
 		uint64_t cleanAdaptiveReward = baseReward / allTimeAvgDifficulty * difficulty;
 		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / allTimeAvgDifficulty * L);
 
-		logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward); // TODO remove this logging
+		//logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward); // TODO remove this logging
 
 
 		// Log approach by Luke inspired by MonetaVerde
@@ -186,7 +186,7 @@ namespace CryptoNote {
 		uint64_t logReward2 = baseReward * static_cast<uint64_t>(pow(2, log10(static_cast<double>(difficulty))))
 			/ static_cast<uint64_t>(pow(2, log10(static_cast<double>(allTimeAvgDifficulty))));
 
-		logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward2);
+		//logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward2);
 
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
