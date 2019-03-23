@@ -223,7 +223,7 @@ namespace CryptoNote {
 		return maxSize;
 	}
 
-	bool Currency::constructMinerTx(difficulty_type avgRefDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+	bool Currency::constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
 		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
 		tx.inputs.clear();
@@ -243,7 +243,7 @@ namespace CryptoNote {
 
 		uint64_t blockReward;
 		int64_t emissionChange;
-		if (!getBlockReward(avgRefDifficulty, difficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+		if (!getBlockReward(allTimeAvgDifficulty, difficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
 			logger(INFO) << "Block is too big";
 			return false;
 		}
