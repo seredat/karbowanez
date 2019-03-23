@@ -235,7 +235,6 @@ namespace CryptoNote {
 		uint64_t logReward2 = baseReward * static_cast<uint64_t>(pow(2, log10(static_cast<double>(difficulty))))
 			/ static_cast<uint64_t>(pow(2, log10(static_cast<double>(avgRefDifficulty))));
 
-
 		logger(INFO, BRIGHT_CYAN) << "L-Reward: " << formatAmount(logReward2);
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
@@ -246,8 +245,8 @@ namespace CryptoNote {
 		}
 
 		if (blockMajorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-			emissionChange = baseReward - fee;
-			reward = baseReward;
+			emissionChange = logReward2 - fee;
+			reward = logReward2;
 
 			return true;
 		}
