@@ -1113,8 +1113,9 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  difficulty_type avgDifficulty = getAvgDifficultyForHeight(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
-  if (!m_currency.getBlockReward(avgDifficulty, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+  difficulty_type avgDifficulty = getAvgDifficultyForHeight(static_cast<uint32_t>(m_blocks.size() - 1), static_cast<uint32_t>(m_blocks.size() - 1));
+  difficulty_type Difficulty = getAvgDifficultyForHeight(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  if (!m_currency.getBlockReward(avgDifficulty, Difficulty, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
     logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
     return false;
   }
