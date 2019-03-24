@@ -153,29 +153,29 @@ namespace CryptoNote {
 		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
-		
+		const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
+
 		// Tail emission
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
 			// flat rate tail emission reward
-			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+			//baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+
+			// inflation 2% of total coins in circulation
+			uint64_t twoPercentOfEmission = static_cast<double>(alreadyGeneratedCoins) / 100 * 2;
+			baseReward = twoPercentOfEmission / blocksInOneYear;
 		}
 		
-
 		// Difficulty driven reward
 		// R2 = R1 * (D2 / M) / D1 * L1 / L2 in whitepaper
-
-		const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
-		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
 		double circulating = static_cast<double>(alreadyGeneratedCoins);
 		double L = (circulating + static_cast<double>(height) / static_cast<double>(blocksInOneYear) * circulating) / circulating - 1; // ~1% every 12 months is lost
-		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears)); // Moores's law
+		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInOneYear * 2)); // Moores's law
 
 		uint64_t cleanAdaptiveReward = baseReward / allTimeAvgDifficulty * difficulty;
 		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / allTimeAvgDifficulty * L);
 		
 		// Log approach by Luke inspired by MonetaVerde
-
 		uint64_t logReward = static_cast<uint64_t>(static_cast<double>(baseReward) * pow(2, log10(static_cast<double>(difficulty) / static_cast<double>(allTimeAvgDifficulty))));
 
 		//TODO remove this logging
