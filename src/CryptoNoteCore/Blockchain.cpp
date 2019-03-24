@@ -2254,6 +2254,10 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
 
   auto block_processing_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - blockProcessingStart).count();
 
+  if (block.height % 1000 == 0) {
+	  logger(INFO) << "+++++ Blockchain loaded to height: " << block.height;
+  }
+
   logger(DEBUGGING) <<
     "+++++ BLOCK SUCCESSFULLY ADDED" << ENDL << "id:\t" << blockHash
     << ENDL << "PoW:\t" << proof_of_work
