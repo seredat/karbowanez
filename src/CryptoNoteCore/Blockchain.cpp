@@ -778,7 +778,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	}
 
 	// calculate average difficulty for ~last month
-	uint64_t avgDifficultyCurrent = getAvgDifficulty(height, window * 7 * 4);
+	uint64_t avgDifficultyCurrent = getAvgDifficulty(height, m_currency.averageDifficultyWindow());
 	
 	// historical reference moving average difficulty
 	uint64_t avgDifficultyHistorical = getAvgCumulativeDifficulty(height);
