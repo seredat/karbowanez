@@ -78,7 +78,7 @@ namespace CryptoNote {
 			m_upgradeHeightV2 = 10;
 			m_upgradeHeightV3 = 60;
 			m_upgradeHeightV4 = 70;
-			m_upgradeHeightV5 = 80;
+			m_upgradeHeightV5 = 100;
 			m_blocksFileName = "testnet_" + m_blocksFileName;
 			m_blocksCacheFileName = "testnet_" + m_blocksCacheFileName;
 			m_blockIndexesFileName = "testnet_" + m_blockIndexesFileName;
@@ -489,10 +489,13 @@ namespace CryptoNote {
 
 	difficulty_type Currency::nextDifficulty(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps,
 		std::vector<difficulty_type> cumulativeDifficulties) const {
-		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_4) {
+		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
+			return nextDifficultyV5(height, blockMajorVersion, timestamps, cumulativeDifficulties);
+		}
+		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
 			return nextDifficultyV4(height, blockMajorVersion, timestamps, cumulativeDifficulties);
 		}
-		else if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3) {
 			return nextDifficultyV3(timestamps, cumulativeDifficulties);
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
@@ -723,6 +726,59 @@ namespace CryptoNote {
 		// minimum limit
 		if (!isTestnet() && next_D < 100000) {
 			next_D = 100000;
+		}
+
+		return next_D;
+	}
+
+	difficulty_type Currency::nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion,
+		std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulativeDifficulties) const {
+
+		// LWMA-1 difficulty algorithm 
+		// Copyright (c) 2017-2018 Zawy, MIT License
+		// See commented link below for required config file changes. Fix FTL and MTP.
+		// https://github.com/zawy12/difficulty-algorithms/issues/3
+
+		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
+		int64_t N = difficultyBlocksCount3() - 1;
+		
+		// Genesis should be the only time sizes are < N+1.
+		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
+
+		// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
+		// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
+		uint64_t difficulty_guess = !isTestnet() ? 1000000000 : 10000;
+		if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
+
+		uint64_t L(0), next_D, i, this_timestamp(0), previous_timestamp(0), avg_D;
+
+		previous_timestamp = timestamps[0] - T;
+		for (i = 1; i <= N; i++) {
+			// Safely prevent out-of-sequence timestamps
+			if (timestamps[i] > previous_timestamp) { this_timestamp = timestamps[i]; }
+			else { this_timestamp = previous_timestamp + 1; }
+			L += i * std::min<uint64_t>(6 * T, this_timestamp - previous_timestamp);
+			previous_timestamp = this_timestamp;
+		}
+		if (L < N * N * T / 20) { L = N * N * T / 20; }
+		avg_D = (cumulativeDifficulties[N] - cumulativeDifficulties[0]) / N;
+
+		// Prevent round off error for small D and overflow for large D.
+		if (avg_D > 2000000 * N * N * T) {
+			next_D = (avg_D / (200 * L)) * (N * (N + 1) * T * 99);
+		}
+		else { next_D = (avg_D * N * (N + 1) * T * 99) / (200 * L); }
+
+		// Optional. Make all insignificant digits zero for easy reading.
+		i = 1000000000;
+		while (i > 1) {
+			if (next_D > i * 100) { next_D = ((next_D + i / 2) / i) * i; break; }
+			else { i /= 10; }
+		}
+
+		// minimum limit
+		if (!isTestnet() && next_D < 1000000) {
+			next_D = 1000000;
 		}
 
 		return next_D;
