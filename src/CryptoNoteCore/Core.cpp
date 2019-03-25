@@ -1147,6 +1147,14 @@ std::vector<Crypto::Hash> core::getTransactionHashesByPaymentId(const Crypto::Ha
   return blockchainTransactionHashes;
 }
 
+difficulty_type core::getAvgDifficulty(uint32_t height, size_t window) {
+  return m_blockchain.getAvgDifficulty(height, window);
+}
+
+difficulty_type core::getAvgCumulativeDifficulty(uint32_t& height) {
+  return m_blockchain.getAvgCumulativeDifficulty(height);
+}
+
 uint64_t core::getMinimalFee() {
   return getMinimalFeeForHeight(get_current_blockchain_height() - 1);
 }
