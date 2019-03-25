@@ -103,6 +103,17 @@ public:
   virtual bool isFusionTransaction(size_t transactionId) const override;
   virtual IFusionManager::EstimateResult estimate(uint64_t threshold, const std::vector<std::string>& sourceAddresses = {}) const override;
 
+  void updateInternalCache();
+  size_t getMaxTxSize();
+  bool txIsTooLarge(const TransactionParameters& sendingTransaction);
+  void clearCaches() { return clearCaches(true, true); };
+  size_t getTxSize(const TransactionParameters &sendingTransaction);
+  void clearCacheAndShutdown();
+  void createViewWallet(const std::string &password,
+	const std::string address,
+	const Crypto::SecretKey &viewSecretKey,
+	const std::string& path);
+
 protected:
   struct NewAddressData {
     Crypto::PublicKey spendPublicKey;

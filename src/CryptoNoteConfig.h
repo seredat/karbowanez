@@ -22,6 +22,7 @@
 #pragma once
 
 #include <cstdint>
+#include <initializer_list>
 
 namespace CryptoNote {
 namespace parameters {
