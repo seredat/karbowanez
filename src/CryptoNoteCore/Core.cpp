@@ -514,8 +514,8 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   }
 
   // get avg recent diff for reward
-  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height - 1, height - 1);
-  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height - 1, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgCumulativeDifficulty(height - 1);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficulty(height - 1, m_currency.averageDifficultyWindow());
 
   // After block v 5 don't penalize reward and simplify miner tx generation.
   if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
@@ -1014,8 +1014,8 @@ bool core::getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generate
 
 bool core::getBlockReward(uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
                           uint64_t& reward, int64_t& emissionChange) {
-  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, height);
-  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficultyForHeight(height, m_currency.expectedNumberOfBlocksPerDay() * 7 * 4);
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgCumulativeDifficulty(height);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficulty(height, m_currency.averageDifficultyWindow());
   return m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange);
 }
 
@@ -1151,7 +1151,7 @@ difficulty_type core::getAvgDifficulty(uint32_t height, size_t window) {
   return m_blockchain.getAvgDifficulty(height, window);
 }
 
-difficulty_type core::getAvgCumulativeDifficulty(uint32_t& height) {
+difficulty_type core::getAvgCumulativeDifficulty(uint32_t height) {
   return m_blockchain.getAvgCumulativeDifficulty(height);
 }
 

@@ -857,6 +857,7 @@ namespace CryptoNote {
 		difficultyWindow(parameters::DIFFICULTY_WINDOW);
 		difficultyLag(parameters::DIFFICULTY_LAG);
 		difficultyCut(parameters::DIFFICULTY_CUT);
+		averageDifficultyWindow(CryptoNote::parameters::AVERAGE_DIFFICULTY_WINDOW);
 
 		maxBlockSizeInitial(parameters::MAX_BLOCK_SIZE_INITIAL);
 		maxBlockSizeGrowthSpeedNumerator(parameters::MAX_BLOCK_SIZE_GROWTH_SPEED_NUMERATOR);
