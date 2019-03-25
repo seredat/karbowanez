@@ -740,7 +740,7 @@ namespace CryptoNote {
 		// https://github.com/zawy12/difficulty-algorithms/issues/3
 
 		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
-		int64_t N = difficultyBlocksCount3() - 1;
+		int64_t N = difficultyBlocksCount4();
 		
 		// Genesis should be the only time sizes are < N+1.
 		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
