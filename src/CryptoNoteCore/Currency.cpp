@@ -147,18 +147,43 @@ namespace CryptoNote {
 		}
 	}
 
-	bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+	bool Currency::getBlockReward(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
 		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 		// assert(alreadyGeneratedCoins <= m_moneySupply);
 		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
-		// Tail emission
-
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
+		const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
+
+		// Tail emission
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
-			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+			// flat rate tail emission reward
+			//baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+
+			// inflation 2% of total coins in circulation
+			uint64_t twoPercentOfEmission = static_cast<double>(alreadyGeneratedCoins) / 100 * 2;
+			baseReward = twoPercentOfEmission / blocksInOneYear;
 		}
+		
+		// Difficulty driven reward
+		// R2 = R1 * (D2 / M) / D1 * L1 / L2 in whitepaper
+		double circulating = static_cast<double>(alreadyGeneratedCoins);
+		double L = (circulating + static_cast<double>(height) / static_cast<double>(blocksInOneYear) * circulating) / circulating - 1; // ~1% every 12 months is lost
+		double M = pow(2, static_cast<double>(height) / static_cast<double>(blocksInOneYear * 2)); // Moores's law
+
+		uint64_t cleanAdaptiveReward = baseReward / allTimeAvgDifficulty * difficulty;
+		uint64_t compensatedAdaptiveReward = static_cast<uint64_t>(baseReward * (difficulty / M) / allTimeAvgDifficulty * L);
+		
+		// Log approach by Luke inspired by MonetaVerde
+		uint64_t logReward = static_cast<uint64_t>(static_cast<double>(baseReward) * pow(2, log10(static_cast<double>(difficulty) / static_cast<double>(allTimeAvgDifficulty))));
+
+		//TODO remove this logging
+		//logger(INFO, WHITE) << "Avg D: " << allTimeAvgDifficulty << ", Cur D: " << difficulty;
+		//logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
+		//logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward);
+		//logger(INFO, BRIGHT_CYAN) << "L-REWARD: " << formatAmount(logReward);
+		
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
@@ -168,8 +193,8 @@ namespace CryptoNote {
 		}
 
 		if (blockMajorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-			emissionChange = baseReward - fee;
-			reward = baseReward;
+			emissionChange = logReward - fee;
+			reward = logReward;
 
 			return true;
 		}
@@ -194,7 +219,7 @@ namespace CryptoNote {
 		return maxSize;
 	}
 
-	bool Currency::constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+	bool Currency::constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
 		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
 		tx.inputs.clear();
@@ -214,7 +239,7 @@ namespace CryptoNote {
 
 		uint64_t blockReward;
 		int64_t emissionChange;
-		if (!getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+		if (!getBlockReward(allTimeAvgDifficulty, difficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
 			logger(INFO) << "Block is too big";
 			return false;
 		}
@@ -868,7 +893,7 @@ namespace CryptoNote {
 	Transaction CurrencyBuilder::generateGenesisTransaction() {
 		CryptoNote::Transaction tx;
 		CryptoNote::AccountPublicAddress ac = boost::value_initialized<CryptoNote::AccountPublicAddress>();
-		m_currency.constructMinerTx(1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
+		m_currency.constructMinerTx(1, 1, 1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
 		return tx;
 	}
 	CurrencyBuilder& CurrencyBuilder::emissionSpeedFactor(unsigned int val) {
