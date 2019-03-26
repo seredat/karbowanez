@@ -297,6 +297,7 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t last_block_reward;
     uint64_t last_block_timestamp;
     uint64_t last_block_difficulty;
+    uint64_t avg_historic_difficulty;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
@@ -324,6 +325,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(last_block_reward)
       KV_MEMBER(last_block_timestamp)
       KV_MEMBER(last_block_difficulty)
+      KV_MEMBER(avg_historic_difficulty)
     }
   };
 };
@@ -559,6 +561,7 @@ struct f_block_short_response {
   uint64_t cumul_size;
   difficulty_type difficulty;
   uint64_t min_tx_fee;
+  uint64_t avg_historic_difficulty;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(timestamp)
@@ -568,6 +571,7 @@ struct f_block_short_response {
     KV_MEMBER(tx_count)
     KV_MEMBER(difficulty)
 	KV_MEMBER(min_tx_fee)
+	KV_MEMBER(avg_historic_difficulty)
   }
 };
 

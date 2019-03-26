@@ -689,6 +689,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.last_block_timestamp = block_header.timestamp;
   res.last_block_reward = block_header.reward;
   m_core.getBlockDifficulty(static_cast<uint32_t>(last_block_height), res.last_block_difficulty);
+  res.avg_historic_difficulty = m_core.getAvgCumulativeDifficulty(last_block_height);
 
   res.status = CORE_RPC_STATUS_OK;
   return true;
@@ -904,6 +905,7 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
     block_short.tx_count = blk.transactionHashes.size() + 1;
 	block_short.difficulty = blockDiff;
 	block_short.min_tx_fee = m_core.getMinimalFeeForHeight(i);
+	block_short.avg_historic_difficulty = m_core.getAvgCumulativeDifficulty(i);
 
     res.blocks.push_back(block_short);
 
