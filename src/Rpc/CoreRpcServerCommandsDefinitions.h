@@ -1174,4 +1174,28 @@ struct K_COMMAND_RPC_CHECK_RESERVE_PROOF {
 	};
 };
 
+struct COMMAND_RPC_GET_AVG_DIFF_BY_HEIGHTS {
+	struct request {
+		std::vector<uint32_t> heights;
+
+		void serialize(ISerializer& s) {
+			KV_MEMBER(heights);
+		}
+	};
+
+	struct response {
+		std::vector<uint64_t> difficulties;
+		std::vector<uint64_t> avgDifficulties;
+		std::vector<uint64_t> minFees;
+		std::string status;
+
+		void serialize(ISerializer& s) {
+			KV_MEMBER(status)
+			KV_MEMBER(difficulties)
+			KV_MEMBER(avgDifficulties)
+			KV_MEMBER(minFees)
+		}
+	};
+};
+
 }

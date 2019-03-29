@@ -197,6 +197,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
 	  { "get_transaction_details_by_hashes", { makeMemberMethod(&RpcServer::onGetTransactionsDetailsByHashes), false } },
 	  { "k_transaction_details_by_hash", { makeMemberMethod(&RpcServer::onGetTransactionDetailsByHash), false } },
 	  { "get_blocks_details_by_heights", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHeights), false } },
+	  { "get_avg_diffs_by_heights", { makeMemberMethod(&RpcServer::onGetAvgDiffByHeights), false } },
 	  { "get_block_details_by_height", { makeMemberMethod(&RpcServer::onGetBlockDetailsByHeight), false } },
 	  { "get_blocks_details_by_hashes", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHashes), false } },
 	  { "get_blocks_hashes_by_timestamps", { makeMemberMethod(&RpcServer::onGetBlocksHashesByTimestamps), false } },
@@ -474,6 +475,40 @@ bool RpcServer::onGetBlocksDetailsByHeights(const COMMAND_RPC_GET_BLOCKS_DETAILS
 
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
+}
+
+bool RpcServer::onGetAvgDiffByHeights(const COMMAND_RPC_GET_AVG_DIFF_BY_HEIGHTS::request& req, COMMAND_RPC_GET_AVG_DIFF_BY_HEIGHTS::response& rsp) {
+	try {
+		std::vector<uint64_t> avgDiffs;
+		std::vector<uint64_t> diffs;
+		std::vector<uint64_t> fees;
+		for (const uint32_t& height : req.heights) {
+			if (m_core.get_current_blockchain_height() <= height) {
+				throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+				  std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height() - 1) };
+			}
+			uint64_t avgDiff = m_core.getAvgCumulativeDifficulty(height);
+			avgDiffs.push_back(avgDiff);
+			uint64_t diff;
+			m_core.getBlockDifficulty(height, diff);
+			diffs.push_back(diff);
+			uint64_t fee = m_core.getMinimalFeeForHeight(height);
+			fees.push_back(fee);
+		}
+		rsp.avgDifficulties = std::move(avgDiffs);
+		rsp.difficulties = std::move(diffs);
+		rsp.minFees = std::move(fees);
+	}
+	catch (std::system_error& e) {
+		rsp.status = e.what();
+		return false;
+	}
+	catch (std::exception& e) {
+		rsp.status = "Error: " + std::string(e.what());
+		return false;
+	}
+	rsp.status = CORE_RPC_STATUS_OK;
+	return true;
 }
 
 bool RpcServer::onGetBlocksDetailsByHashes(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
