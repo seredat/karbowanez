@@ -471,6 +471,12 @@ namespace CryptoNote {
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
 		minimumFee = static_cast<uint64_t>(minFee);
 
+		uint64_t i = 1000000000;
+		while (i > 1) {
+			if (minimumFee > i * 100) { minimumFee = ((minimumFee + i / 2) / i) * i; break; }
+			else { i /= 10; }
+		}
+
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
 
