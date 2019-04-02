@@ -1209,12 +1209,12 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   Crypto::Hash hash_1;
 
   // Hashing the current blockdata (preprocessing it)
-  cn_fast_hash(bd.data(), bd.size(), hash_1); // hash it with keccak to speed up
+  cn_fast_hash(bd.data(), bd.size(), hash_1);
   
   // Phase 2
 
   BinaryArray pot, ba;
-  // throw our full block into common pot (not hashing blob)
+  // throw our full block (not hashing blob) into common pot
   if (!toBinaryArray(b, ba)) {
     return false;
   }
@@ -1240,16 +1240,8 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 3
 
-  Crypto::Hash hash_2;
-
   // stir the pot - hashing the 1 + 8 blocks as one continous data, salt is hash_1
-  Crypto::argon2d_hash(pot.data(), pot.size(), &hash_1, sizeof(&hash_1), m_cost, lanes, threads, t_cost, hash_2);
-
-  // Phase 4
-
-  // Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
-  // with pseudorandom finalizer function as in CN
-  Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, sizeof(&hash_2), m_cost, t_cost, res);
+  Crypto::argon2d_hash(pot.data(), pot.size(), &hash_1, sizeof(&hash_1), m_cost, lanes, threads, t_cost, res);
 
   return true;
 }

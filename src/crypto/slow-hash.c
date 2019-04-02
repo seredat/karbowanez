@@ -51,54 +51,38 @@
 #define INIT_SIZE_BYTE (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
 void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, char *hash) {
-	argon2_context context;
-	context.out = (uint8_t *)hash;
-	context.outlen = (uint32_t)32;
-	context.pwd = (uint8_t *)in;
-	context.pwdlen = (uint32_t)inlen;
-	context.salt = (uint8_t *)salt;
-	context.saltlen = (uint32_t)saltlen;
-	context.secret = NULL;
-	context.secretlen = 0;
-	context.ad = NULL;
-	context.adlen = 0;
-	context.allocate_cbk = NULL;
-	context.free_cbk = NULL;
-	context.flags = 2;
-	context.m_cost = m_cost;        // Memory in KiB
-	context.lanes = lanes;          // Degree of Parallelism
-	context.threads = threads;      // Threads
-	context.t_cost = t_cost;        // Iterations
-	argon2_ctx(&context, Argon2_d);
+  argon2_context context;
+  context.out = (uint8_t *)hash;
+  context.outlen = (uint32_t)32;
+  context.pwd = (uint8_t *)in;
+  context.pwdlen = (uint32_t)inlen;
+  context.salt = (uint8_t *)salt;
+  context.saltlen = (uint32_t)saltlen;
+  context.secret = NULL;
+  context.secretlen = 0;
+  context.ad = NULL;
+  context.adlen = 0;
+  context.allocate_cbk = NULL;
+  context.free_cbk = NULL;
+  context.flags = 2;
+  context.m_cost = m_cost;        // Memory in KiB
+  context.lanes = lanes;          // Degree of Parallelism
+  context.threads = threads;      // Threads
+  context.t_cost = t_cost;        // Iterations
+  argon2_ctx(&context, Argon2_d);
 }
 
 #pragma pack(push, 1)
 union cn_slow_hash_state
 {
-	union hash_state hs;
-	struct
-	{
-		uint8_t k[64];
-		uint8_t init[INIT_SIZE_BYTE];
-	};
+  union hash_state hs;
+  struct
+  {
+    uint8_t k[64];
+    uint8_t init[INIT_SIZE_BYTE];
+  };
 };
 #pragma pack(pop)
-
-void an_slow_hash(const void *data, size_t datalen, const void *salt, size_t saltlen, uint32_t m_cost, uint32_t t_cost, char *hash)
-{
-	uint8_t hs1[200];
-	static void(*const extra_hashes[4])(const void *, size_t, char *) =
-	{
-		hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
-	};
-
-	keccak1600(data, (int)datalen, (uint8_t*)hs1);
-	
-	uint8_t hs2[32];
-	argon2d_hash(data, datalen, salt, saltlen, m_cost, 2, 1, t_cost, (uint8_t*)hs2);
-
-	extra_hashes[hs1[0] & 3](&hs2, 64, hash);
-}
 
 #if !defined NO_AES && (defined(__x86_64__) || (defined(_MSC_VER) && defined(_WIN64)))
 // Optimised code below, uses x86-specific intrinsics, SSE2, AES-NI

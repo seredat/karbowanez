@@ -68,7 +68,6 @@ enum {
 void cn_fast_hash(const void *data, size_t length, char *hash);
 
 void cn_slow_hash(const void *data, size_t length, char *hash);
-void an_slow_hash(const void *data, size_t inlen, const void *salt, size_t saltlen, uint32_t m_cost, uint32_t t_cost, char *hash);
 void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, char *hash);
 
 void hash_extra_blake(const void *data, size_t length, char *hash);
