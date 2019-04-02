@@ -29,6 +29,8 @@
 #include <boost/limits.hpp>
 #include <boost/utility/value_init.hpp>
 
+#include "../CryptoNoteConfig.h"
+
 #include "crypto/crypto.h"
 #include "Common/CommandLine.h"
 #include "Common/StringTools.h"
@@ -119,47 +121,56 @@ namespace CryptoNote
 
 	System::Dispatcher dispatcher;
 
-    // 1) First, create block template with dummy coinbase tx (to get block reward)
-	if (!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce)) {
-		logger(ERROR) << "Failed to get_block_template(), stopping mining";
-		return false;
-	}
+    // 1) First, create block template with dummy coinbase tx
+    if (!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce)) {
+      logger(ERROR) << "Failed to get_block_template(), stopping mining";
+      return false;
+    }
 
-	// 2) Get stake tx from wallet RPC, passing block reward
-	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
-	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
-	req.address = m_currency.accountAddressAsString(m_stake_address);
-	m_diffic = m_handler.getNextBlockDifficulty();
-	req.stake = m_diffic * 10000000; // TODO replace by const
-	uint64_t mixin = 3; // TODO replace by params or settings
+    // 2) Get stake tx from wallet RPC
+    Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
+    Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
 
-	Transaction stake_tx;
-	Crypto::SecretKey stake_tx_key;	
-	try {
-		HttpClient httpClient(dispatcher, m_wallet_host, m_wallet_port);
+    req.address = m_currency.accountAddressAsString(m_stake_address);
+    m_diffic = m_handler.getNextBlockDifficulty();
+    req.stake = m_diffic * CryptoNote::parameters::STAKE_TO_DIFFICULTY_RATIO;
+    uint64_t mixin = 3; // TODO replace by params or settings
+    // get block reward from coinbase tx and pass it to wallet
+    uint64_t blockReward = 0;
+    for (const auto& o : bl.baseTransaction.outputs) {
+      blockReward += o.amount;
+    }
+	req.reward = blockReward;
 
-		invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res);
-		
-		BinaryArray tx_blob;
-		if (!Common::fromHex(res.tx_as_hex, tx_blob))
-		{
-			logger(ERROR) << "Failed to parse tx from hexbuff";
-			return false;
-		}
-		Crypto::Hash tx_hash = NULL_HASH;
-		Crypto::Hash tx_prefixt_hash = NULL_HASH;
-		if (!parseAndValidateTransactionFromBinaryArray(tx_blob, stake_tx, tx_hash, tx_prefixt_hash)) {
-			logger(ERROR) << "Could not parse tx from blob";
-			return false;
-		}
-		Crypto::Hash tx_key_hash;
-		size_t size;
-		if (!Common::fromHex(res.tx_key, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash)) {
-			logger(ERROR) << "Failed to parse tx_key";
-			return false;
-		}
-		stake_tx_key = *(struct Crypto::SecretKey *) &tx_key_hash;
-	}
+    // TODO create also functions for InProcessNode
+
+    Transaction stake_tx;
+    Crypto::SecretKey stake_tx_key;	
+    try {
+      HttpClient httpClient(dispatcher, m_wallet_host, m_wallet_port);
+
+      invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res);
+
+      BinaryArray tx_blob;
+      if (!Common::fromHex(res.tx_as_hex, tx_blob))
+      {
+        logger(ERROR) << "Failed to parse tx from hexbuff";
+        return false;
+      }
+      Crypto::Hash tx_hash = NULL_HASH;
+      Crypto::Hash tx_prefixt_hash = NULL_HASH;
+      if (!parseAndValidateTransactionFromBinaryArray(tx_blob, stake_tx, tx_hash, tx_prefixt_hash)) {
+        logger(ERROR) << "Could not parse tx from blob";
+        return false;
+      }
+      Crypto::Hash tx_key_hash;
+      size_t size;
+      if (!Common::fromHex(res.tx_key, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash)) {
+        logger(ERROR) << "Failed to parse tx_key";
+        return false;
+      }
+      stake_tx_key = *(struct Crypto::SecretKey *) &tx_key_hash;
+    }
     catch (const ConnectException&) {
       logger(ERROR) << "Failed to connect to wallet";
       return false;
@@ -169,10 +180,10 @@ namespace CryptoNote
       return false;
     }
 
-	// 3) Replace coibase tx with stake tx in block template
-	bl.baseTransaction = stake_tx;
+    // 3) Replace coibase tx with stake tx in block template
+    bl.baseTransaction = stake_tx;
 
-	// 4) Set block template
+    // 4) Set block template
     set_block_template(bl, di);
     return true;
   }

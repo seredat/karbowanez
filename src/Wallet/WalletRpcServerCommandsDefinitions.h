@@ -102,6 +102,7 @@ using CryptoNote::ISerializer;
 		{
 			std::string address;
 			uint64_t stake;
+			uint64_t reward;
 			uint64_t mixin = 0;
 			uint64_t unlock_time = 0;
 
@@ -109,6 +110,7 @@ using CryptoNote::ISerializer;
 			{
 				KV_MEMBER(address)
 				KV_MEMBER(stake)
+				KV_MEMBER(reward)
 				KV_MEMBER(mixin)
 				KV_MEMBER(unlock_time)
 			}
