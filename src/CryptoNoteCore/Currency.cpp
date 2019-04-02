@@ -182,8 +182,7 @@ namespace CryptoNote {
 		//logger(INFO, WHITE) << "Avg D: " << allTimeAvgDifficulty << ", Cur D: " << difficulty;
 		//logger(INFO, BRIGHT_MAGENTA) << "Reward: " << formatAmount(baseReward);
 		//logger(INFO, BRIGHT_CYAN) << "D-REWARD: " << formatAmount(cleanAdaptiveReward);
-		//logger(INFO, BRIGHT_CYAN) << "L-REWARD: " << formatAmount(logReward);
-		
+		//logger(INFO, BRIGHT_CYAN) << "L-REWARD: " << formatAmount(logReward);		
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
 		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
@@ -192,9 +191,16 @@ namespace CryptoNote {
 			return false;
 		}
 
-		if (blockMajorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+		if (blockMajorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_6) {
 			emissionChange = logReward - fee;
 			reward = logReward;
+
+			return true;
+		}
+
+		if (blockMajorVersion == CryptoNote::BLOCK_MAJOR_VERSION_5) {
+			emissionChange = baseReward - fee;
+			reward = baseReward;
 
 			return true;
 		}
