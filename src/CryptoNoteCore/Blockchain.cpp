@@ -1294,7 +1294,7 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
 #endif
 
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
-    logger(TRACE) << "Block with id: " << id << std::endl <<
+    logger(INFO) << "Block with id: " << id << std::endl <<
       " can't be accepted for alternative chain, block height: " << block_height << std::endl <<
       " blockchain height: " << getCurrentBlockchainHeight();
     bvc.m_verification_failed = true;
