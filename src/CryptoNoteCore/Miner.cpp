@@ -117,19 +117,24 @@ namespace CryptoNote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
-    // get stake tx from wallet RPC
-	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
-	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
-    req.address = m_currency.accountAddressAsString(m_stake_address);
-	m_diffic = m_handler.getNextBlockDifficulty();
-	req.stake =  m_diffic * 10000000; // TODO replace by const
-	uint64_t mixin = 3; // TODO replace by params or settings
-
 	System::Dispatcher dispatcher;
 
-	Transaction stake_tx;
-	Crypto::SecretKey stake_tx_key;
+    // 1) First, create block template with dummy coinbase tx (to get block reward)
+	if (!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce)) {
+		logger(ERROR) << "Failed to get_block_template(), stopping mining";
+		return false;
+	}
 
+	// 2) Get stake tx from wallet RPC, passing block reward
+	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
+	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
+	req.address = m_currency.accountAddressAsString(m_stake_address);
+	m_diffic = m_handler.getNextBlockDifficulty();
+	req.stake = m_diffic * 10000000; // TODO replace by const
+	uint64_t mixin = 3; // TODO replace by params or settings
+
+	Transaction stake_tx;
+	Crypto::SecretKey stake_tx_key;	
 	try {
 		HttpClient httpClient(dispatcher, m_wallet_host, m_wallet_port);
 
@@ -164,11 +169,10 @@ namespace CryptoNote
       return false;
     }
 
-    if(!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce, stake_tx, stake_tx_key)) {
-      logger(ERROR) << "Failed to get_block_template(), stopping mining";
-      return false;
-    }
+	// 3) Replace coibase tx with stake tx in block template
+	bl.baseTransaction = stake_tx;
 
+	// 4) Set block template
     set_block_template(bl, di);
     return true;
   }
@@ -374,7 +378,7 @@ namespace CryptoNote
           for (uint32_t nonce = startNonce + i; !found; nonce += nthreads) {
             lb.nonce = nonce;
 
-            if (!get_block_longhash(localctx, lb, h)) {
+            if (!m_handler.getBlockLongHash(localctx, lb, h)) {
               return;
             }
 
@@ -399,7 +403,7 @@ namespace CryptoNote
     } else {
       for (; bl.nonce != std::numeric_limits<uint32_t>::max(); bl.nonce++) {
         Crypto::Hash h;
-        if (!get_block_longhash(context, bl, h)) {
+        if (!m_handler.getBlockLongHash(context, bl, h)) {
           return false;
         }
 
@@ -476,7 +480,7 @@ namespace CryptoNote
 
       b.nonce = nonce;
       Crypto::Hash h;
-      if (!m_stop && !get_block_longhash(context, b, h)) {
+      if (!m_stop && !m_handler.getBlockLongHash(context, b, h)) {
         logger(ERROR) << "Failed to get block long hash";
         m_stop = true;
       }

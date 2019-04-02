@@ -23,7 +23,9 @@
 namespace CryptoNote {
   struct IMinerHandler {
     virtual bool handle_block_found(Block& b) = 0;
-    virtual bool get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce, Transaction& stake_tx, Crypto::SecretKey& stake_tx_key) = 0;
+	
+    virtual bool get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) = 0;
+	virtual bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) = 0;
 	virtual uint64_t getNextBlockDifficulty() = 0;
 
   protected:

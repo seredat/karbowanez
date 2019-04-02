@@ -495,6 +495,32 @@ using CryptoNote::ISerializer;
 		};
 	};
 
+	struct COMMAND_RPC_VALIDATE_ADDRESS {
+		struct request {
+			std::string address;
+
+			void serialize(ISerializer &s) {
+				KV_MEMBER(address)
+			}
+		};
+
+		struct response {
+			bool isvalid;
+			std::string address;
+			std::string spendPublicKey;
+			std::string viewPublicKey;
+			std::string status;
+
+			void serialize(ISerializer &s) {
+				KV_MEMBER(isvalid)
+				KV_MEMBER(address)
+				KV_MEMBER(spendPublicKey)
+				KV_MEMBER(viewPublicKey)
+				KV_MEMBER(status)
+			}
+		};
+	};
+
 	/* Fusion transactions */
 
 	struct COMMAND_RPC_ESTIMATE_FUSION

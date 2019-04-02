@@ -90,11 +90,12 @@ namespace CryptoNote {
     Crypto::Hash getTailId();
     Crypto::Hash getTailId(uint32_t& height);
     difficulty_type getDifficultyForNextBlock();
+	difficulty_type getAvgCumulativeDifficulty(uint32_t height);
+	difficulty_type getAvgDifficulty(uint32_t height, size_t window);
 	uint64_t getBlockTimestamp(uint32_t height);
 	uint64_t getMinimalFee(uint32_t height);
     uint64_t getCoinsInCirculation();
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
-	uint8_t blockMajorVersion;
     bool addNewBlock(const Block& bl_, block_verification_context& bvc);
     bool resetAndSetGenesisBlock(const Block& b);
     bool haveBlock(const Crypto::Hash& id);
@@ -112,6 +113,7 @@ namespace CryptoNote {
     bool checkTransactionInputs(const Transaction& tx, uint32_t& pmax_used_block_height, Crypto::Hash& max_used_block_id, BlockInfo* tail = 0);
     uint64_t getCurrentCumulativeBlocksizeLimit();
     uint64_t blockDifficulty(size_t i);
+    uint64_t blockCumulativeDifficulty(size_t i);
     bool getBlockContainingTransaction(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight);
     bool getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generatedCoins);
     bool getBlockSize(const Crypto::Hash& hash, size_t& size);
@@ -122,7 +124,6 @@ namespace CryptoNote {
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
     bool isBlockInMainChain(const Crypto::Hash& blockId);
     bool isInCheckpointZone(const uint32_t height);
-    uint64_t getAvgDifficultyForHeight(uint32_t height, size_t window);
 
     template<class visitor_t> bool scanOutputKeysForIndexes(const KeyInput& tx_in_to_key, visitor_t& vis, uint32_t* pmax_related_block_height = NULL);
 
@@ -196,7 +197,10 @@ namespace CryptoNote {
     };
 
     void rollbackBlockchainTo(uint32_t height);
-	bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+    bool have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im);
+
+    bool checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork);
+    bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res);
 
   private:
 

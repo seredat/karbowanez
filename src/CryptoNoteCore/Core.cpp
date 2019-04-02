@@ -311,10 +311,35 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	return true;
 }
 
+bool core::check_tx_unmixable(const Transaction& tx, uint32_t height) {
+  for (const auto& out : tx.outputs) {
+    if (!is_valid_decomposed_amount(out.amount) && height >= CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+      logger(ERROR) << "Invalid decomposed output amount " << out.amount << " for tx id= " << getObjectHash(tx);
+      return false;
+    }
+  }
+  return true;
+}
+
 bool core::check_tx_semantic(const Transaction& tx, bool keeped_by_block) {
   if (!tx.inputs.size()) {
     logger(ERROR) << "tx with empty inputs, rejected for tx id= " << getObjectHash(tx);
     return false;
+  }
+
+  if (tx.inputs.size() != tx.signatures.size()) {
+    logger(ERROR) << "tx signatures size doesn't match inputs size, rejected for tx id= " << getObjectHash(tx);
+    return false;
+  }
+
+  for (size_t i = 0; i < tx.inputs.size(); ++i) {
+    if (tx.inputs[i].type() == typeid(KeyInput)) {
+      if (boost::get<KeyInput>(tx.inputs[i]).outputIndexes.size() != tx.signatures[i].size()) {
+        logger(ERROR) << "tx signatures count doesn't match outputIndexes count for input " 
+          << i << ", rejected for tx id= " << getObjectHash(tx);
+        return false;
+      }
+    }
   }
 
   if (!check_inputs_types_supported(tx)) {
@@ -424,7 +449,7 @@ bool core::add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t
 }
 
 // add Transaction miner_tx to args received from wallet
-bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce, Transaction& stake_tx, Crypto::SecretKey& stake_tx_key) {
+bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) {
   size_t median_size;
   uint64_t already_generated_coins;
 
@@ -496,23 +521,38 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     return false;
   }
 
+
   /// TODO Move miner tx construct to wallet
+
+  // get avg recent diff for reward
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgCumulativeDifficulty(height - 1);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficulty(height - 1, m_currency.averageDifficultyWindow());
+
+  // After block v 5 don't penalize reward and simplify miner tx generation.
+  if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    bool r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+    if (!r) {
+      logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance";
+      return false;
+    }
+
+    return true;
+  }
 
   /*
      two-phase miner transaction generation: we don't know exact block size until we prepare block, but we don't know reward until we know
      block size, so first miner transaction generated with fake amount of money, and with phase we know think we know expected block size
      */
   //make blocks coin-base tx looks close to real coinbase tx to get truthful blob size
-  bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, stake_tx, stake_tx_key, ex_nonce, 14);
+  bool r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
   if (!r) { 
     logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, first chance"; 
     return false; 
   }
-  size_t cumulative_size = txs_size + getObjectBinarySize(b.baseTransaction);
 
-  // now after we estimated the size of coinbase tx with stake let's attempt to create real one
+  size_t cumulative_size = txs_size + getObjectBinarySize(b.baseTransaction);
   for (size_t try_count = 0; try_count != 10; ++try_count) {
-    r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, stake_tx, stake_tx_key, ex_nonce, 14);
+    r = m_currency.constructMinerTx(allTimeAvgDifficulty, currentAvgDifficulty, b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 14);
     if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, second chance"; return false; }
     size_t coinbase_blob_size = getObjectBinarySize(b.baseTransaction);
     if (coinbase_blob_size > cumulative_size - txs_size) {
@@ -765,6 +805,10 @@ bool core::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockHeight(blockId, blockHeight);
 }
 
+bool core::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  return m_blockchain.getBlockLongHash(context, b, res);
+}
+
 //void core::get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid) {
 //  m_blockchain.get_all_known_block_ids(main, alt, invalid);
 //}
@@ -978,9 +1022,11 @@ bool core::getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generate
   return m_blockchain.getAlreadyGeneratedCoins(hash, generatedCoins);
 }
 
-bool core::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+bool core::getBlockReward(uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
                           uint64_t& reward, int64_t& emissionChange) {
-  return m_currency.getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange);
+  difficulty_type allTimeAvgDifficulty = m_blockchain.getAvgCumulativeDifficulty(height);
+  difficulty_type currentAvgDifficulty = m_blockchain.getAvgDifficulty(height, m_currency.averageDifficultyWindow());
+  return m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange);
 }
 
 bool core::scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) {
@@ -1002,6 +1048,11 @@ bool core::scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pa
 
 bool core::getBlockDifficulty(uint32_t height, difficulty_type& difficulty) {
   difficulty = m_blockchain.blockDifficulty(height);
+  return true;
+}
+
+bool core::getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) {
+  difficulty = m_blockchain.blockCumulativeDifficulty(height);
   return true;
 }
 
@@ -1106,6 +1157,14 @@ std::vector<Crypto::Hash> core::getTransactionHashesByPaymentId(const Crypto::Ha
   return blockchainTransactionHashes;
 }
 
+difficulty_type core::getAvgDifficulty(uint32_t height, size_t window) {
+  return m_blockchain.getAvgDifficulty(height, window);
+}
+
+difficulty_type core::getAvgCumulativeDifficulty(uint32_t height) {
+  return m_blockchain.getAvgCumulativeDifficulty(height);
+}
+
 uint64_t core::getMinimalFee() {
   return getMinimalFeeForHeight(get_current_blockchain_height() - 1);
 }
@@ -1151,7 +1210,7 @@ bool core::fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDet
     if (typeid(TransactionExtraPublicKey) == field.type()) {
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
-      extraDetails.nonce = Common::asBinaryArray(Common::toHex(boost::get<TransactionExtraNonce>(field).nonce.data(), boost::get<TransactionExtraNonce>(field).nonce.size()));
+      extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
     }
   }
   return true;
@@ -1235,11 +1294,11 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
-  if (!getBlockReward(block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
+  if (!getBlockReward(blockDetails.height, block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
     return false;
   }
 
-  if (!getBlockReward(block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
+  if (!getBlockReward(blockDetails.height, block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
     return false;
   }
 
@@ -1367,8 +1426,12 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
         return false;
       }
       txInToKeyDetails.mixin = txInToKey.outputIndexes.size();
-      txInToKeyDetails.output.number = outputReferences.back().second;
-      txInToKeyDetails.output.transactionHash = outputReferences.back().first;
+	  for (const auto& r : outputReferences) {
+		  TransactionOutputReferenceDetails d;
+		  d.number = r.second;
+		  d.transactionHash = r.first;
+		  txInToKeyDetails.outputs.push_back(d);
+	  }
 	  txInDetails = txInToKeyDetails;
     } else if (txIn.type() == typeid(MultisignatureInput)) {
       MultisignatureInputDetails txInMultisigDetails;
@@ -1434,6 +1497,13 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
       tvc.m_verification_failed = true;
       return false;
     }
+
+    if (!check_tx_unmixable(tx, height)) {
+      logger(ERROR) << "Transaction verification failed: unmixable output for transaction " << txHash << ", rejected";
+      tvc.m_verification_failed = true;
+      return false;
+	}
+
   }
 
   if (!check_tx_semantic(tx, keptByBlock)) {

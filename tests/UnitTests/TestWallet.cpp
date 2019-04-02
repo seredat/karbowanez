@@ -2116,6 +2116,28 @@ TEST_F(WalletApi, transferFromTrackingKeyThrows) {
   bob.shutdown();
 }
 
+TEST_F(WalletApi, createAddressListSuccessfullyCreatesAddresses) {
+  ASSERT_EQ(1, alice.getAddressCount());
+  for (size_t i = 0; i < 10; ++i) {
+    alice.createAddress();
+  }
+
+  WalletGreen bob(dispatcher, currency, node, logger, TRANSACTION_SOFTLOCK_TIME);
+  bob.initializeWithViewKey(BOB_WALLET_PATH, "pass", alice.getViewKey().secretKey);
+
+  std::vector<Crypto::SecretKey> spendSecretKeys(alice.getAddressCount());
+  for (size_t i = 0; i < spendSecretKeys.size(); ++i) {
+    spendSecretKeys[i] = alice.getAddressSpendKey(i).secretKey;
+  }
+
+  ASSERT_NO_THROW(bob.createAddressList(spendSecretKeys));
+  compareWalletsAddresses(alice, bob);
+
+  bob.shutdown();
+
+  wait(100);
+}
+
 TEST_F(WalletApi, walletGetsSyncCompletedEvent) {
   generator.generateEmptyBlocks(1);
   node.updateObservers();

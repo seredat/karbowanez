@@ -315,7 +315,6 @@ bool check_outs_valid(const TransactionPrefix& tx, std::string* error) {
         return false;
       }
       keys_seen.insert(boost::get<KeyOutput>(out.target).key);
-
     } else if (out.target.type() == typeid(MultisignatureOutput)) {
       const MultisignatureOutput& multisignatureOutput = ::boost::get<MultisignatureOutput>(out.target);
       if (multisignatureOutput.requiredSignatureCount > multisignatureOutput.keys.size()) {
@@ -527,7 +526,16 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   } else {
     return false;
   }
+  
   cn_slow_hash(context, bd.data(), bd.size(), res);
+
+  //if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+  //  rf_slow_hash(bd.data(), res, bd.size());
+  //}
+  //else {
+  //  cn_slow_hash(context, bd.data(), bd.size(), res);
+  //}
+
   return true;
 }
 

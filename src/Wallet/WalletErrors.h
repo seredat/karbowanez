@@ -121,9 +121,9 @@ inline std::error_code make_error_code(CryptoNote::error::WalletErrorCodes e) {
   return std::error_code(static_cast<int>(e), CryptoNote::error::WalletErrorCategory::INSTANCE);
 }
 
-namespace std {
-
-template <>
-struct is_error_code_enum<CryptoNote::error::WalletErrorCodes>: public true_type {};
-
-}
+//namespace std {
+//
+//template <>
+//struct is_error_code_enum<CryptoNote::error::WalletErrorCodes>: public true_type {};
+//
+//}

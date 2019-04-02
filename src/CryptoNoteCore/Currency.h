@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016, The Karbowanec developers
+// Copyright (c) 2016-2018, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -39,6 +39,7 @@ public:
   size_t maxTxSize() const { return m_maxTxSize; }
   uint64_t publicAddressBase58Prefix() const { return m_publicAddressBase58Prefix; }
   size_t minedMoneyUnlockWindow() const { return m_minedMoneyUnlockWindow; }
+  size_t minedMoneyUnlockWindow_v1() const { return m_minedMoneyUnlockWindow_v1; }
   size_t transactionSpendableAge() const { return m_transactionSpendableAge; }
   size_t expectedNumberOfBlocksPerDay() const { return m_expectedNumberOfBlocksPerDay; }
 
@@ -88,7 +89,10 @@ public:
   size_t difficultyLag() const { return m_difficultyLag; }
   size_t difficultyCut() const { return m_difficultyCut; }
   size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const {
-    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
+      return difficultyBlocksCount4() + 1;
+    }
+	else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3 || blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
       return difficultyBlocksCount3() + 1;
     }
     else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
@@ -101,6 +105,8 @@ public:
   size_t difficultyBlocksCount() const { return m_difficultyWindow + m_difficultyLag; }
   size_t difficultyBlocksCount2() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V2; }
   size_t difficultyBlocksCount3() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V3; }
+  size_t difficultyBlocksCount4() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V4; }
+  uint64_t averageDifficultyWindow() const { return m_averageDifficultyWindow; }
 
   size_t maxBlockSizeInitial() const { return m_maxBlockSizeInitial; }
   uint64_t maxBlockSizeGrowthSpeedNumerator() const { return m_maxBlockSizeGrowthSpeedNumerator; }
@@ -136,12 +142,12 @@ public:
   const Block& genesisBlock() const { return m_genesisBlock; }
   const Crypto::Hash& genesisBlockHash() const { return m_genesisBlockHash; }
 
-  bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+  bool getBlockReward(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
     uint64_t& reward, int64_t& emissionChange) const;
   size_t maxBlockCumulativeSize(uint64_t height) const;
 
-  bool constructMinerTx(uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
-    uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, Transaction& stake_tx, Crypto::SecretKey& secKey, const BinaryArray& extraNonce = BinaryArray(), size_t maxOuts = 1) const;
+  bool constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+    uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce = BinaryArray(), size_t maxOuts = 1) const;
 
   bool isFusionTransaction(const Transaction& transaction, uint32_t height) const;
   bool isFusionTransaction(const Transaction& transaction, size_t size, uint32_t height) const;
@@ -164,6 +170,7 @@ public:
   difficulty_type nextDifficultyV2(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV3(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV4(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
+  difficulty_type nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
 
   bool checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
   bool checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
@@ -187,6 +194,7 @@ private:
   size_t m_maxTxSize;
   uint64_t m_publicAddressBase58Prefix;
   size_t m_minedMoneyUnlockWindow;
+  size_t m_minedMoneyUnlockWindow_v1;
   size_t m_transactionSpendableAge;
   size_t m_expectedNumberOfBlocksPerDay;
 
@@ -218,6 +226,7 @@ private:
   size_t m_difficultyWindow;
   size_t m_difficultyLag;
   size_t m_difficultyCut;
+  uint64_t m_averageDifficultyWindow;
 
   size_t m_maxBlockSizeInitial;
   uint64_t m_maxBlockSizeGrowthSpeedNumerator;
@@ -275,6 +284,7 @@ public:
   CurrencyBuilder& maxTxSize(size_t val) { m_currency.m_maxTxSize = val; return *this; }
   CurrencyBuilder& publicAddressBase58Prefix(uint64_t val) { m_currency.m_publicAddressBase58Prefix = val; return *this; }
   CurrencyBuilder& minedMoneyUnlockWindow(size_t val) { m_currency.m_minedMoneyUnlockWindow = val; return *this; }
+  CurrencyBuilder& minedMoneyUnlockWindow_v1(size_t val) { m_currency.m_minedMoneyUnlockWindow_v1 = val; return *this; }
   CurrencyBuilder& transactionSpendableAge(size_t val) { m_currency.m_transactionSpendableAge = val; return *this; }
   CurrencyBuilder& expectedNumberOfBlocksPerDay(size_t val) { m_currency.m_expectedNumberOfBlocksPerDay = val; return *this; }
 
@@ -304,6 +314,7 @@ public:
   CurrencyBuilder& difficultyWindow(size_t val);
   CurrencyBuilder& difficultyLag(size_t val) { m_currency.m_difficultyLag = val; return *this; }
   CurrencyBuilder& difficultyCut(size_t val) { m_currency.m_difficultyCut = val; return *this; }
+  CurrencyBuilder& averageDifficultyWindow(uint64_t val) { m_currency.m_averageDifficultyWindow = val; return *this; }
 
   CurrencyBuilder& maxBlockSizeInitial(size_t val) { m_currency.m_maxBlockSizeInitial = val; return *this; }
   CurrencyBuilder& maxBlockSizeGrowthSpeedNumerator(uint64_t val) { m_currency.m_maxBlockSizeGrowthSpeedNumerator = val; return *this; }

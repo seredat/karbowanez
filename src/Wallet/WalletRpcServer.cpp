@@ -143,6 +143,7 @@ void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, C
             { "get_transaction"    , makeMemberMethod(&wallet_rpc_server::on_get_transaction)   },
             { "get_height"         , makeMemberMethod(&wallet_rpc_server::on_get_height)        },
             { "get_address"        , makeMemberMethod(&wallet_rpc_server::on_get_address)       },
+            { "validate_address"   , makeMemberMethod(&wallet_rpc_server::on_validate_address)  },
             { "query_key"          , makeMemberMethod(&wallet_rpc_server::on_query_key)         },
             { "get_paymentid"      , makeMemberMethod(&wallet_rpc_server::on_gen_paymentid)     },
             { "get_tx_key"         , makeMemberMethod(&wallet_rpc_server::on_get_tx_key)        },
@@ -496,11 +497,25 @@ bool wallet_rpc_server::on_query_key(const wallet_rpc::COMMAND_RPC_QUERY_KEY::re
 	return true;
 }
 
-
 bool wallet_rpc_server::on_reset(const wallet_rpc::COMMAND_RPC_RESET::request& req, 
 	wallet_rpc::COMMAND_RPC_RESET::response& res)
 {
 	m_wallet.reset();
+	return true;
+}
+
+bool wallet_rpc_server::on_validate_address(const wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::request& req,
+	wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::response& res)
+{
+	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+	bool r = m_currency.parseAccountAddressString(req.address, acc);
+	res.isvalid = r;
+	if (r) {
+		res.address = m_currency.accountAddressAsString(acc);
+		res.spendPublicKey = Common::podToHex(acc.spendPublicKey);
+		res.viewPublicKey = Common::podToHex(acc.viewPublicKey);
+	}
+	res.status = CORE_RPC_STATUS_OK;
 	return true;
 }
 

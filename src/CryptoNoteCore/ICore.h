@@ -97,10 +97,13 @@ public:
   virtual bool getBackwardBlocksSizes(uint32_t fromHeight, std::vector<size_t>& sizes, size_t count) = 0;
   virtual bool getBlockSize(const Crypto::Hash& hash, size_t& size) = 0;
   virtual bool getAlreadyGeneratedCoins(const Crypto::Hash& hash, uint64_t& generatedCoins) = 0;
-  virtual bool getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
+  virtual bool getBlockReward(uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins, uint64_t fee,
                               uint64_t& reward, int64_t& emissionChange) = 0;
   virtual bool scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) = 0;
   virtual bool getBlockDifficulty(uint32_t height, difficulty_type& difficulty) = 0;
+  virtual bool getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) = 0;
+  virtual difficulty_type getAvgDifficulty(uint32_t height, size_t window) = 0;
+  virtual difficulty_type getAvgCumulativeDifficulty(uint32_t height) = 0;
   virtual bool getBlockContainingTx(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight) = 0;
   virtual bool getMultisigOutputReference(const MultisignatureInput& txInMultisig, std::pair<Crypto::Hash, size_t>& outputReference) = 0;
 
@@ -126,6 +129,8 @@ public:
   virtual bool removeMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) = 0;
 
   virtual void rollbackBlockchain(const uint32_t height) = 0;
+
+  virtual bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) = 0;
 };
 
 } //namespace CryptoNote
