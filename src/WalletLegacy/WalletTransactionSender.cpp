@@ -186,7 +186,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(Tr
 }
 
 bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransactionContext>& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-	const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+	const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, const AccountPublicAddress& address, uint64_t reward, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 	if (m_isStoping) {
 		//events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
 		throw std::system_error(make_error_code(error::INTERNAL_WALLET_ERROR));
@@ -219,8 +219,20 @@ bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransacti
 		uint64_t totalAmount = -transaction.totalAmount;
 		createChangeDestinations(m_keys.address, totalAmount, context->foundMoney, changeDts);
 
+		TransactionDestinationEntry rewardDts;
+		rewardDts.addr = address;
+		rewardDts.amount = reward;
+
 		std::vector<TransactionDestinationEntry> splittedDests;
 		splitDestinations(transaction.firstTransferId, transaction.transferCount, changeDts, context->dustPolicy, splittedDests);
+		uint64_t dust = 0;
+
+		decompose_amount_into_digits(rewardDts.amount, 0,
+			[&](uint64_t chunk) { splittedDests.push_back(TransactionDestinationEntry(chunk, rewardDts.addr)); },
+			[&](uint64_t a_dust) { dust = a_dust; });
+		if (0 != dust && !context->dustPolicy.addToFee) {
+			splittedDests.push_back(TransactionDestinationEntry(dust, context->dustPolicy.addrForDust));
+		}
 
 		constructTx(m_keys, sources, splittedDests, transaction.extra, transaction.unlockTime, m_upperTransactionSizeLimit, stakeTx, context->tx_key);
 		getObjectHash(stakeTx, transaction.hash);
@@ -232,7 +244,7 @@ bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransacti
 	}
 	catch (std::system_error& ec) {
 		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, ec.code()));
-		std::cout << "system_error during making stake transaction" << ec.what() << ENDL;
+		std::cout << "system_error during making stake transaction: " << ec.what() << ENDL;
 		return false;
 	}
 	catch (std::exception& e) {

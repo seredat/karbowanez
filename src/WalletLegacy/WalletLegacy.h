@@ -120,7 +120,7 @@ public:
 
   virtual bool isTrackingWallet();
 
-  virtual bool constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, Crypto::SecretKey& stakeKey) override;
+  virtual bool constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& reward, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, Crypto::SecretKey& stakeKey) override;
 
 private:
 

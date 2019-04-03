@@ -270,7 +270,7 @@ bool wallet_rpc_server::on_construct_stake_tx(const wallet_rpc::COMMAND_RPC_CONS
 	{
 		CryptoNote::Transaction tx;
 		Crypto::SecretKey txKey;
-		if (!m_wallet.constructStakeTx(req.address, req.stake, req.mixin, req.unlock_time, tx, txKey)) {
+		if (!m_wallet.constructStakeTx(req.address, req.stake, req.reward, req.mixin, req.unlock_time, tx, txKey)) {
 			throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_GENERIC_TRANSFER_ERROR, "Couldn't construct stake transaction");
 		}
 		res.tx_as_hex = Common::toHex(toBinaryArray(tx));

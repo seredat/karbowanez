@@ -151,7 +151,7 @@ public:
 
   virtual bool isTrackingWallet() = 0;
 
-  virtual bool constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, Crypto::SecretKey& stakeKey) = 0;
+  virtual bool constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& reward, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, Crypto::SecretKey& stakeKey) = 0;
 };
 
 }

@@ -759,7 +759,7 @@ TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOut
 	return txId;
 }
 
-bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, SecretKey& stakeKey) {
+bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& reward, const uint64_t& mixin, uint64_t unlockTimestamp, Transaction& stakeTransaction, SecretKey& stakeKey) {
 	TransactionId txId = 0;
 	std::deque<std::shared_ptr<WalletLegacyEvent>> events;
 	std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
@@ -813,7 +813,10 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 		context->outs = outs;
 	}
 
-	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, 0, extra, mixin, unlockTimestamp)) {
+	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+	bool r = m_currency.parseAccountAddressString(address, acc);
+
+	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, acc, reward, 0, extra, mixin, unlockTimestamp)) {
 		return false;
 	}
 
