@@ -227,10 +227,10 @@ bool constructTransaction(
   }
 
   //check money
-  if (summary_outs_money > summary_inputs_money) {
-    logger(ERROR) << "Transaction inputs money (" << summary_inputs_money << ") less than outputs money (" << summary_outs_money << ")";
-    return false;
-  }
+  //if (summary_outs_money > summary_inputs_money) {
+  //  logger(ERROR) << "Transaction inputs money (" << summary_inputs_money << ") less than outputs money (" << summary_outs_money << ")";
+  //  return false;
+  //}
 
   //generate ring signatures
   Hash tx_prefix_hash;
