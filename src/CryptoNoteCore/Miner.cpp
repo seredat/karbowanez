@@ -127,9 +127,15 @@ namespace CryptoNote
       return false;
     }
 
-    // 2) Get stake tx from wallet RPC
-    Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
-    Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
+	// 2) Get stake tx from wallet RPC
+	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
+	Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
+	Transaction stake_tx;
+	Crypto::SecretKey stake_tx_key;
+
+	// for blocks prior v5 skip these steps
+	if (bl.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5)
+		goto out;
 
     req.address = m_currency.accountAddressAsString(m_stake_address);
     m_diffic = m_handler.getNextBlockDifficulty();
@@ -144,8 +150,6 @@ namespace CryptoNote
 
     // TODO create also functions for InProcessNode
 
-    Transaction stake_tx;
-    Crypto::SecretKey stake_tx_key;	
     try {
       HttpClient httpClient(dispatcher, m_wallet_host, m_wallet_port);
 
@@ -183,6 +187,7 @@ namespace CryptoNote
     // 3) Replace coibase tx with stake tx in block template
     bl.baseTransaction = stake_tx;
 
+	out:
     // 4) Set block template
     set_block_template(bl, di);
     return true;
