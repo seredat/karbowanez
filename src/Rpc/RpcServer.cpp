@@ -701,25 +701,22 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   
   Block blk;
   if (!m_core.getBlockByHash(last_block_hash, blk)) {
-	  throw JsonRpc::JsonRpcError{
-		CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-		"Internal error: can't get last block by hash." };
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last block by hash." };
+  }
+  
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    throw JsonRpc::JsonRpcError{
+    CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Internal error: coinbase transaction in the block has the wrong type" };
   }
 
-  //if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
-//	  throw JsonRpc::JsonRpcError{
-//		CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-//		"Internal error: coinbase transaction in the block has the wrong type" };
- // }
-
   block_header_response block_header;
-  //uint32_t last_block_height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  uint32_t last_block_height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
 
-  //Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(last_block_height);
-  //bool is_orphaned = last_block_hash != tmp_hash;
-  uint32_t last_block_height;
-  m_core.getBlockHeight(last_block_hash, last_block_height);
-  fill_block_header_response(blk, false/*is_orphaned*/, last_block_height, last_block_hash, block_header);
+  Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(last_block_height);
+  bool is_orphaned = last_block_hash != tmp_hash;
+  fill_block_header_response(blk, is_orphaned, last_block_height, last_block_hash, block_header);
 
   res.block_major_version = block_header.major_version;
   res.block_minor_version = block_header.minor_version;
@@ -975,23 +972,22 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
       "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
   }
 
-  //if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
-  //  throw JsonRpc::JsonRpcError{
-  //    CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-  //    "Internal error: coinbase transaction in the block has the wrong type" };
-  //}
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Internal error: coinbase transaction in the block has the wrong type" };
+  }
 
   block_header_response block_header;
-  //res.block.height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  res.block.height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
 
-  //Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(res.block.height);
-  //bool is_orphaned = hash != tmp_hash;
-  Crypto::Hash tmp_hash;
+  Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(res.block.height);
+  bool is_orphaned = hash != tmp_hash;
   uint32_t block_height;
   m_core.getBlockHeight(hash, block_height);
   res.block.height = block_height;
 
-  fill_block_header_response(blk, /*is_orphaned*/false, res.block.height, hash, block_header);
+  fill_block_header_response(blk, is_orphaned, res.block.height, hash, block_header);
 
   res.block.major_version = block_header.major_version;
   res.block.minor_version = block_header.minor_version;
@@ -1443,15 +1439,14 @@ void RpcServer::fill_block_header_response(const Block& blk, bool orphan_status,
 }
 
 bool RpcServer::on_get_last_block_header(const COMMAND_RPC_GET_LAST_BLOCK_HEADER::request& req, COMMAND_RPC_GET_LAST_BLOCK_HEADER::response& res) {
-  uint32_t last_block_height;
-  Hash last_block_hash;
-  
-  m_core.get_blockchain_top(last_block_height, last_block_hash);
-
+  Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(m_core.get_current_blockchain_height() - 1);
   Block last_block;
   if (!m_core.getBlockByHash(last_block_hash, last_block)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last block hash." };
   }
+
+  uint32_t last_block_height = last_block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? last_block.blockIndex : boost::get<BaseInput>(last_block.baseTransaction.inputs.front()).blockIndex;
+
   Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(last_block_height);
   bool is_orphaned = last_block_hash != tmp_hash;
   fill_block_header_response(last_block, is_orphaned, last_block_height, last_block_hash, res.block_header);
@@ -1475,20 +1470,19 @@ bool RpcServer::on_get_block_header_by_hash(const COMMAND_RPC_GET_BLOCK_HEADER_B
       "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
   }
 
-  //if (b.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 && blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
-  //  throw JsonRpc::JsonRpcError{
-  //    CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-  //    "Internal error: coinbase transaction in the block has the wrong type" };
-  //}
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Internal error: coinbase transaction in the block has the wrong type" };
+  }
 
-  //uint64_t block_height = blk.majorVersion >= CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
-  //Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(block_height);
-  //bool is_orphaned = block_hash != tmp_hash;
+  uint64_t tmp_height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(tmp_height);
+  bool is_orphaned = block_hash != tmp_hash;
   uint32_t block_height;
-  Crypto::Hash tmp_hash;
   m_core.getBlockHeight(block_hash, block_height);
 
-  fill_block_header_response(blk, false/*is_orphaned*/, block_height, block_hash, res.block_header);
+  fill_block_header_response(blk, is_orphaned, block_height, block_hash, res.block_header);
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }
