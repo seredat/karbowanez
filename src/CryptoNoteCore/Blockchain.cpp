@@ -1118,12 +1118,14 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   uint64_t alreadyGeneratedCoins, uint64_t fee, uint64_t& reward, int64_t& emissionChange) {
 
   uint64_t minerReward = 0;
+  uint64_t inputsAmount = 0;
   uint64_t outputsAmount = 0;
+  uint64_t stake = getDifficultyForNextBlock() * CryptoNote::parameters::STAKE_TO_DIFFICULTY_RATIO;
+
   for (auto& o : b.baseTransaction.outputs) {
     outputsAmount += o.amount;
   }
 
-  uint64_t inputsAmount = 0;
   if (height > m_currency.upgradeHeight(b.majorVersion)) {
     for (const auto& in : b.baseTransaction.inputs) {
       if (in.type() == typeid(KeyInput)) {
@@ -1157,6 +1159,12 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
 	  else if (minerReward < reward) {
 		  logger(ERROR, BRIGHT_RED) << "Coinbase stake transaction doesn't use full amount of block reward: spent " <<
 			  m_currency.formatAmount(minerReward) << ", block reward is " << m_currency.formatAmount(reward);
+		  return false;
+	  }
+
+	  if (inputsAmount < stake) { // check stake, we don't care what's actually stake and what's change as both will be locked
+		  logger(ERROR, BRIGHT_RED) << "Coinbase stake transaction doesn't have enough stake: input amount " <<
+			  m_currency.formatAmount(inputsAmount) << ", minimal stake " << m_currency.formatAmount(stake);
 		  return false;
 	  }
 
