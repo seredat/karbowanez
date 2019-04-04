@@ -272,11 +272,15 @@ bool get_inputs_money_amount(const Transaction& tx, uint64_t& money) {
 }
 
 uint32_t get_block_height(const Block& b) {
-  const auto& in = b.baseTransaction.inputs[0];
-  if (in.type() != typeid(BaseInput)) {
-    return b.blockIndex; //return 0;
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    const auto& in = b.baseTransaction.inputs[0];
+    if (in.type() != typeid(BaseInput)) {
+      return 0;
+    }
+    return boost::get<BaseInput>(in).blockIndex;
+  } else {
+    return b.blockIndex;
   }
-  return boost::get<BaseInput>(in).blockIndex;
 }
 
 bool check_inputs_types_supported(const TransactionPrefix& tx) {

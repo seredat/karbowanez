@@ -2115,7 +2115,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
       logger(INFO) << "handling alternative block " << Common::podToHex(id)
-                   << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
+                   << " at height " << (bl.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? bl.blockIndex : boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex) 
                    << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
                    << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
       bvc.m_added_to_main_chain = false;

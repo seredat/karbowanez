@@ -1241,7 +1241,7 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
 
   if (block.baseTransaction.inputs.front().type() != typeid(BaseInput))
     return false;
-  blockDetails.height = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  blockDetails.height = block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
 
   Crypto::Hash tmpHash = getBlockIdByHeight(blockDetails.height);
   blockDetails.isOrphaned = hash != tmpHash;
