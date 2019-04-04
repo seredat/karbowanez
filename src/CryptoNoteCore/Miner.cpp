@@ -119,6 +119,8 @@ namespace CryptoNote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
+	// TODO: add extra_nonce to stake tx
+
 	System::Dispatcher dispatcher;
 
     // 1) First, create block template with dummy coinbase tx
@@ -147,6 +149,7 @@ namespace CryptoNote
       blockReward += o.amount;
     }
 	req.reward = blockReward;
+	req.unlock_time = m_currency.isTestnet() ? height + CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW : height + CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
 
     // TODO create also functions for InProcessNode
 

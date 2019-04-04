@@ -769,7 +769,7 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 	// select inputs
 	std::vector<TransactionOutputInformation> allOutputs;
 	m_transferDetails->getOutputs(allOutputs, ITransfersContainer::IncludeKeyUnlocked);
-	context->foundMoney = m_sender->selectTransfersToSend(stake, true, m_currency.defaultDustThreshold(), context->selectedTransfers);
+	context->foundMoney = m_sender->selectTransfersToSend(stake, false, m_currency.defaultDustThreshold(), context->selectedTransfers);
 	throwIf(context->foundMoney < stake, error::WRONG_AMOUNT);
 
 	// prepare transfers
@@ -813,10 +813,7 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 		context->outs = outs;
 	}
 
-	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-	bool r = m_currency.parseAccountAddressString(address, acc);
-
-	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, acc, reward, 0, extra, mixin, unlockTimestamp)) {
+	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, reward, 0, extra, mixin, unlockTimestamp)) {
 		return false;
 	}
 
