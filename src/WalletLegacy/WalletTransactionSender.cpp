@@ -188,7 +188,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(Tr
 bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransactionContext>& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
 	const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t reward, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 	if (m_isStoping) {
-		//events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
+		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
 		throw std::system_error(make_error_code(error::INTERNAL_WALLET_ERROR));
 		return false;
 	}
@@ -196,20 +196,6 @@ bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransacti
 	try
 	{
 		WalletLegacyTransaction& transaction = m_transactionsCache.getTransaction(context->transactionId);
-
-		/*WalletLegacyTransaction transaction;
-		transaction.firstTransferId = m_transactionsCache.getTransferCount();
-		transaction.transferCount = transfers.size();
-		transaction.totalAmount = -static_cast<int64_t>(context->foundMoney);
-		transaction.fee = 0;
-		transaction.sentTime = time(nullptr);
-		transaction.isCoinbase = false;
-		transaction.timestamp = 0;
-		transaction.extra = extra;
-		transaction.blockHeight = WALLET_LEGACY_UNCONFIRMED_TRANSACTION_HEIGHT;
-		transaction.state = WalletLegacyTransactionState::Sending;
-		transaction.unlockTime = 0;
-		transaction.secretKey = NULL_SECRET_KEY;*/
 
 		std::vector<TransactionSourceEntry> sources;
 		prepareInputs(context->selectedTransfers, context->outs, sources, context->mixIn);
@@ -251,8 +237,8 @@ bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransacti
 	}
 	catch (std::exception& e) {
 		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::INTERNAL_WALLET_ERROR)));
-		//throw std::system_error(make_error_code(error::INTERNAL_WALLET_ERROR));
 		std::cout << "exception during making stake transaction: " << e.what() << ENDL;
+		throw std::system_error(make_error_code(error::INTERNAL_WALLET_ERROR));
 		return false;
 	}
 

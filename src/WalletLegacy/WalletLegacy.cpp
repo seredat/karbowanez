@@ -790,7 +790,6 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 
 	// prepare outputs
 	if (context->mixIn != 0) {
-		std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> outs;
 		uint64_t outsCount = mixin + 1;// add one to make possible (if need) to skip real output key
 		std::vector<uint64_t> amounts;
 
@@ -798,18 +797,17 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 			amounts.push_back(td.amount);
 		}
 
-		auto scanty_it = std::find_if(outs.begin(), outs.end(),
+		WalletRequest::Callback callback;
+		std::function<void(WalletRequest::Callback, std::error_code)> cb;
+		m_node.getRandomOutsByAmounts(std::move(amounts), outsCount, std::ref(context->outs), std::bind(cb, callback, std::placeholders::_1));
+
+		auto scanty_it = std::find_if(context->outs.begin(), context->outs.end(),
 			[&](COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& out) {return out.outs.size() < mixin; });
 
-		if (scanty_it != outs.end()) {
+		if (scanty_it != context->outs.end()) {
 			throw std::system_error(make_error_code(error::MIXIN_COUNT_TOO_BIG));
 			return false;
 		}
-		WalletRequest::Callback callback;
-		std::function<void(WalletRequest::Callback, std::error_code)> cb;
-		m_node.getRandomOutsByAmounts(std::move(amounts), outsCount, std::ref(outs), std::bind(cb, callback, std::placeholders::_1));
-
-		context->outs = outs;
 	}
 
 	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, reward, 0, extra, mixin, unlockTimestamp)) {
