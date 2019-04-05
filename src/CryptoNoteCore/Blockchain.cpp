@@ -729,6 +729,8 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
 
 difficulty_type Blockchain::getAvgDifficulty(uint32_t height, size_t window) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock); 
+  if (height <= 1)
+	  return 1;
   assert(height < m_blocks.size());
 
   if (window == height) {
@@ -746,6 +748,8 @@ difficulty_type Blockchain::getAvgDifficulty(uint32_t height, size_t window) {
 
 difficulty_type Blockchain::getAvgCumulativeDifficulty(uint32_t height) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  if (height <= 1)
+	  return 1;
   assert(height < m_blocks.size());
   return m_blocks[height].cumulative_difficulty / height;
 }
@@ -1126,7 +1130,7 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
     outputsAmount += o.amount;
   }
 
-  if (height > m_currency.upgradeHeight(b.majorVersion)) {
+  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
     for (const auto& in : b.baseTransaction.inputs) {
       if (in.type() == typeid(KeyInput)) {
         inputsAmount += boost::get<KeyInput>(in).amount;
@@ -1143,14 +1147,24 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  difficulty_type allTimeAvgDifficulty = getAvgCumulativeDifficulty(static_cast<uint32_t>(m_blocks.size() - 1));
-  difficulty_type currentAvgDifficulty = getAvgDifficulty(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.averageDifficultyWindow());
-  if (!m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
-    logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
-    return false;
+  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+	  difficulty_type allTimeAvgDifficulty = getAvgCumulativeDifficulty(static_cast<uint32_t>(m_blocks.size() - 1));
+	  difficulty_type currentAvgDifficulty = getAvgDifficulty(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.averageDifficultyWindow());
+
+	  if (!m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+		  logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
+		  return false;
+	  }
+  }
+  else {
+	  if (!m_currency.getBlockReward(1, 1, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+		  logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
+		  return false;
+	  }
+
   }
 
-  if (height > m_currency.upgradeHeight(b.majorVersion)) {
+  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
 	  if (minerReward > reward) {
 		  logger(ERROR, BRIGHT_RED) << "Coinbase stake transaction spend too much money: " << m_currency.formatAmount(minerReward) <<
 			  ", block reward is " << m_currency.formatAmount(reward);

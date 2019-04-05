@@ -763,7 +763,6 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 	TransactionId txId = 0;
 	std::deque<std::shared_ptr<WalletLegacyEvent>> events;
 	std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
-
 	throwIfNotInitialised();
 
 	// select inputs
@@ -790,7 +789,7 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 	context->mixIn = mixin;
 
 	// prepare outputs
-	if (context->mixIn) {
+	if (context->mixIn != 0) {
 		std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount> outs;
 		uint64_t outsCount = mixin + 1;// add one to make possible (if need) to skip real output key
 		std::vector<uint64_t> amounts;

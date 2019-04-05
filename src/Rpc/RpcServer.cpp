@@ -1036,27 +1036,39 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
+  uint64_t stake = 0;
   size_t blockGrantedFullRewardZone =  CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
   res.block.effectiveSizeMedian = std::max(res.block.sizeMedian, blockGrantedFullRewardZone);
 
   if (!m_core.getBlockReward(res.block.height, res.block.major_version, res.block.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
     return false;
   }
-  if (!m_core.getBlockReward(res.block.height, res.block.major_version, res.block.sizeMedian, res.block.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
-    return false;
+  if (blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (!m_core.getBlockReward(res.block.height, res.block.major_version, res.block.sizeMedian, res.block.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
+      return false;
+    }
   }
 
   res.block.baseReward = maxReward;
-  if (maxReward == 0 && currentReward == 0) {
-    res.block.penalty = static_cast<double>(0);
-  } else {
-    if (maxReward < currentReward) {
+  if (blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (maxReward == 0 && currentReward == 0) {
+      res.block.penalty = static_cast<double>(0);
+    }
+    else {
+      if (maxReward < currentReward) {
+        return false;
+      }
+      res.block.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+    }
+  }
+  else {
+    if (!get_inputs_money_amount(blk.baseTransaction, stake)) {
       return false;
     }
-    res.block.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+	res.block.stake = stake;
+	res.block.penalty = static_cast<double>(0);
   }
 
-  // Base transaction adding
   f_transaction_short_response transaction_short;
   transaction_short.hash = Common::podToHex(getObjectHash(blk.baseTransaction));
   transaction_short.fee = 0;
@@ -1419,6 +1431,14 @@ namespace {
     uint64_t reward = 0;
     for (const TransactionOutput& out : blk.baseTransaction.outputs) {
       reward += out.amount;
+    }
+
+    if (blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      uint64_t stake;
+      if (!get_inputs_money_amount(blk.baseTransaction, stake)) {
+        return reward;
+      }
+      reward -= stake;
     }
     return reward;
   }

@@ -592,6 +592,7 @@ struct f_block_details_response {
   difficulty_type difficulty;
   difficulty_type cumulativeDifficulty;
   uint64_t reward;
+  uint64_t stake;
   uint64_t blockSize;
   size_t sizeMedian;
   uint64_t effectiveSizeMedian;
@@ -616,6 +617,7 @@ struct f_block_details_response {
     KV_MEMBER(difficulty)
     KV_MEMBER(cumulativeDifficulty)
     KV_MEMBER(reward)
+    KV_MEMBER(stake)
     KV_MEMBER(blockSize)
     KV_MEMBER(sizeMedian)
     KV_MEMBER(effectiveSizeMedian)

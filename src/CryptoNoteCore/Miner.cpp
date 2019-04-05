@@ -142,7 +142,7 @@ namespace CryptoNote
     req.address = m_currency.accountAddressAsString(m_stake_address);
     m_diffic = m_handler.getNextBlockDifficulty();
     req.stake = m_diffic * CryptoNote::parameters::STAKE_TO_DIFFICULTY_RATIO;
-    uint64_t mixin = 3; // TODO replace by params or settings
+	req.mixin = 3; // TODO replace by params or settings
     // get block reward from coinbase tx and pass it to wallet
     uint64_t blockReward = 0;
     for (const auto& o : bl.baseTransaction.outputs) {
@@ -200,8 +200,7 @@ namespace CryptoNote
   {
     m_update_block_template_interval.call([&](){
       if(is_mining()) 
-        request_block_template();
-      return true;
+        return request_block_template();
     });
 
     m_update_merge_hr_interval.call([&](){
@@ -334,7 +333,8 @@ namespace CryptoNote
     m_wallet_port = wallet_port;
 
     if (!m_template_no) {
-      request_block_template(); //lets update block template
+      if (!request_block_template()) //lets update block template
+        return false;
     }
 
     m_stop = false;

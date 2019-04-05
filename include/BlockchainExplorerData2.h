@@ -89,6 +89,7 @@ struct BlockDetails2 {
   Crypto::Hash hash;
   uint64_t difficulty = 0;
   uint64_t reward = 0;
+  uint64_t stake = 0;
   uint64_t baseReward = 0;
   uint64_t blockSize = 0;
   uint64_t transactionsCumulativeSize = 0;

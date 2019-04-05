@@ -194,6 +194,7 @@ void serialize(BlockDetails2& block, ISerializer& serializer) {
   serializePod(block.hash, "hash", serializer);
   serializer(block.difficulty, "difficulty");
   serializer(block.reward, "reward");
+  serializer(block.stake, "stake");
   serializer(block.baseReward, "baseReward");
   serializer(block.blockSize, "blockSize");
   serializer(block.transactionsCumulativeSize, "transactionsCumulativeSize");

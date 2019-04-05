@@ -1239,7 +1239,7 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   blockDetails.nonce = block.nonce;
   blockDetails.hash = hash;
 
-  if (block.baseTransaction.inputs.front().type() != typeid(BaseInput))
+  if (block.baseTransaction.inputs.front().type() != typeid(BaseInput) && block.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5)
     return false;
   blockDetails.height = block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
 
@@ -1249,12 +1249,6 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   if (!getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {
     return false;
   }
-
-  blockDetails.reward = 0;
-  for (const TransactionOutput& out : block.baseTransaction.outputs) {
-	  blockDetails.reward += out.amount;
-  }
-  blockDetails.reward = blockDetails.reward - blockDetails.difficulty * 100000; // TODO replace with proper const
 
   std::vector<size_t> blocksSizes;
   if (!getBackwardBlocksSizes(blockDetails.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
@@ -1299,13 +1293,16 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   }
 
   blockDetails.baseReward = maxReward;
-  if (maxReward == 0 && currentReward == 0) {
-    blockDetails.penalty = static_cast<double>(0);
-  } else {
-    if (maxReward < currentReward) {
-      return false;
-    }
-    blockDetails.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+  if (blockDetails.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+	  if (maxReward == 0 && currentReward == 0) {
+		  blockDetails.penalty = static_cast<double>(0);
+	  }
+	  else {
+		  if (maxReward < currentReward) {
+			  return false;
+		  }
+		  blockDetails.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+	  }
   }
 
   blockDetails.transactions.reserve(block.transactionHashes.size() + 1);
@@ -1333,6 +1330,19 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
     blockDetails.totalFeeAmount += transactionDetails.fee;
   }
   return true;
+
+  blockDetails.reward = 0;
+  blockDetails.stake = 0;
+  for (const TransactionOutput& out : block.baseTransaction.outputs) {
+	  blockDetails.reward += out.amount;
+  }
+  if (blockDetails.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (!get_inputs_money_amount(block.baseTransaction, blockDetails.stake)) {
+      return false;
+    }
+  
+    blockDetails.reward -= blockDetails.stake;
+  }
 }
 
 bool core::fillTransactionDetails(const Transaction& transaction, TransactionDetails2& transactionDetails, uint64_t timestamp) {
@@ -1369,11 +1379,21 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
   }
   transactionDetails.totalInputsAmount = inputsAmount;
 
-  if (transaction.inputs.size() > 0 && transaction.inputs.front().type() == typeid(BaseInput)) {
+  if (transaction.inputs.size() > 0 && (transaction.inputs.front().type() == typeid(BaseInput) && blockHeight <= m_currency.upgradeHeightV5())) {
     //It's gen transaction
     transactionDetails.fee = 0;
     transactionDetails.mixin = 0;
-  } else {
+  }
+  else if (transaction.inputs.size() > 0 && blockHeight > m_currency.upgradeHeightV5()) {
+    //It's gen transaction with stake
+    transactionDetails.fee = 0;
+    uint64_t mixin;
+    if (!f_getMixin(transaction, mixin)) {
+      return false;
+    }
+    transactionDetails.mixin = mixin;
+  }
+  else {
     uint64_t fee;
     if (!get_tx_fee(transaction, fee)) {
       return false;

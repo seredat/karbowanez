@@ -149,6 +149,10 @@ namespace CryptoNote {
 		}
 	}
 
+	uint32_t Currency::upgradeHeightV5() const {
+		return m_upgradeHeightV5;
+	}
+
 	bool Currency::getBlockReward(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint32_t height, uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
 		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 		// assert(alreadyGeneratedCoins <= m_moneySupply);
@@ -227,7 +231,8 @@ namespace CryptoNote {
 		return maxSize;
 	}
 
-	bool Currency::constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
+	bool Currency::constructMinerTx(difficulty_type allTimeAvgDifficulty, difficulty_type difficulty, 
+		uint8_t blockMajorVersion, uint32_t height, size_t medianSize, uint64_t alreadyGeneratedCoins, size_t currentBlockSize,
 		uint64_t fee, const AccountPublicAddress& minerAddress, Transaction& tx, const BinaryArray& extraNonce/* = BinaryArray()*/, size_t maxOuts/* = 1*/) const {
 
 		tx.inputs.clear();
@@ -964,7 +969,7 @@ namespace CryptoNote {
 		CryptoNote::Transaction tx;
 		CryptoNote::Transaction st;
 		CryptoNote::AccountPublicAddress ac = boost::value_initialized<CryptoNote::AccountPublicAddress>();
-		m_currency.constructMinerTx(1, 1, 1, 0, 0, 0, 0, 0, ac, tx, BinaryArray(), 14); // zero fee in genesis
+		m_currency.constructMinerTx(1, 1, 1, 0, 0, 0, 0, 0, ac, tx); // zero fee in genesis
 		return tx;
 	}
 	CurrencyBuilder& CurrencyBuilder::emissionSpeedFactor(unsigned int val) {
