@@ -286,11 +286,11 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 
 	uint64_t outputs_amount = get_outs_money_amount(tx);
 
-	if (outputs_amount > inputs_amount) { // TODO check coinbase tx with reward
-		logger(ERROR) << "transaction use more money then it has: use " << m_currency.formatAmount(outputs_amount) <<
+	if (outputs_amount > inputs_amount) {
+		logger(ERROR) << "transaction use more money than it has: use " << m_currency.formatAmount(outputs_amount) <<
 			", have " << m_currency.formatAmount(inputs_amount);
-		//tvc.m_verification_failed = true;
-		//return false;
+		tvc.m_verification_failed = true;
+		return false;
 	}
 
 	Crypto::Hash h = NULL_HASH;
