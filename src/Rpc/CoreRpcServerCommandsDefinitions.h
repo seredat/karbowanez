@@ -254,12 +254,14 @@ struct COMMAND_RPC_START_MINING {
     uint64_t threads_count;
 	std::string wallet_host;
 	uint16_t wallet_port;
+	size_t mixin;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(miner_address)
       KV_MEMBER(threads_count)
       KV_MEMBER(wallet_host)
       KV_MEMBER(wallet_port)
+      KV_MEMBER(mixin)
     }
   };
 
@@ -594,7 +596,7 @@ struct f_block_details_response {
   uint64_t reward;
   uint64_t stake;
   uint64_t blockSize;
-  size_t sizeMedian;
+  uint64_t sizeMedian;
   uint64_t effectiveSizeMedian;
   uint64_t transactionsCumulativeSize;
   std::string alreadyGeneratedCoins;

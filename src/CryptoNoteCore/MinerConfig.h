@@ -37,6 +37,7 @@ public:
   std::string walletHost;
   uint16_t walletPort;
   std::string stakeAddress;
+  size_t stakeMixin;
 };
 
 } //namespace CryptoNote

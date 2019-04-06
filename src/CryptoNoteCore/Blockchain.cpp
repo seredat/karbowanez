@@ -2120,7 +2120,7 @@ bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) 
     std::lock_guard<decltype(m_blockchain_lock)> bcLock(m_blockchain_lock);
 
     if (haveBlock(id)) {
-      logger(INFO) << "block with id = " << id << " already exists";
+      logger(TRACE) << "block with id = " << id << " already exists";
       bvc.m_already_exists = true;
       return false;
     }

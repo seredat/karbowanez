@@ -828,7 +828,7 @@ bool RpcServer::on_start_mining(const COMMAND_RPC_START_MINING::request& req, CO
     return true;
   }
 
-  if (!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count), req.wallet_host, req.wallet_port)) {
+  if (!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count), req.wallet_host, req.wallet_port, req.mixin)) {
     res.status = "Failed, mining not started";
     return true;
   }

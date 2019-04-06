@@ -142,7 +142,7 @@ namespace CryptoNote
     req.address = m_currency.accountAddressAsString(m_stake_address);
     m_diffic = m_handler.getNextBlockDifficulty();
     req.stake = m_diffic * CryptoNote::parameters::STAKE_TO_DIFFICULTY_RATIO;
-	req.mixin = 3; // TODO replace by params or settings
+	req.mixin = m_mixin;
     // get block reward from coinbase tx and pass it to wallet
     uint64_t blockReward = 0;
     for (const auto& o : bl.baseTransaction.outputs) {
@@ -233,8 +233,8 @@ namespace CryptoNote
 
       if(m_do_print_hashrate) {
         uint64_t total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), static_cast<uint64_t>(0));
-        float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size());
-        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << ENDL;
+        float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size())/(float)1000;
+        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << " kH/s" << ENDL;
       }
     }
     
@@ -300,6 +300,10 @@ namespace CryptoNote
       } 
     }
 
+    if (!config.stakeMixin > 0) {
+      m_mixin = config.stakeMixin;
+    }
+   
     return true;
   }
   //-----------------------------------------------------------------------------------------------------
@@ -308,7 +312,7 @@ namespace CryptoNote
     return !m_stop;
   }
   //-----------------------------------------------------------------------------------------------------
-  bool miner::start(const AccountPublicAddress& adr, size_t threads_count, std::string wallet_host, uint16_t wallet_port)
+  bool miner::start(const AccountPublicAddress& adr, size_t threads_count, std::string wallet_host, uint16_t wallet_port, size_t mixin)
   {   
     if (is_mining()) {
       logger(ERROR) << "Starting miner but it's already started";
@@ -331,6 +335,7 @@ namespace CryptoNote
 
     m_wallet_host = wallet_host;
     m_wallet_port = wallet_port;
+	m_mixin = mixin;
 
     if (!m_template_no) {
       if (!request_block_template()) //lets update block template
@@ -438,7 +443,7 @@ namespace CryptoNote
   void miner::on_synchronized()
   {
     if(m_do_mining) {
-      start(m_mine_address, m_threads_total, m_wallet_host, m_wallet_port);
+      start(m_mine_address, m_threads_total, m_wallet_host, m_wallet_port, m_mixin);
     }
   }
   //-----------------------------------------------------------------------------------------------------

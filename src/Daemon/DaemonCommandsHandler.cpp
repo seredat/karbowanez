@@ -397,8 +397,8 @@ bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& arg
 }
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
-  if (args.size() != 3) {
-    std::cout << "usage: start_mining <addr> <threads[=1]> <wallet_host:port>" << std::endl;
+  if (args.size() != 4) {
+    std::cout << "usage: start_mining <addr> <threads[=1]> <wallet_host:port> <mixin>" << std::endl;
     return true;
   }
 
@@ -409,8 +409,8 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
   }
 
   size_t threads_count = 1;
-  bool ok = Common::fromString(args[1], threads_count);
-  threads_count = (ok && 0 < threads_count) ? threads_count : 1;
+  bool t_ok = Common::fromString(args[1], threads_count);
+  threads_count = (t_ok && 0 < threads_count) ? threads_count : 1;
 
   std::string walletHost;
   uint16_t walletPort;
@@ -421,7 +421,11 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
     return false;
   }
 
-  m_core.get_miner().start(adr, threads_count, walletHost, walletPort);
+  size_t mixin = 0;
+  bool m_ok = Common::fromString(args[3], mixin);
+  mixin = (m_ok && mixin > 1) ? mixin : 0;
+
+  m_core.get_miner().start(adr, threads_count, walletHost, walletPort, mixin);
   return true;
 }
 

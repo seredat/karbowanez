@@ -45,7 +45,7 @@ namespace CryptoNote {
     bool init(const MinerConfig& config);
     bool set_block_template(const Block& bl, const difficulty_type& diffic);
     bool on_block_chain_update();
-    bool start(const AccountPublicAddress& adr, size_t threads_count, std::string wallet_host, uint16_t wallet_port);
+    bool start(const AccountPublicAddress& adr, size_t threads_count, std::string wallet_host, uint16_t wallet_port, size_t mixin);
     uint64_t get_speed();
     void send_stop_signal();
     bool stop();
@@ -86,6 +86,7 @@ namespace CryptoNote {
 
     std::string m_wallet_host;
     uint16_t m_wallet_port;
+	size_t m_mixin;
 
     std::atomic<uint32_t> m_threads_total;
     std::atomic<int32_t> m_pausers_count;
