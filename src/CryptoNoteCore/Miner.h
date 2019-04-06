@@ -80,9 +80,6 @@ namespace CryptoNote {
     std::atomic<uint32_t> m_template_no;
     std::atomic<uint32_t> m_starter_nonce;
     difficulty_type m_diffic;
-	
-    Transaction m_stake_tx;
-    Crypto::SecretKey m_stake_tx_key;
 
     std::string m_wallet_host;
     uint16_t m_wallet_port;

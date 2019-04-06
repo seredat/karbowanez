@@ -320,9 +320,6 @@ namespace CryptoNote
     m_mine_address = adr;
     m_threads_total = static_cast<uint32_t>(threads_count);
     m_starter_nonce = Crypto::rand<uint32_t>();
-	
-    m_stake_tx;
-    m_stake_tx_key;
 
     m_wallet_host = wallet_host;
     m_wallet_port = wallet_port;
