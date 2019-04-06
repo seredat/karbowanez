@@ -38,6 +38,7 @@
 #include <utility>
 #include <string.h>
 #include <time.h>
+#include <boost/thread/thread.hpp>
 
 #include "crypto/crypto.h"
 #include "Common/Base58.h"
@@ -801,6 +802,10 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 		std::function<void(WalletRequest::Callback, std::error_code)> cb;
 		m_node.getRandomOutsByAmounts(std::move(amounts), outsCount, std::ref(context->outs), std::bind(cb, callback, std::placeholders::_1));
 
+		// TODO make something better
+		// wait for random outs from node
+		boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+
 		auto scanty_it = std::find_if(context->outs.begin(), context->outs.end(),
 			[&](COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& out) {return out.outs.size() < mixin; });
 
@@ -810,7 +815,10 @@ bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& 
 		}
 	}
 
-	if (!m_sender->makeStakeTransaction(context, events, transfers, stakeTransaction, stakeKey, reward, 0, extra, mixin, unlockTimestamp)) {
+	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+	bool r = m_currency.parseAccountAddressString(address, acc);
+
+	if (!m_sender->makeStakeTransaction(context, events, acc, stakeTransaction, stakeKey, reward, 0, extra, mixin, unlockTimestamp)) {
 		return false;
 	}
 

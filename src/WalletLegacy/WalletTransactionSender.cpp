@@ -186,7 +186,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(Tr
 }
 
 bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransactionContext>& context, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-	const std::vector<WalletLegacyTransfer>& transfers, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t reward, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+	const AccountPublicAddress& address, Transaction& stakeTx, Crypto::SecretKey& stakeTxKey, uint64_t reward, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 	if (m_isStoping) {
 		events.push_back(makeCompleteEvent(m_transactionsCache, context->transactionId, make_error_code(error::TX_CANCELLED)));
 		throw std::system_error(make_error_code(error::INTERNAL_WALLET_ERROR));
@@ -205,10 +205,9 @@ bool WalletTransactionSender::makeStakeTransaction(std::shared_ptr<SendTransacti
 		uint64_t totalAmount = -transaction.totalAmount;
 		createChangeDestinations(m_keys.address, totalAmount, context->foundMoney, changeDts);
 
-		AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
-		bool r = m_currency.parseAccountAddressString(transfers[0].address, acc);
+		
 		TransactionDestinationEntry rewardDts;
-		rewardDts.addr = acc;
+		rewardDts.addr = address;
 		rewardDts.amount = reward;
 
 		std::vector<TransactionDestinationEntry> splittedDests;
