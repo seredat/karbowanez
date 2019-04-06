@@ -27,7 +27,6 @@ const command_line::arg_descriptor<std::string> arg_start_mining    = {"start-mi
 const command_line::arg_descriptor<uint32_t>    arg_mining_threads  = {"mining-threads", "Specify mining threads count", 0, true};
 const command_line::arg_descriptor<std::string> arg_wallet_host     = {"wallet-host", "Specify wallet RPC host", "127.0.0.1", true};
 const command_line::arg_descriptor<uint16_t>    arg_wallet_port     = {"wallet-port", "Specify wallet RPC port", 32349, true};
-const command_line::arg_descriptor<std::string> arg_stake_address   = {"stake-address", "Specify stake transaction destination", "", true};
 const command_line::arg_descriptor<size_t>      arg_stake_mixin     = {"stake-mixin", "Specify stake transaction mixin", 0, true };
 }
 
@@ -41,7 +40,6 @@ void MinerConfig::initOptions(boost::program_options::options_description& desc)
   command_line::add_arg(desc, arg_mining_threads);
   command_line::add_arg(desc, arg_wallet_host);
   command_line::add_arg(desc, arg_wallet_port);
-  command_line::add_arg(desc, arg_stake_address);
   command_line::add_arg(desc, arg_stake_mixin);
 }
 
@@ -64,10 +62,6 @@ void MinerConfig::init(const boost::program_options::variables_map& options) {
 
   if (command_line::has_arg(options, arg_wallet_port)) {
     walletPort = command_line::get_arg(options, arg_wallet_port);
-  }
-
-  if (command_line::has_arg(options, arg_stake_address)) {
-    stakeAddress = command_line::get_arg(options, arg_stake_address);
   }
 
   if (command_line::has_arg(options, arg_stake_mixin)) {

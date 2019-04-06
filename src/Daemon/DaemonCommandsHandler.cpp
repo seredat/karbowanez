@@ -421,11 +421,11 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
     return false;
   }
 
-  size_t mixin = 0;
-  bool m_ok = Common::fromString(args[3], mixin);
-  mixin = (m_ok && mixin > 1) ? mixin : 0;
+  size_t mixin_count = 0;
+  bool m_ok = Common::fromString(args[3], mixin_count);
+  mixin_count = (m_ok && mixin_count > 1) ? mixin_count : 0;
 
-  m_core.get_miner().start(adr, threads_count, walletHost, walletPort, mixin);
+  m_core.get_miner().start(adr, threads_count, walletHost, walletPort, mixin_count);
   return true;
 }
 

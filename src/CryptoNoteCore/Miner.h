@@ -96,7 +96,6 @@ namespace CryptoNote {
     std::mutex m_threads_lock;
     IMinerHandler& m_handler;
     AccountPublicAddress m_mine_address;
-	AccountPublicAddress m_stake_address = m_mine_address;
     OnceInInterval m_update_block_template_interval;
     OnceInInterval m_update_merge_hr_interval;
 

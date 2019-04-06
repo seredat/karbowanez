@@ -36,7 +36,6 @@ public:
   uint32_t miningThreads;
   std::string walletHost;
   uint16_t walletPort;
-  std::string stakeAddress;
   size_t stakeMixin;
 };
 

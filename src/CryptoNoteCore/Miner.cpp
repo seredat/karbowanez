@@ -139,7 +139,7 @@ namespace CryptoNote
 	if (bl.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5)
 		goto out;
 
-    req.address = m_currency.accountAddressAsString(m_stake_address);
+    req.address = m_currency.accountAddressAsString(m_mine_address);
     m_diffic = m_handler.getNextBlockDifficulty();
     req.stake = m_diffic * CryptoNote::parameters::STAKE_TO_DIFFICULTY_RATIO;
 	req.mixin = m_mixin;
@@ -289,15 +289,6 @@ namespace CryptoNote
 
     if (!config.walletPort > 0) {
       m_wallet_port = config.walletPort;
-    }
-
-    if (!config.stakeAddress.empty()) {
-      CryptoNote::AccountPublicAddress adr;
-      if (!m_currency.parseAccountAddressString(config.stakeAddress, adr)) {
-        logger(ERROR) << "Stake account address has wrong format";
-      } else {
-        m_stake_address = adr;
-      } 
     }
 
     if (!config.stakeMixin > 0) {
