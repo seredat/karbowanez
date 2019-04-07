@@ -1250,7 +1250,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     return get_block_longhash(context, b, res);
   }
 
-  BinaryArray bd;
+  BinaryArray bd, pot;
   if (!get_block_hashing_blob(b, bd)) {
     return false;
   }
@@ -1268,18 +1268,16 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   
   // Phase 2
 
-  BinaryArray pot, ba;
-  // throw our full block (not hashing blob) into common pot
-  if (!toBinaryArray(b, ba)) {
-    return false;
-  }
-  pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+  // throw our block into common pot
+  pot.insert(std::end(pot), std::begin(bd), std::end(bd));
 
   // Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
   // and throwing them into the pot too
   for (uint8_t i = 1; i <= 8; i++) {
-    uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
-    uint32_t height_i = cd % ((b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? b.blockIndex : boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex) - 1 - !m_currency.isTestnet() ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow());
+    uint32_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
+    uint32_t height_i = cd % ((b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 
+		? b.blockIndex : boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex) - 1 - 
+		(!m_currency.isTestnet() ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()));
     Crypto::Hash hash_i = getBlockIdByHeight(height_i);
 
     Block bl;
@@ -1287,9 +1285,9 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
       return false;
     }
     BinaryArray ba;
-    if (!toBinaryArray(bl, ba)) {
-      return false;
-    }
+	if (!get_block_hashing_blob(bl, ba)) {
+		return false;
+	}
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
   }
 
