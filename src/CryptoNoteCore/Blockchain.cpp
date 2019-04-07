@@ -1594,7 +1594,7 @@ bool Blockchain::add_out_to_get_random_outs(std::vector<std::pair<TransactionInd
   if (!(tx.outputs[amount_outs[i].second].target.type() == typeid(KeyOutput))) { logger(ERROR, BRIGHT_RED) << "unknown tx out type"; return false; }
 
   //check if transaction is unlocked
-  if (!is_tx_spendtime_unlocked(tx.unlockTime))
+  if (!is_tx_spendtime_unlocked(tx.unlockTime, getCurrentBlockchainHeight()))
     return false;
 
   COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry& oen = *result_outs.outs.insert(result_outs.outs.end(), COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry());
@@ -1892,10 +1892,10 @@ bool Blockchain::checkTransactionInputs(const Transaction& tx, const Crypto::Has
   return true;
 }
 
-bool Blockchain::is_tx_spendtime_unlocked(uint64_t unlock_time) {
+bool Blockchain::is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height) {
   if (unlock_time < m_currency.maxBlockHeight()) {
     //interpret as block index
-    if (getCurrentBlockchainHeight() - 1 + m_currency.lockedTxAllowedDeltaBlocks() >= unlock_time)
+    if (height - 1 + m_currency.lockedTxAllowedDeltaBlocks() >= unlock_time)
       return true;
     else
       return false;
@@ -1923,7 +1923,15 @@ bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_pre
 
     bool handle_output(const Transaction& tx, const TransactionOutput& out, size_t transactionOutputIndex) {
       //check tx unlock time
-      if (!m_bch.is_tx_spendtime_unlocked(tx.unlockTime)) {
+      Crypto::Hash txId, blockId;
+	  txId = getObjectHash(tx);
+      uint32_t blockHeight;
+      if (m_bch.getBlockContainingTransaction(txId, blockId, blockHeight)) {
+        logger(INFO, BRIGHT_WHITE) <<
+          "Can not get block containing transaction " << Common::podToHex(txId);
+        return false;
+      }
+      if (!m_bch.is_tx_spendtime_unlocked(tx.unlockTime, blockHeight)) {
         logger(INFO, BRIGHT_WHITE) <<
           "One of outputs for one of inputs have wrong tx.unlockTime = " << tx.unlockTime;
         return false;
@@ -2568,8 +2576,15 @@ bool Blockchain::validateInput(const MultisignatureInput& input, const Crypto::H
     return false;
   }
 
+  Crypto::Hash blockId;
+  uint32_t blockHeight;
+  if (getBlockContainingTransaction(transactionHash, blockId, blockHeight)) {
+    logger(INFO, BRIGHT_WHITE) <<
+      "Can not get block containing transaction " << Common::podToHex(transactionHash);
+    return false;
+  }
   const Transaction& outputTransaction = m_blocks[outputIndex.transactionIndex.block].transactions[outputIndex.transactionIndex.transaction].tx;
-  if (!is_tx_spendtime_unlocked(outputTransaction.unlockTime)) {
+  if (!is_tx_spendtime_unlocked(outputTransaction.unlockTime, blockHeight)) {
     logger(DEBUGGING) <<
       "Transaction << " << transactionHash << " contains multisignature input which points to a locked transaction.";
     return false;
