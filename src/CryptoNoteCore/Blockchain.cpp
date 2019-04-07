@@ -1929,9 +1929,9 @@ bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_pre
           "Can not get block containing transaction " << Common::podToHex(txId);
         return false;
       }
-      if (!m_bch.is_tx_spendtime_unlocked(tx.unlockTime, blockHeight)) {
+      if (!m_bch.is_tx_spendtime_unlocked(tx.unlockTime, blockHeight + tx.unlockTime)) {
         logger(INFO, BRIGHT_WHITE) <<
-          "One of outputs for one of inputs have wrong tx.unlockTime = " << tx.unlockTime;
+          "One of outputs for one of inputs have wrong tx.unlockTime = " << tx.unlockTime << ", output tx height is " << blockHeight;
         return false;
       }
 
