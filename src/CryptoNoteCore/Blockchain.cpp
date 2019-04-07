@@ -1924,7 +1924,7 @@ bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_pre
       Crypto::Hash txId, blockId;
 	  txId = getObjectHash(tx);
       uint32_t blockHeight;
-      if (m_bch.getBlockContainingTransaction(txId, blockId, blockHeight)) {
+      if (!m_bch.getBlockContainingTransaction(txId, blockId, blockHeight)) {
         logger(INFO, BRIGHT_WHITE) <<
           "Can not get block containing transaction " << Common::podToHex(txId);
         return false;
@@ -2576,7 +2576,7 @@ bool Blockchain::validateInput(const MultisignatureInput& input, const Crypto::H
 
   Crypto::Hash blockId;
   uint32_t blockHeight;
-  if (getBlockContainingTransaction(transactionHash, blockId, blockHeight)) {
+  if (!getBlockContainingTransaction(transactionHash, blockId, blockHeight)) {
     logger(INFO, BRIGHT_WHITE) <<
       "Can not get block containing transaction " << Common::podToHex(transactionHash);
     return false;
