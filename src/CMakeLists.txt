@@ -92,7 +92,7 @@ if (FREEBSD)
   target_link_libraries(Miner -lthr)
 endif ()
 
-if (ANDROID)
+if (ANDROID OR MSVC)
   target_link_libraries(SimpleWallet ${SSL_LIBRARY} ${CRYPTO_LIBRARY})
   target_link_libraries(Daemon ${SSL_LIBRARY} ${CRYPTO_LIBRARY})
   target_link_libraries(PaymentGateService ${SSL_LIBRARY} ${CRYPTO_LIBRARY})
