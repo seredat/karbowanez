@@ -206,12 +206,14 @@ namespace CryptoNote
     std::string m_import_path;
     std::string m_daemon_address;
     std::string m_daemon_host;
-	std::string m_mnemonic_seed;
+    std::string m_daemon_path;
+    std::string m_mnemonic_seed;
     std::string m_wallet_file;
-	uint16_t m_daemon_port;
-	Crypto::SecretKey m_recovery_key;  // recovery key (used as random for wallet gen)
-	bool m_restore_deterministic_wallet;  // recover flag
-	bool m_non_deterministic;  // old 2-random generation
+    uint16_t m_daemon_port;
+    Crypto::SecretKey m_recovery_key;  // recovery key (used as random for wallet gen)
+    bool m_restore_deterministic_wallet;  // recover flag
+    bool m_non_deterministic;  // old 2-random generation
+    bool m_daemon_ssl;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 

@@ -1,5 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, Karbo developers
+// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018-2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -156,6 +156,7 @@ public:
   virtual std::string createAddress() = 0;
   virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, bool reset = true) = 0;
   virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, bool reset = true) = 0;
   virtual std::string createAddressWithTimestamp(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) = 0;
   virtual void deleteAddress(const std::string& address) = 0;
 

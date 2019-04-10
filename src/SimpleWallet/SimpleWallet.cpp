@@ -68,6 +68,7 @@
 #include <Common/Base58.h>
 #include "Common/PathTools.h"
 #include "Common/DnsTools.h"
+#include "Common/UrlTools.h"
 #include "Common/Util.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
@@ -130,29 +131,6 @@ const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to dep
 const command_line::arg_descriptor<bool> arg_reset = { "reset", "Discard cache data and start synchronizing from scratch", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
 
-
-bool parseUrlAddress(const std::string& url, std::string& address, uint16_t& port) {
-  auto pos = url.find("://");
-  size_t addrStart = 0;
-
-  if (pos != std::string::npos) {
-    addrStart = pos + 3;
-  }
-
-  auto addrEnd = url.find(':', addrStart);
-
-  if (addrEnd != std::string::npos) {
-    auto portEnd = url.find('/', addrEnd);
-    port = Common::fromString<uint16_t>(url.substr(
-      addrEnd + 1, portEnd == std::string::npos ? std::string::npos : portEnd - addrEnd - 1));
-  } else {
-    addrEnd = url.find('/');
-    port = 80;
-  }
-
-  address = url.substr(addrStart, addrEnd - addrStart);
-  return true;
-}
 
 void seedFormater(std::string& seed){
   const unsigned int word_width = 12;
@@ -684,7 +662,9 @@ bool simple_wallet::exit(const std::vector<std::string> &args) {
 
 simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log) :
   m_dispatcher(dispatcher),
-  m_daemon_port(0), 
+  m_daemon_port(0),
+  m_daemon_path("/"),
+  m_daemon_ssl(false),
   m_currency(currency), 
   m_logManager(log),
   logger(log, "simplewallet"),
@@ -1012,7 +992,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
   
 	if (!m_daemon_address.empty())
 	{
-		if (!parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port))
+		if (!Common::parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port, m_daemon_path, m_daemon_ssl))
 		{
 			fail_msg_writer() << "failed to parse daemon address: " << m_daemon_address;
 			return false;
@@ -2621,10 +2601,12 @@ int main(int argc, char* argv[]) {
 
     std::string daemon_address = command_line::get_arg(vm, arg_daemon_address);
     std::string daemon_host = command_line::get_arg(vm, arg_daemon_host);
+    std::string daemon_path = "/";
     uint16_t daemon_port = command_line::get_arg(vm, arg_daemon_port);
+    bool daemon_ssl = false;
 
     if (!daemon_address.empty()) {
-      if (!parseUrlAddress(daemon_address, daemon_host, daemon_port)) {
+      if (!Common::parseUrlAddress(daemon_address, daemon_host, daemon_port, daemon_path, daemon_ssl)) {
         logger(ERROR, BRIGHT_RED) << "failed to parse daemon address: " << daemon_address;
         return 1;
       }
