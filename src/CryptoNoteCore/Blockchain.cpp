@@ -1149,21 +1149,9 @@ bool Blockchain::validate_miner_transaction(const Block& b, uint32_t height, siz
   size_t blocksSizeMedian = Common::medianValue(lastBlocksSizes);
 
   auto blockMajorVersion = getBlockMajorVersionForHeight(height);
-  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-	  difficulty_type allTimeAvgDifficulty = getAvgCumulativeDifficulty(static_cast<uint32_t>(m_blocks.size() - 1));
-	  difficulty_type currentAvgDifficulty = getAvgDifficulty(static_cast<uint32_t>(m_blocks.size() - 1), m_currency.averageDifficultyWindow());
-
-	  if (!m_currency.getBlockReward(allTimeAvgDifficulty, currentAvgDifficulty, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
-		  logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
-		  return false;
-	  }
-  }
-  else {
-	  if (!m_currency.getBlockReward(1, 1, height, blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
-		  logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
-		  return false;
-	  }
-
+  if (!m_currency.getBlockReward(blockMajorVersion, blocksSizeMedian, cumulativeBlockSize, alreadyGeneratedCoins, fee, reward, emissionChange)) {
+    logger(INFO, BRIGHT_WHITE) << "block size " << cumulativeBlockSize << " is bigger than allowed for this blockchain";
+    return false;
   }
 
   if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
