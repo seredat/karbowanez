@@ -1261,11 +1261,14 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
   // and throwing them into the pot too
+
+  size_t currentMinedMoneyUnlockWindow = !m_currency.isTestnet() ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow();
+  uint32_t currentHeight = b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? b.blockIndex : boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
+  uint32_t allowedHeight = currentHeight - 1 - currentMinedMoneyUnlockWindow;
+
   for (uint8_t i = 1; i <= 8; i++) {
     uint32_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
-    uint32_t height_i = cd % ((b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 
-		? b.blockIndex : boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex) - 1 - 
-		(!m_currency.isTestnet() ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow()));
+    uint32_t height_i = cd % allowedHeight;
     Crypto::Hash hash_i = getBlockIdByHeight(height_i);
 
     Block bl;
@@ -1317,7 +1320,8 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
 
   // get fresh checkpoints from DNS - the best we have right now
 #ifndef __ANDROID__
-  m_checkpoints.load_checkpoints_from_dns();
+  if (!m_currency.isTestnet())
+    m_checkpoints.load_checkpoints_from_dns();
 #endif
 
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
