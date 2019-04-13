@@ -40,6 +40,7 @@ public:
   virtual uint64_t getLastLocalBlockTimestamp() const override { return 0; }
   virtual uint32_t getNodeHeight() const override { return 0; }
   virtual uint64_t getMinimalFee() const override{ return 0; }
+  virtual void getFeeAddress() override { }
 
   virtual CryptoNote::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return CryptoNote::BlockHeaderInfo(); }
 
@@ -87,6 +88,8 @@ public:
     const Callback& callback) override { }
 
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
+
+  virtual std::string feeAddress() override { return std::string(); }
 
 };
 

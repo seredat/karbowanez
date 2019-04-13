@@ -28,6 +28,7 @@
 #include "../CryptoNoteConfig.h"
 #include "Common/ObserverManager.h"
 #include "INode.h"
+#include "Rpc/CoreRpcServerCommandsDefinitions.h"
 
 namespace System {
   class ContextGroup;
@@ -68,6 +69,7 @@ public:
   virtual uint64_t getMinimalFee() const override;
   virtual uint32_t getNodeHeight() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
+  virtual void getFeeAddress() override;
 
   virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount, std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override;
@@ -84,6 +86,8 @@ public:
   virtual void getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions, const Callback& callback) override;
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) override;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override;
+
+  virtual std::string feeAddress() override;
 
   unsigned int rpcTimeout() const { return m_rpcTimeout; }
   void rpcTimeout(unsigned int val) { m_rpcTimeout = val; }
@@ -157,6 +161,7 @@ private:
   std::unordered_set<Crypto::Hash> m_knownTxs;
 
   bool m_connected;
+  std::string m_fee_address;
 };
 
 }

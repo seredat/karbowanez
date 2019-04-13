@@ -162,6 +162,8 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
+	getFeeAddress();
+
     initialized_callback(std::error_code());
 
     contextGroup.spawn([this]() {
@@ -296,6 +298,24 @@ void NodeRpcProxy::updatePoolState(const std::vector<std::unique_ptr<ITransactio
     Hash hash = tx->getTransactionHash();
     m_knownTxs.emplace(std::move(hash));
   }
+}
+
+void NodeRpcProxy::getFeeAddress() {
+  CryptoNote::COMMAND_RPC_GET_FEE_ADDRESS::request ireq = AUTO_VAL_INIT(ireq);
+  CryptoNote::COMMAND_RPC_GET_FEE_ADDRESS::response iresp = AUTO_VAL_INIT(iresp);
+
+  std::error_code ec = jsonCommand("/feeaddress", ireq, iresp);
+
+  if (ec || iresp.status != CORE_RPC_STATUS_OK) {
+    return;
+  }
+  m_fee_address = iresp.fee_address;
+
+  return;
+}
+
+std::string NodeRpcProxy::feeAddress() {
+  return m_fee_address;
 }
 
 std::vector<Crypto::Hash> NodeRpcProxy::getKnownTxsVector() const {
