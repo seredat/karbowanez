@@ -192,7 +192,7 @@ void blockchainHeight(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet)
 {
     const uint32_t localHeight = node.getLastLocalBlockHeight();
     const uint32_t remoteHeight = node.getLastKnownBlockHeight();
-    const uint32_t walletHeight = wallet.getBlockCount();
+    const uint32_t walletHeight = wallet.getBlockCount() - 1;
 
     /* This is the height that the wallet has been scanned to. The blockchain
        can be fully updated, but we have to walk the chain to find our
@@ -379,7 +379,7 @@ void status(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet)
 {
     uint32_t localHeight = node.getLastLocalBlockHeight();
     uint32_t remoteHeight = node.getLastKnownBlockHeight();
-    uint32_t walletHeight = wallet.getBlockCount();
+    uint32_t walletHeight = wallet.getBlockCount() - 1;
 
     /* Print the heights of local, remote, and wallet */
     printHeights(localHeight, remoteHeight, walletHeight);
@@ -615,11 +615,11 @@ void advanced(std::shared_ptr<WalletInfo> wallet)
     if (wallet->viewWallet)
     {
         printCommands(advancedViewWalletCommands(),
-                      basicViewWalletCommands().size());
+                      (int)basicViewWalletCommands().size());
     }
     else
     {
         printCommands(advancedCommands(),
-                      basicCommands().size());
+                      (int)basicCommands().size());
     }
 }
