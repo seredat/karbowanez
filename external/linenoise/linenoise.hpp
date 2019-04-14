@@ -1607,7 +1607,13 @@ inline bool enableRawMode(int fd) {
      * no start/stop output control. */
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     /* output modes - disable post processing */
+
+    /* This line has been commented out due to causing issues whilst writing
+       to the terminal on another thread, whilst waiting for input with
+       readline. See further - https://github.com/antirez/linenoise/issues/128
     raw.c_oflag &= ~(OPOST);
+    */
+
     /* control modes - set 8 bit chars */
     raw.c_cflag |= (CS8);
     /* local modes - choing off, canonical off, no extended functions,

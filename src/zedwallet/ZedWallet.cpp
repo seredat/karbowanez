@@ -132,89 +132,89 @@ void run(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
 
 	std::tie(quit, walletInfo) = selectionScreen(config, wallet, node);
 
-	if (quit)
-	{
-		std::cout << "Bye." << std::endl;
-		return;
-	}
-
 	bool alreadyShuttingDown = false;
 
-	/* This will call shutdown when ctrl+c is hit. This is a lambda function,
-	   & means capture all variables by reference */
-	Tools::SignalHandler::install([&]
+	if (!quit)
 	{
-		/* If we're already shutting down let control flow continue as normal */
-		if (shutdown(walletInfo->wallet, node, alreadyShuttingDown))
+		/* Call shutdown on ctrl+c */
+		Tools::SignalHandler::install([&]
 		{
-			exit(0);
-		}
-	});
-
-	mainLoop(walletInfo, node);
-
-	shutdown(walletInfo->wallet, node, alreadyShuttingDown);
-}
-
-bool shutdown(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
-	bool &alreadyShuttingDown)
-{
-	if (alreadyShuttingDown)
-	{
-		std::cout << "Patience little turtle, we're already shutting down!"
-			<< std::endl;
-
-		return false;
-	}
-
-	std::cout << InformationMsg("Shutting down...") << std::endl;
-
-	alreadyShuttingDown = true;
-
-	bool finishedShutdown = false;
-
-	std::thread timelyShutdown([&finishedShutdown]
-	{
-		const auto startTime = std::chrono::system_clock::now();
-
-		/* Has shutdown finished? */
-		while (!finishedShutdown)
-		{
-			const auto currentTime = std::chrono::system_clock::now();
-
-			/* If not, wait for a max of 20 seconds then force exit. */
-			if ((currentTime - startTime) > std::chrono::seconds(20))
+			/* If we're already shutting down let control flow continue
+			   as normal */
+			if (shutdown(walletInfo, node, alreadyShuttingDown))
 			{
-				std::cout << WarningMsg("Wallet took too long to save! "
-					"Force closing.") << std::endl
-					<< "Bye." << std::endl;
 				exit(0);
 			}
+		});
 
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-	});
+		mainLoop(walletInfo, node);
+	}
 
-	std::cout << InformationMsg("Saving wallet file...") << std::endl;
+	shutdown(walletInfo, node, alreadyShuttingDown);
+}
 
-	wallet.save();
+bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
+              bool &alreadyShuttingDown)
+{
+    if (alreadyShuttingDown)
+    {
+        std::cout << "Patience little turtle, we're already shutting down!" 
+                  << std::endl;
 
-	std::cout << InformationMsg("Shutting down wallet interface...")
-		<< std::endl;
+        return false;
+    }
 
-	wallet.shutdown();
+    std::cout << InformationMsg("Shutting down...") << std::endl;
 
-	std::cout << InformationMsg("Shutting down node connection...")
-		<< std::endl;
+    alreadyShuttingDown = true;
 
-	node.shutdown();
+    bool finishedShutdown = false;
 
-	finishedShutdown = true;
+    std::thread timelyShutdown([&finishedShutdown]
+    {
+        const auto startTime = std::chrono::system_clock::now();
 
-	/* Wait for shutdown watcher to finish */
-	timelyShutdown.join();
+        /* Has shutdown finished? */
+        while (!finishedShutdown)
+        {
+            const auto currentTime = std::chrono::system_clock::now();
 
-	std::cout << "Bye." << std::endl;
+            /* If not, wait for a max of 20 seconds then force exit. */
+            if ((currentTime - startTime) > std::chrono::seconds(20))
+            {
+                std::cout << WarningMsg("Wallet took too long to save! "
+                                        "Force closing.") << std::endl
+                          << "Bye." << std::endl;
+                exit(0);
+            }
 
-	return true;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+    });
+
+    if (walletInfo != nullptr)
+    {
+        std::cout << InformationMsg("Saving wallet file...") << std::endl;
+
+        walletInfo->wallet.save();
+
+        std::cout << InformationMsg("Shutting down wallet interface...")
+                  << std::endl;
+
+        walletInfo->wallet.shutdown();
+    }
+
+    std::cout << InformationMsg("Shutting down node connection...")
+              << std::endl;
+
+    node.shutdown();
+
+    finishedShutdown = true;
+
+    /* Wait for shutdown watcher to finish */
+    timelyShutdown.join();
+
+    std::cout << "Bye." << std::endl;
+    
+    return true;
 }
