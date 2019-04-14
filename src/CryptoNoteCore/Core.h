@@ -21,7 +21,6 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "BlockchainExplorerData.h"
-#include "BlockchainExplorerData2.h"
 #include "P2p/NetNodeCommon.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "Currency.h"
@@ -103,8 +102,8 @@ namespace CryptoNote {
      uint8_t getCurrentBlockMajorVersion() override;
 	 uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
 
-	 bool fillBlockDetails(const CryptoNote::Block& block, BlockDetails2& blockDetails);
-	 bool fillTransactionDetails(const Transaction &tx, TransactionDetails2& txRpcInfo, uint64_t timestamp = 0);
+	 bool fillBlockDetails(const CryptoNote::Block& block, BlockDetails& blockDetails);
+	 bool fillTransactionDetails(const Transaction &tx, TransactionDetails& txRpcInfo, uint64_t timestamp = 0);
 
 	 static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 
@@ -169,7 +168,7 @@ namespace CryptoNote {
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
-     bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
+     virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
 

@@ -85,7 +85,7 @@ bool serializePod(T& v, Common::StringView name, CryptoNote::ISerializer& serial
 
 //namespace CryptoNote {
 
-void serialize(transaction_output_details& output, ISerializer& serializer) {
+void serialize(transactionOutputDetails2& output, ISerializer& serializer) {
   serializer(output.output, "output");
   serializer(output.globalIndex, "globalIndex");
 }
@@ -111,7 +111,7 @@ void serialize(MultisignatureInputDetails& inputMultisig, ISerializer& serialize
   serializer(inputMultisig.output, "output");
 }
 
-void serialize(transaction_input_details& input, ISerializer& serializer) {
+void serialize(transactionInputDetails2& input, ISerializer& serializer) {
   if (serializer.type() == ISerializer::OUTPUT) {
     BinaryVariantTagGetter tagGetter;
     uint8_t tag = boost::apply_visitor(tagGetter, input);
@@ -139,7 +139,7 @@ void serialize(TransactionExtraDetails2& extra, ISerializer& serializer) {
   serializeAsBinary(extra.raw, "raw", serializer);
 }
 
-void serialize(TransactionDetails2& transaction, ISerializer& serializer) {
+void serialize(TransactionDetails& transaction, ISerializer& serializer) {
   serializePod(transaction.hash, "hash", serializer);
   serializer(transaction.size, "size");
   serializer(transaction.fee, "fee");
@@ -184,7 +184,7 @@ void serialize(TransactionDetails2& transaction, ISerializer& serializer) {
   }
 }
 
-void serialize(BlockDetails2& block, ISerializer& serializer) {
+void serialize(BlockDetails& block, ISerializer& serializer) {
   serializer(block.majorVersion, "majorVersion");
   serializer(block.minorVersion, "minorVersion");
   serializer(block.timestamp, "timestamp");

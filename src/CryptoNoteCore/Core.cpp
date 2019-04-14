@@ -1168,7 +1168,9 @@ bool core::fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDet
   std::vector<TransactionExtraField> txExtraFields;
   parseTransactionExtra(rawExtra, txExtraFields);
   for (const TransactionExtraField& field : txExtraFields) {
-    if (typeid(TransactionExtraPublicKey) == field.type()) {
+    if (typeid(TransactionExtraPadding) == field.type()) {
+      extraDetails.padding.push_back(std::move(boost::get<TransactionExtraPadding>(field).size));
+    } else if (typeid(TransactionExtraPublicKey) == field.type()) {
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
       extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
@@ -1194,7 +1196,7 @@ size_t core::median(std::vector<size_t>& v) {
 
 }
 
-bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
+bool core::fillBlockDetails(const Block &block, BlockDetails& blockDetails) {
   Crypto::Hash hash = get_block_hash(block);
 
   blockDetails.majorVersion = block.majorVersion;
@@ -1273,7 +1275,7 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   }
 
   blockDetails.transactions.reserve(block.transactionHashes.size() + 1);
-  TransactionDetails2 transactionDetails;
+  TransactionDetails transactionDetails;
   if (!fillTransactionDetails(block.baseTransaction, transactionDetails, block.timestamp)) {
     return false;
   }
@@ -1289,7 +1291,7 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   blockDetails.totalFeeAmount = 0;
 
   for (const Transaction& tx : found) {
-    TransactionDetails2 transactionDetails;
+    TransactionDetails transactionDetails;
     if (!fillTransactionDetails(tx, transactionDetails, block.timestamp)) {
       return false;
     }
@@ -1299,7 +1301,7 @@ bool core::fillBlockDetails(const Block &block, BlockDetails2& blockDetails) {
   return true;
 }
 
-bool core::fillTransactionDetails(const Transaction& transaction, TransactionDetails2& transactionDetails, uint64_t timestamp) {
+bool core::fillTransactionDetails(const Transaction& transaction, TransactionDetails& transactionDetails, uint64_t timestamp) {
   Crypto::Hash hash = getObjectHash(transaction);
   transactionDetails.hash = hash;
 
@@ -1344,7 +1346,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
     }
     transactionDetails.fee = fee;
     uint64_t mixin;
-    if (!f_getMixin(transaction, mixin)) {
+    if (!getMixin(transaction, mixin)) {
       return false;
     }
     transactionDetails.mixin = mixin;
@@ -1368,7 +1370,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
 
   transactionDetails.inputs.reserve(transaction.inputs.size());
   for (const TransactionInput& txIn : transaction.inputs) {
-    transaction_input_details txInDetails;
+    transactionInputDetails2 txInDetails;
     if (txIn.type() == typeid(BaseInput)) {
       BaseInputDetails txInGenDetails;
       txInGenDetails.input.blockIndex = boost::get<BaseInput>(txIn).blockIndex;
@@ -1422,7 +1424,7 @@ bool core::fillTransactionDetails(const Transaction& transaction, TransactionDet
   typedef boost::tuple<TransactionOutput, uint32_t> outputWithIndex;
   auto range = boost::combine(transaction.outputs, globalIndices);
   for (const outputWithIndex& txOutput : range) {
-    transaction_output_details txOutDetails;
+    transactionOutputDetails2 txOutDetails;
     txOutDetails.globalIndex = txOutput.get<1>();
 	txOutDetails.output.amount = txOutput.get<0>().amount;
 	txOutDetails.output.target = txOutput.get<0>().target;
@@ -1514,7 +1516,7 @@ std::unique_ptr<IBlock> core::getBlock(const Crypto::Hash& blockId) {
   return std::move(blockPtr);
 }
 
-bool core::f_getMixin(const Transaction& transaction, uint64_t& mixin) {
+bool core::getMixin(const Transaction& transaction, uint64_t& mixin) {
   mixin = 0;
   for (const TransactionInput& txin : transaction.inputs) {
     if (txin.type() != typeid(KeyInput)) {

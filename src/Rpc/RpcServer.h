@@ -122,8 +122,6 @@ private:
   bool on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request& req, COMMAND_RPC_VALIDATE_ADDRESS::response& res);
   bool on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req, COMMAND_RPC_VERIFY_MESSAGE::response& res);
 
-  bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
-
   Logging::LoggerRef logger;
   core& m_core;
   NodeServer& m_p2p;
