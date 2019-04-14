@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 ///////////////////////////////
-#include <zedwallet/Transfer.h>
+#include <GreenWallet/Transfer.h>
 ///////////////////////////////
 
 #include <boost/algorithm/string.hpp>
@@ -26,10 +26,10 @@ namespace NodeErrors
     #include <NodeRpcProxy/NodeErrors.h>
 }
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/Fusion.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/Fusion.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/WalletConfig.h>
 
 namespace WalletErrors
 {

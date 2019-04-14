@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include <zedwallet/Types.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/Types.h>
+#include <GreenWallet/WalletConfig.h>
 
 enum BalanceInfo { NotEnoughBalance, EnoughBalance, SetMixinToZero };
 void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height,

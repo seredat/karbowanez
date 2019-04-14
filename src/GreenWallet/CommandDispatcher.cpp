@@ -3,15 +3,15 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////////////
-#include <zedwallet/CommandDispatcher.h>
+#include <GreenWallet/CommandDispatcher.h>
 ////////////////////////////////////////
 
-#include <zedwallet/AddressBook.h>
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/CommandImplementations.h>
-#include <zedwallet/Fusion.h>
-#include <zedwallet/Open.h>
-#include <zedwallet/Transfer.h>
+#include <GreenWallet/AddressBook.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/CommandImplementations.h>
+#include <GreenWallet/Fusion.h>
+#include <GreenWallet/Open.h>
+#include <GreenWallet/Transfer.h>
 
 bool handleCommand(const std::string command,
                    std::shared_ptr<WalletInfo> walletInfo,

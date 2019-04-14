@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <zedwallet/Types.h>
+#include <GreenWallet/Types.h>
 
 void syncWallet(CryptoNote::INode &node,
                 std::shared_ptr<WalletInfo> walletInfo);

@@ -10,7 +10,7 @@
 #include <vector>
 #include <iterator>
 
-#include <zedwallet/Types.h>
+#include <GreenWallet/Types.h>
 
 void confirmPassword(std::string walletPass, std::string msg = "");
 

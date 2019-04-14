@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <zedwallet/Types.h>
+#include <GreenWallet/Types.h>
 
 std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet, 
                                            Crypto::SecretKey privateSpendKey,

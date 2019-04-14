@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <zedwallet/Types.h>
+#include <GreenWallet/Types.h>
 
 char* getCmdOption(char ** begin, char ** end, const std::string & option);
 

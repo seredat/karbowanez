@@ -25,7 +25,7 @@
 #include "JsonOutputStreamSerializer.h"
 #include "KVBinaryInputStreamSerializer.h"
 #include "KVBinaryOutputStreamSerializer.h"
-#include <zedwallet/Types.h>
+#include "GreenWallet/Types.h"
 
 namespace Common {
 

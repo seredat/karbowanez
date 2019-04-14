@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 ///////////////////////////
-#include <zedwallet/Open.h>
+#include <GreenWallet/Open.h>
 ///////////////////////////
 
 #include <boost/algorithm/string.hpp>
@@ -18,13 +18,13 @@
 
 #include <Wallet/WalletErrors.h>
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/CommandImplementations.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/Transfer.h>
-#include <zedwallet/Types.h>
-#include <zedwallet/PasswordContainer.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/CommandImplementations.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/Transfer.h>
+#include <GreenWallet/Types.h>
+#include <GreenWallet/PasswordContainer.h>
+#include <GreenWallet/WalletConfig.h>
 
 std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
 {

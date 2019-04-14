@@ -5,7 +5,7 @@
 #pragma once
 
 #include <NodeRpcProxy/NodeRpcProxy.h>
-#include <zedwallet/Types.h>
+#include <GreenWallet/Types.h>
 
 int main(int argc, char **argv);
 

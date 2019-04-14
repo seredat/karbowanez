@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////
-#include <zedwallet/Tools.h>
+#include <GreenWallet/Tools.h>
 ////////////////////////////
 
 #include <boost/algorithm/string.hpp>
@@ -19,9 +19,9 @@
 
 #include <iostream>
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/PasswordContainer.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/PasswordContainer.h>
+#include <GreenWallet/WalletConfig.h>
 
 void confirmPassword(std::string walletPass, std::string msg)
 {

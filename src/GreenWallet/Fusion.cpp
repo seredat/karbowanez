@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////
-#include <zedwallet/Fusion.h>
+#include <GreenWallet/Fusion.h>
 /////////////////////////////
 
 #include "CryptoNoteConfig.h"
@@ -12,9 +12,9 @@
 
 #include <Wallet/WalletGreen.h>
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/WalletConfig.h>
 
 size_t makeFusionTransaction(CryptoNote::WalletGreen &wallet, 
                              uint64_t threshold)

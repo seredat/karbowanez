@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////
-#include <zedwallet/ZedWallet.h>
+#include <GreenWallet/ZedWallet.h>
 ////////////////////////////////
 
 #include <Common/SignalHandler.h>
@@ -17,11 +17,11 @@
 #include <windows.h>
 #endif
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/Menu.h>
-#include <zedwallet/ParseArguments.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/Menu.h>
+#include <GreenWallet/ParseArguments.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/WalletConfig.h>
 
 int main(int argc, char **argv)
 {

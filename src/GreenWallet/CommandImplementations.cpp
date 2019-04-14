@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////////////////
-#include <zedwallet/CommandImplementations.h>
+#include <GreenWallet/CommandImplementations.h>
 /////////////////////////////////////////////
 
 #include <atomic>
@@ -19,17 +19,17 @@
 
 #include "mnemonics/electrum-words.h"
 
-#include <zedwallet/AddressBook.h>
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/Commands.h>
-#include <zedwallet/Fusion.h>
-#include <zedwallet/Menu.h>
-#include <zedwallet/Open.h>
-#include <zedwallet/Sync.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/Transfer.h>
-#include <zedwallet/Types.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/AddressBook.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/Commands.h>
+#include <GreenWallet/Fusion.h>
+#include <GreenWallet/Menu.h>
+#include <GreenWallet/Open.h>
+#include <GreenWallet/Sync.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/Transfer.h>
+#include <GreenWallet/Types.h>
+#include <GreenWallet/WalletConfig.h>
 
 void changePassword(std::shared_ptr<WalletInfo> walletInfo)
 {

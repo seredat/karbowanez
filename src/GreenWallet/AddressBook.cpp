@@ -5,7 +5,7 @@
 #include <initializer_list>
 
 //////////////////////////////////
-#include <zedwallet/AddressBook.h>
+#include <GreenWallet/AddressBook.h>
 //////////////////////////////////
 
 #include <boost/algorithm/string.hpp>
@@ -16,10 +16,10 @@
 
 #include <Serialization/SerializationTools.h>
 
-#include <zedwallet/ColouredMsg.h>
-#include <zedwallet/Tools.h>
-#include <zedwallet/Transfer.h>
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/ColouredMsg.h>
+#include <GreenWallet/Tools.h>
+#include <GreenWallet/Transfer.h>
+#include <GreenWallet/WalletConfig.h>
 
 const std::string getAddressBookName(AddressBook addressBook)
 {

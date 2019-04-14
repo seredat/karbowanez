@@ -3,10 +3,10 @@
 // Please see the included LICENSE file for more information.
 
 ////////////////////////////////
-#include <zedwallet/Commands.h>
+#include <GreenWallet/Commands.h>
 ////////////////////////////////
 
-#include <zedwallet/Tools.h>
+#include <GreenWallet/Tools.h>
 
 std::vector<Command> startupCommands()
 {

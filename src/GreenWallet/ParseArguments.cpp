@@ -3,7 +3,7 @@
 // Please see the included LICENSE file for more information.
 
 /////////////////////////////////////
-#include <zedwallet/ParseArguments.h>
+#include <GreenWallet/ParseArguments.h>
 /////////////////////////////////////
 
 #include "CryptoNoteConfig.h"
@@ -14,7 +14,7 @@
 
 #include "version.h"
 
-#include <zedwallet/WalletConfig.h>
+#include <GreenWallet/WalletConfig.h>
 
 /* Thanks to https://stackoverflow.com/users/85381/iain for this small command
    line parsing snippet! https://stackoverflow.com/a/868894/8737306 */
