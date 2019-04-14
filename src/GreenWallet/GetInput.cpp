@@ -38,9 +38,10 @@ std::string getPrompt(std::shared_ptr<WalletInfo> walletInfo)
         walletName = walletInfo->walletFileName.substr(0, extPos);
     }
 
-    const std::string shortName = walletName.substr(0, promptLength);
+    const std::string shortFileName = walletName.substr(0, promptLength - 9);
+	std::string addrStart = walletInfo->walletAddress.substr(0, 6);
 
-    return "[" + WalletConfig::ticker + " " + shortName + "]: ";
+    return "[" + addrStart + " " + shortFileName + "]: ";
 }
 
 template<typename T>
