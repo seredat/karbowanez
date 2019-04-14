@@ -12,19 +12,10 @@
 
 #include <iterator>
 
-void confirmPassword(std::string walletPass, std::string msg="");
-
-bool saveWallet(std::shared_ptr<WalletInfo> &walletInfo);
-
-bool loadWallet(CryptoNote::WalletGreen &wallet, std::string walletFileName,
-                std::string walletPass);
-
-bool loadWallet(std::shared_ptr<WalletInfo> &walletInfo);
+void confirmPassword(std::string walletPass, std::string msg = "");
 
 bool confirm(std::string msg);
 bool confirm(std::string msg, bool defaultReturn);
-
-bool createOutputBinaryFile(const std::string& filename, std::fstream& file);
 
 std::string formatAmountBasic(uint64_t amount);
 std::string formatAmount(uint64_t amount);
@@ -35,6 +26,8 @@ std::string getPaymentIDFromExtra(std::string extra);
 
 std::string unixTimeToDate(uint64_t timestamp);
 
+std::string createIntegratedAddress(std::string address, std::string paymentID);
+
 uint64_t getDivisor();
 
 uint64_t getScanHeight();
@@ -42,11 +35,11 @@ uint64_t getScanHeight();
 template <typename T, typename Function>
 std::vector<T> filter(std::vector<T> input, Function predicate)
 {
-    std::vector<T> result;
+	std::vector<T> result;
 
-    std::copy_if(
-        input.begin(), input.end(), std::back_inserter(result), predicate
-    );
+	std::copy_if(
+		input.begin(), input.end(), std::back_inserter(result), predicate
+	);
 
-    return result;
+	return result;
 }

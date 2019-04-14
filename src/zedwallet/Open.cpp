@@ -243,13 +243,7 @@ std::tuple<bool, std::shared_ptr<WalletInfo>>
 
         try
         {
-            if (!loadWallet(wallet, walletFileName, walletPass))
-            {
-                std::cout << "Returning to selection screen..."
-                          << std::endl << std::endl;
-
-                return Nothing<std::shared_ptr<WalletInfo>>();
-            }
+			wallet.load(walletFileName, walletPass);
 
             const std::string walletAddress = wallet.getAddress(0);
             

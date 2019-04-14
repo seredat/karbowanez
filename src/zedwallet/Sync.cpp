@@ -127,9 +127,9 @@ void syncWallet(CryptoNote::INode &node,
 
         /* Save periodically so if someone closes before completion they don't
            lose all their progress */
-        if (counter % 60 == 0)
+        if (counter % 600 == 0)
         {
-            saveWallet(walletInfo);
+			walletInfo->wallet.save();
         }
 
         if (tmpWalletHeight == walletHeight)
@@ -157,7 +157,7 @@ void syncWallet(CryptoNote::INode &node,
                    So we'll try this before warning the user.
                 */
                 std::cout << InformationMsg("Saving wallet.") << std::endl;
-                saveWallet(walletInfo);
+				walletInfo->wallet.save();
                 waitSeconds = 5;
             }
         }
@@ -208,7 +208,7 @@ void syncWallet(CryptoNote::INode &node,
 
     /* In case the user force closes, we don't want them to have to rescan
        the whole chain. */
-    saveWallet(walletInfo);
+	walletInfo->wallet.save();
 
     walletInfo->knownTransactionCount = transactionCount;
 }

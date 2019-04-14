@@ -93,6 +93,27 @@ int main(int argc, char **argv)
         }
     }
 
+	/*
+	  This will check to see if the node responded to /feeaddress and actually
+	  returned something that it expects us to use for convenience charges
+	  for using that node to send transactions.
+	*/
+	if (!node->feeAddress().empty()) {
+		std::stringstream feemsg;
+
+		feemsg << std::endl << "You have connected to a node that charges " <<
+			"a fee to send transactions." << std::endl << std::endl
+			<< "The fee for sending transactions is 0.25% of transaction amount, " <<
+			"but no more than " << formatAmount(10000000000000) << "KRB." 
+			<< std::endl << std::endl <<
+			"If you don't want to pay the node fee, please " <<
+			"relaunch " << WalletConfig::walletName <<
+			" and run your own node." <<
+			std::endl;
+
+		std::cout << WarningMsg(feemsg.str()) << std::endl;
+	}
+
     /* Create the wallet instance */
     CryptoNote::WalletGreen wallet(*dispatcher, currency, *node, logManager);
 
@@ -101,103 +122,99 @@ int main(int argc, char **argv)
 }
 
 void run(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
-         Config &config)
+	Config &config)
 {
-    std::cout << InformationMsg(getVersion()) << std::endl;
+	std::cout << InformationMsg(getVersion()) << std::endl;
 
-    std::shared_ptr<WalletInfo> walletInfo;
+	std::shared_ptr<WalletInfo> walletInfo;
 
-    bool quit;
+	bool quit;
 
-    std::tie(quit, walletInfo) = selectionScreen(config, wallet, node);
+	std::tie(quit, walletInfo) = selectionScreen(config, wallet, node);
 
-    if (quit)
-    {
-        std::cout << "Bye." << std::endl;
-        return;
-    }
+	if (quit)
+	{
+		std::cout << "Bye." << std::endl;
+		return;
+	}
 
-    /* Make sure to save if we created a new file */
-    saveWallet(walletInfo);
+	bool alreadyShuttingDown = false;
 
-    bool alreadyShuttingDown = false;
+	/* This will call shutdown when ctrl+c is hit. This is a lambda function,
+	   & means capture all variables by reference */
+	Tools::SignalHandler::install([&]
+	{
+		/* If we're already shutting down let control flow continue as normal */
+		if (shutdown(walletInfo->wallet, node, alreadyShuttingDown))
+		{
+			exit(0);
+		}
+	});
 
-    /* This will call shutdown when ctrl+c is hit. This is a lambda function,
-       & means capture all variables by reference */
-    Tools::SignalHandler::install([&]
-    {
-        /* If we're already shutting down let control flow continue as normal */
-        if (shutdown(walletInfo, node, alreadyShuttingDown))
-        {
-            exit(0);
-        }
-    });
+	mainLoop(walletInfo, node);
 
-    mainLoop(walletInfo, node);
-    
-    shutdown(walletInfo->wallet, node, alreadyShuttingDown);
+	shutdown(walletInfo->wallet, node, alreadyShuttingDown);
 }
 
-bool shutdown(std::shared_ptr<WalletInfo> &walletInfo, CryptoNote::INode &node,
-              bool &alreadyShuttingDown)
+bool shutdown(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
+	bool &alreadyShuttingDown)
 {
-    if (alreadyShuttingDown)
-    {
-        std::cout << "Patience little turtle, we're already shutting down!" 
-                  << std::endl;
+	if (alreadyShuttingDown)
+	{
+		std::cout << "Patience little turtle, we're already shutting down!"
+			<< std::endl;
 
-        return false;
-    }
+		return false;
+	}
 
-    std::cout << InformationMsg("Shutting down...") << std::endl;
+	std::cout << InformationMsg("Shutting down...") << std::endl;
 
-    alreadyShuttingDown = true;
+	alreadyShuttingDown = true;
 
-    bool finishedShutdown = false;
+	bool finishedShutdown = false;
 
-    std::thread timelyShutdown([&finishedShutdown]
-    {
-        const auto startTime = std::chrono::system_clock::now();
+	std::thread timelyShutdown([&finishedShutdown]
+	{
+		const auto startTime = std::chrono::system_clock::now();
 
-        /* Has shutdown finished? */
-        while (!finishedShutdown)
-        {
-            const auto currentTime = std::chrono::system_clock::now();
+		/* Has shutdown finished? */
+		while (!finishedShutdown)
+		{
+			const auto currentTime = std::chrono::system_clock::now();
 
-            /* If not, wait for a max of 20 seconds then force exit. */
-            if ((currentTime - startTime) > std::chrono::seconds(20))
-            {
-                std::cout << WarningMsg("Wallet took too long to save! "
-                                        "Force closing.") << std::endl
-                          << "Bye." << std::endl;
-                exit(0);
-            }
+			/* If not, wait for a max of 20 seconds then force exit. */
+			if ((currentTime - startTime) > std::chrono::seconds(20))
+			{
+				std::cout << WarningMsg("Wallet took too long to save! "
+					"Force closing.") << std::endl
+					<< "Bye." << std::endl;
+				exit(0);
+			}
 
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
-    });
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+		}
+	});
 
-    std::cout << InformationMsg("Saving wallet file...") << std::endl;
+	std::cout << InformationMsg("Saving wallet file...") << std::endl;
 
-    wallet.save();
+	wallet.save();
 
-    std::cout << InformationMsg("Shutting down wallet interface...")
-              << std::endl;
+	std::cout << InformationMsg("Shutting down wallet interface...")
+		<< std::endl;
 
-    wallet.shutdown();
+	wallet.shutdown();
 
-    std::cout << InformationMsg("Shutting down node connection...")
-              << std::endl;
+	std::cout << InformationMsg("Shutting down node connection...")
+		<< std::endl;
 
-    node.shutdown();
+	node.shutdown();
 
-    finishedShutdown = true;
+	finishedShutdown = true;
 
-    /* Wait for shutdown watcher to finish */
-    timelyShutdown.join();
+	/* Wait for shutdown watcher to finish */
+	timelyShutdown.join();
 
-    std::cout << "Bye." << std::endl;
-    
-    return true;
+	std::cout << "Bye." << std::endl;
+
+	return true;
 }
-

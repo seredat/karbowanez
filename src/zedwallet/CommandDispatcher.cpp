@@ -44,8 +44,7 @@ bool handleCommand(const std::string command,
     }
     else if (command == "transfer")
     {
-        transfer(walletInfo, node.getLastKnownBlockHeight(), false,
-                 node.feeAddress(), node.feeAmount());
+        transfer(walletInfo, node.getLastKnownBlockHeight(), false, node.feeAddress());
     }
     /* Advanced commands */
     else if (command == "ab_add")
@@ -63,15 +62,11 @@ bool handleCommand(const std::string command,
     else if (command == "ab_send")
     {
         sendFromAddressBook(walletInfo, node.getLastKnownBlockHeight(),
-                            node.feeAddress(), node.feeAmount());
+                            node.feeAddress());
     }
     else if (command == "change_password")
     {
         changePassword(walletInfo);
-    }
-    else if (command == "make_integrated_address")
-    {
-        createIntegratedAddress();
     }
     else if (command == "incoming_transfers")
     {
@@ -83,7 +78,7 @@ bool handleCommand(const std::string command,
     }
     else if (command == "optimize")
     {
-        fullOptimize(walletInfo->wallet, node.getLastKnownBlockHeight());
+        fullOptimize(walletInfo->wallet);
     }
     else if (command == "outgoing_transfers")
     {
@@ -95,7 +90,7 @@ bool handleCommand(const std::string command,
     }
     else if (command == "save")
     {
-        save(walletInfo->wallet);
+		save(walletInfo->wallet);
     }
     else if (command == "save_csv")
     {
@@ -103,8 +98,7 @@ bool handleCommand(const std::string command,
     }
     else if (command == "send_all")
     {
-        transfer(walletInfo, node.getLastKnownBlockHeight(), true,
-                 node.feeAddress(), node.feeAmount());
+        transfer(walletInfo, node.getLastKnownBlockHeight(), true, node.feeAddress());
     }
     else if (command == "status")
     {
