@@ -1200,6 +1200,134 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   }
 }
 
+CryptoNote::BlockDetails WalletGreen::getBlock(const uint64_t blockHeight)
+{
+	CryptoNote::BlockDetails block;
+
+	if (m_node.getLastKnownBlockHeight() == 0)
+	{
+		return block;
+	}
+
+	std::promise<std::error_code> errorPromise;
+
+	auto e = errorPromise.get_future();
+
+	auto callback = [&errorPromise](std::error_code e)
+	{
+		errorPromise.set_value(e);
+	};
+
+	m_node.getBlock(blockHeight, block, callback);
+
+	e.get();
+
+	return block;
+}
+
+uint64_t WalletGreen::scanHeightToTimestamp(const uint64_t scanHeight)
+{
+	if (scanHeight == 0)
+	{
+		return 0;
+	}
+
+	/* Get the block timestamp from the node if the node has it */
+	uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
+
+	if (timestamp != 0)
+	{
+		return timestamp;
+	}
+
+	/* Get the amount of seconds since the blockchain launched */
+	uint64_t secondsSinceLaunch = scanHeight *
+		CryptoNote::parameters::DIFFICULTY_TARGET;
+
+	/* Add a bit of a buffer in case of difficulty weirdness, blocks coming
+	   out too fast */
+	secondsSinceLaunch *= 0.95;
+
+	/* Get the genesis block timestamp and add the time since launch */
+	timestamp = UINT64_C(1464595534)
+		+ secondsSinceLaunch;
+
+	/* Timestamp in the future */
+	if (timestamp >= static_cast<uint64_t>(std::time(nullptr)))
+	{
+		return getCurrentTimestampAdjusted();
+	}
+
+	return timestamp;
+}
+
+uint64_t WalletGreen::getCurrentTimestampAdjusted()
+{
+	/* Get the current time as a unix timestamp */
+	std::time_t time = std::time(nullptr);
+
+	/* Take the amount of time a block can potentially be in the past/future */
+	std::initializer_list<uint64_t> limits =
+	{
+		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT,
+		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1
+	};
+
+	/* Get the largest adjustment possible */
+	uint64_t adjust = std::max(limits);
+
+	/* Take the earliest timestamp that will include all possible blocks */
+	return time - adjust;
+}
+
+void WalletGreen::reset(const uint64_t scanHeight)
+{
+    throwIfNotInitialized();
+    throwIfStopped();
+
+    /* Stop so things can't be added to the container as we're looping */
+    stop();
+
+    /* Grab the wallet encrypted prefix */
+    auto* prefix = reinterpret_cast<ContainerStoragePrefix*>(m_containerStorage.prefix());
+
+    uint64_t newTimestamp = scanHeightToTimestamp(scanHeight);
+
+    /* Reencrypt with the new creation timestamp so we rescan from here when we relaunch */
+    prefix->encryptedViewKeys = encryptKeyPair(m_viewPublicKey, m_viewSecretKey, newTimestamp);
+
+    /* As a reference so we can update it */
+    for (auto& encryptedSpendKeys : m_containerStorage)
+    {
+        Crypto::PublicKey publicKey;
+        Crypto::SecretKey secretKey;
+        uint64_t oldTimestamp;
+
+        /* Decrypt the key pair we're pointing to */
+        decryptKeyPair(encryptedSpendKeys, publicKey, secretKey, oldTimestamp);
+
+        /* Re-encrypt with the new timestamp */
+        encryptedSpendKeys = encryptKeyPair(publicKey, secretKey, newTimestamp);
+    }
+
+    /* Start again so we can save */
+    start();
+
+    /* Save just the keys + timestamp to file */
+    save(CryptoNote::WalletSaveLevel::SAVE_KEYS_ONLY);
+
+    /* Stop and shutdown */
+    stop();
+
+    /* Shutdown the wallet */
+    shutdown();
+
+    start();
+
+    /* Reopen from truncated storage */
+    load(m_path, m_password);
+}
+
 void WalletGreen::deleteAddress(const std::string& address) {
   throwIfNotInitialized();
   throwIfStopped();
@@ -1374,6 +1502,25 @@ size_t WalletGreen::transfer(const TransactionParameters& transactionParameters,
 
   id = doTransfer(transactionParameters, txSecretKey);
   return id;
+}
+
+uint64_t WalletGreen::getBalanceMinusDust(const std::vector<std::string>& addresses)
+{
+	std::vector<WalletOuts> wallets = pickWallets(addresses);
+	std::vector<OutputToTransfer> unused;
+
+	/* We want to get the full balance, so don't stop getting outputs early */
+	uint64_t needed = std::numeric_limits<uint64_t>::max();
+
+	return selectTransfers
+	(
+		needed,
+		/* Don't include dust outputs */
+		false,
+		m_currency.defaultDustThreshold(),
+		std::move(wallets),
+		unused
+	);
 }
 
 void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
