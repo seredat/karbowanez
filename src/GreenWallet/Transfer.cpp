@@ -158,13 +158,15 @@ void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
                       << " of " << InformationMsg(std::to_string(numTxs))
                       << std::endl;
 
-            wallet.updateInternalCache();
+			Crypto::SecretKey txSecretKey;
+            
+			wallet.updateInternalCache();
 
             const uint64_t neededBalance = tx.destinations[0].amount + tx.fee;
 
             if (neededBalance < wallet.getActualBalance())
             {
-                const size_t id = wallet.transfer(tx);
+                const size_t id = wallet.transfer(tx, txSecretKey);
 
                 const CryptoNote::WalletTransaction sentTx 
                     = wallet.getTransaction(id);
@@ -512,7 +514,8 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 uint32_t height, uint64_t mixin,
                 std::string nodeAddress, uint32_t nodeFee)
 {
-    const uint64_t balance = walletInfo->wallet.getActualBalance();
+	Crypto::SecretKey txSecretKey;
+	const uint64_t balance = walletInfo->wallet.getActualBalance();
 
     if (balance < amount + fee + nodeFee)
     {
@@ -569,7 +572,7 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 else
                 {
                     
-                    const size_t id = walletInfo->wallet.transfer(p);
+                    const size_t id = walletInfo->wallet.transfer(p, txSecretKey);
 
                     const CryptoNote::WalletTransaction tx
                         = walletInfo->wallet.getTransaction(id);
@@ -583,7 +586,7 @@ void doTransfer(std::string address, uint64_t amount, uint64_t fee,
             }
             else
             {
-                const size_t id = walletInfo->wallet.transfer(p);
+                const size_t id = walletInfo->wallet.transfer(p, txSecretKey);
                 
                 const CryptoNote::WalletTransaction tx 
                     = walletInfo->wallet.getTransaction(id);

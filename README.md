@@ -84,7 +84,7 @@ Good luck!
 
 ### On Apple:
 
-`brew install git cmake boost rocksdb readline`
+`brew install git cmake boost readline`
 `brew link --force readline`
 `git clone https://github.com/seredat/karbowanec.git`
 `cd karbowanec`

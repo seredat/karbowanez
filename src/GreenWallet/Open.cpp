@@ -92,7 +92,7 @@ std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet)
 
 std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
 {
-    const int privateKeyLen = 186;
+    const int privateKeyLen = 184;
 
     std::string guiPrivateKey;
 
