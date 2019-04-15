@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
@@ -54,7 +54,9 @@ enum WalletErrorCodes {
   DESTINATION_ADDRESS_REQUIRED,
   DESTINATION_ADDRESS_NOT_FOUND,
   BAD_PAYMENT_ID,
-  BAD_TRANSACTION_EXTRA
+  BAD_TRANSACTION_EXTRA,
+  MIXIN_COUNT_TOO_SMALL,
+  MIXIN_COUNT_TOO_LARGE
 };
 
 // custom category:
@@ -101,6 +103,8 @@ public:
     case DESTINATION_ADDRESS_NOT_FOUND: return "Destination address not found";
     case BAD_PAYMENT_ID:                return "Wrong payment id format";
     case BAD_TRANSACTION_EXTRA:         return "Wrong transaction extra format";
+    case MIXIN_COUNT_TOO_SMALL:         return "MixIn count is below the required minimum";
+	case MIXIN_COUNT_TOO_LARGE:         return "MixIn count is over the maximum allowed";
     default:                            return "Unknown error";
     }
   }

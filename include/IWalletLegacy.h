@@ -1,29 +1,38 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2016, The Monero Project
+// Copyright (c) 2018, Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
 #include <istream>
-#include <limits>
 #include <ostream>
+#include <limits>
 #include <string>
+#include <list>
 #include <system_error>
+#include <boost/optional.hpp>
 #include "CryptoNote.h"
 #include "CryptoTypes.h"
+#include "CryptoNote.h"
+#include "crypto/crypto.h"
+#include "CryptoNoteCore/CryptoNoteBasic.h"
+#include "ITransfersContainer.h"
+#include "Rpc/CoreRpcServerCommandsDefinitions.h"
 
 namespace CryptoNote {
 
@@ -56,12 +65,21 @@ struct WalletLegacyTransaction {
   uint64_t         sentTime;
   uint64_t         unlockTime;
   Crypto::Hash     hash;
+  boost::optional<Crypto::SecretKey> secretKey = CryptoNote::NULL_SECRET_KEY;
   bool             isCoinbase;
   uint32_t         blockHeight;
   uint64_t         timestamp;
   std::string      extra;
   WalletLegacyTransactionState state;
 };
+
+using PaymentId = Crypto::Hash;
+struct Payments {
+  PaymentId paymentId;
+  std::vector<WalletLegacyTransaction> transactions;
+};
+
+static_assert(std::is_move_constructible<Payments>::value, "Payments is not move constructible");
 
 class IWalletLegacyObserver {
 public:
@@ -105,20 +123,33 @@ public:
 
   virtual size_t getTransactionCount() = 0;
   virtual size_t getTransferCount() = 0;
+  virtual size_t getUnlockedOutputsCount() = 0;
 
   virtual TransactionId findTransactionByTransferId(TransferId transferId) = 0;
   
   virtual bool getTransaction(TransactionId transactionId, WalletLegacyTransaction& transaction) = 0;
   virtual bool getTransfer(TransferId transferId, WalletLegacyTransfer& transfer) = 0;
+  virtual std::vector<Payments> getTransactionsByPaymentIds(const std::vector<PaymentId>& paymentIds) const = 0;
+  virtual bool getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) = 0;
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string &message) = 0;
+  virtual Crypto::SecretKey getTxKey(Crypto::Hash& txid) = 0;
+  virtual bool get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey) = 0;
+  virtual void getAccountKeys(AccountKeys& keys) = 0;
+  virtual bool getSeed(std::string& electrum_words) = 0;
 
   virtual TransactionId sendTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) = 0;
   virtual TransactionId sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) = 0;
-  virtual TransactionId sendDustTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) = 0;
   virtual TransactionId sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) = 0;
+  virtual TransactionId sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) = 0;
   virtual std::error_code cancelTransaction(size_t transferId) = 0;
 
-  virtual void getAccountKeys(AccountKeys& keys) = 0;
-  virtual bool getSeed(std::string& electrum_words) = 0;
+  virtual size_t estimateFusion(const uint64_t& threshold) = 0;
+  virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount) = 0;
+      
+  virtual std::string sign_message(const std::string &data) = 0;
+  virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
+
+  virtual bool isTrackingWallet() = 0;
 };
 
 }

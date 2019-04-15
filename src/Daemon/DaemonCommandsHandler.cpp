@@ -4,20 +4,20 @@
 // Copyright (c) 2018, The TurtleCoin developers
 // Copyright (c) 2016-2018, The Karbowanec developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "DaemonCommandsHandler.h"
 
@@ -128,15 +128,16 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
   std::time_t uptime = std::time(nullptr) - m_core.getStartTime();
   uint8_t majorVersion = m_core.getBlockMajorVersionForHeight(height);
   bool synced = ((uint32_t)height == (uint32_t)last_known_block_index);
+  uint64_t alt_block_count = m_core.get_alternative_blocks_count();
 
   std::cout << std::endl
     << (synced ? "Synced " : "Syncing ") << height << "/" << last_known_block_index 
     << " (" << get_sync_percentage(height, last_known_block_index) << "%) "
     << "on " << (m_core.currency().isTestnet() ? "testnet, " : "mainnet, ")
-    << "network hashrate: " << get_mining_speed(hashrate) << ", difficulty: " << difficulty << ", "
-    << "block v. " << (int)majorVersion << ", "
-    << outgoing_connections_count << " out. + " << incoming_connections_count << " inc. connections, "
-    << rpc_conn <<  " rpc connections, "
+    << "network hashrate: " << get_mining_speed(hashrate) << ", next difficulty: " << difficulty << ", "
+    << "block v. " << (int)majorVersion << ", alt. blocks: " << alt_block_count << ", "
+    << outgoing_connections_count << " out. + " << incoming_connections_count << " inc. connection(s), "
+    << rpc_conn <<  " rpc connection(s), " << tx_pool_size << " transaction(s) in mempool, "
     << "uptime: " << (unsigned int)floor(uptime / 60.0 / 60.0 / 24.0) << "d " << (unsigned int)floor(fmod((uptime / 60.0 / 60.0), 24.0)) << "h "
     << (unsigned int)floor(fmod((uptime / 60.0), 60.0)) << "m " << (unsigned int)fmod(uptime, 60.0) << "s"
     << std::endl;

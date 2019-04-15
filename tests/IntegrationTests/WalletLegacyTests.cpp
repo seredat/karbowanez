@@ -1,28 +1,30 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BaseTests.h"
 
 #include <System/Timer.h>
 #include "WalletLegacy/WalletLegacy.h"
 #include "WalletLegacyObserver.h"
+#include <Logging/LoggerRef.h>
 
 using namespace Tests;
 using namespace CryptoNote;
+using namespace Logging;
 
 class WalletLegacyTests : public BaseTest {
 
@@ -41,7 +43,8 @@ TEST_F(WalletLegacyTests, checkNetworkShutdown) {
 
   {
     auto node = daemon.makeINode();
-    WalletLegacy wallet(currency, *node);
+	
+    WalletLegacy wallet(currency, *node, logger);
     wallet.initAndGenerate("pass");
 
     WalletLegacyObserver observer;

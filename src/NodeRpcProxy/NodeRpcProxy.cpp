@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "NodeRpcProxy.h"
 #include "NodeErrors.h"
@@ -66,7 +66,11 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort)
     m_pullInterval(5000),
     m_nodeHost(nodeHost),
     m_nodePort(nodePort),
-    m_connected(true) {
+    m_connected(true),
+    m_peerCount(0),
+    m_networkHeight(0),
+	m_nodeHeight(0),
+	m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE) {
   resetInternalState();
 }
 
@@ -105,8 +109,8 @@ void NodeRpcProxy::init(const INode::Callback& callback) {
 
   m_state = STATE_INITIALIZING;
   resetInternalState();
-  m_workerThread = std::thread([this, callback] { 
-    workerThread(callback); 
+  m_workerThread = std::thread([this, callback] {
+    workerThread(callback);
   });
 }
 
@@ -135,7 +139,7 @@ bool NodeRpcProxy::shutdown() {
     m_workerThread.join();
   }
   m_state = STATE_NOT_INITIALIZED;
-
+  m_cv_initialized.notify_all();
   return true;
 }
 
@@ -265,6 +269,9 @@ void NodeRpcProxy::updateBlockchainStatus() {
     }
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
+
+	m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
+	m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
   }
 
   if (m_connected != m_httpClient->isConnected()) {
@@ -338,9 +345,17 @@ uint64_t NodeRpcProxy::getLastLocalBlockTimestamp() const {
   return lastLocalBlockHeaderInfo.timestamp;
 }
 
+uint64_t NodeRpcProxy::getMinimalFee() const {
+  return m_minimalFee.load(std::memory_order_relaxed);
+}
+
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {
   std::lock_guard<std::mutex> lock(m_mutex);
   return lastLocalBlockHeaderInfo;
+}
+
+uint32_t NodeRpcProxy::getNodeHeight() const {
+  return m_nodeHeight.load(std::memory_order_relaxed);
 }
 
 void NodeRpcProxy::relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) {

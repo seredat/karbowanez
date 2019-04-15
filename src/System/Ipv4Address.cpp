@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "Ipv4Address.h"
 #include <stdexcept>
@@ -116,11 +116,11 @@ bool Ipv4Address::isLoopback() const {
 bool Ipv4Address::isPrivate() const {
   return
     // 10.0.0.0/8
-    (value & 0xff000000) == (10 << 24) ||
+    (int)(value & 0xff000000) == (int)(10 << 24) ||
     // 172.16.0.0/12
-    (value & 0xfff00000) == ((172 << 24) | (16 << 16)) ||
+    (int)(value & 0xfff00000) == (int)((172 << 24) | (16 << 16)) ||
     // 192.168.0.0/16
-    (value & 0xffff0000) == ((192 << 24) | (168 << 16));
+    (int)(value & 0xffff0000) == (int)((192 << 24) | (168 << 16));
 }
 
 }

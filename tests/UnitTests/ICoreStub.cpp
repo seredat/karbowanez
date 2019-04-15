@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ICoreStub.h"
 
@@ -340,9 +340,9 @@ std::unique_ptr<CryptoNote::IBlock> ICoreStub::getBlock(const Crypto::Hash& bloc
   return std::unique_ptr<CryptoNote::IBlock>(nullptr);
 }
 
-bool ICoreStub::handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock) {
+bool ICoreStub::handleIncomingTransaction(const CryptoNote::Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, CryptoNote::tx_verification_context& tvc, bool keptByBlock, uint32_t height) {
   auto result = transactionPool.emplace(std::make_pair(txHash, tx));
-  tvc.m_verifivation_failed = !poolTxVerificationResult;
+  tvc.m_verification_failed = !poolTxVerificationResult;
   tvc.m_added_to_pool = true;
   tvc.m_should_be_relayed = result.second;
   return poolTxVerificationResult;
@@ -367,3 +367,16 @@ bool ICoreStub::removeMessageQueue(CryptoNote::MessageQueue<CryptoNote::Blockcha
 void ICoreStub::setPoolChangesResult(bool result) {
   poolChangesResult = result;
 }
+
+uint64_t ICoreStub::getMinimalFeeForHeight(uint32_t height) {
+	return 10000000000ULL;
+};
+uint64_t ICoreStub::getMinimalFee() {
+	return 10000000000ULL;
+};
+uint8_t ICoreStub::getBlockMajorVersionForHeight(uint32_t height) {
+	return (uint8_t)4;
+};
+uint8_t ICoreStub::getCurrentBlockMajorVersion() {
+	return (uint8_t)4;
+};

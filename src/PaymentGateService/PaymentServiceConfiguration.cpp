@@ -1,21 +1,22 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright(c) 2014 - 2017 XDN - project developers
-// Copyright(c) 2018 The Karbo developers
+// Copyright (c) 2014 - 2017 XDN - project developers
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "PaymentServiceConfiguration.h"
 
@@ -32,6 +33,7 @@ namespace PaymentService {
 
 Configuration::Configuration() {
   generateNewContainer = false;
+  generateDeterministic = false;
   daemonize = false;
   registerService = false;
   unregisterService = false;
@@ -43,6 +45,9 @@ Configuration::Configuration() {
   bindPort = 0;
   m_rpcUser = "";
   m_rpcPassword = "";
+  secretViewKey = "";
+  secretSpendKey = "";
+  mnemonicSeed = "";
 }
 
 void Configuration::initOptions(boost::program_options::options_description& desc) {
@@ -54,6 +59,10 @@ void Configuration::initOptions(boost::program_options::options_description& des
       ("container-file,w", po::value<std::string>(), "container file")
       ("container-password,p", po::value<std::string>(), "container password")
       ("generate-container,g", "generate new container file with one wallet and exit")
+      ("view-key", po::value<std::string>(), "generate a container with this secret key view")
+      ("spend-key", po::value<std::string>(), "generate a container with this secret spend key")
+      ("mnemonic-seed", po::value<std::string>(), "generate a container with this mnemonic seed")
+      ("deterministic", "generate a container with deterministic keys. View key is generated from spend key of the first address")
       ("daemon,d", "run as daemon in Unix or as service in Windows")
 #ifdef _WIN32
       ("register-service", "register service and exit (Windows only)")
@@ -120,6 +129,8 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("container-file") != 0) {
     containerFile = options["container-file"].as<std::string>();
+  } else {
+    throw ConfigurationError("Wallet file not set");
   }
 
   if (options.count("container-password") != 0) {
@@ -128,6 +139,34 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("generate-container") != 0) {
     generateNewContainer = true;
+  }
+
+  if (options.count("deterministic") != 0) {
+    generateDeterministic = true;
+  }
+
+  if (options.count("view-key") != 0) {
+	if (!generateNewContainer) {
+	  throw ConfigurationError("generate-container parameter is required");
+	}
+	secretViewKey = options["view-key"].as<std::string>();
+  }
+
+  if (options.count("spend-key") != 0) {
+	if (!generateNewContainer) {
+	  throw ConfigurationError("generate-container parameter is required");
+	}
+	secretSpendKey = options["spend-key"].as<std::string>();
+  }
+
+  if (options.count("mnemonic-seed") != 0) {
+    if (!generateNewContainer) {
+      throw ConfigurationError("generate-container parameter is required");
+    }
+    else if (options.count("spend-key") != 0 || options.count("view-key") != 0) {
+      throw ConfigurationError("Cannot specify import via both mnemonic seed and private keys");
+    }
+    mnemonicSeed = options["mnemonic-seed"].as<std::string>();
   }
 
   if (options.count("address") != 0) {

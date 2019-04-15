@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BlockchainIndices.h"
 
@@ -43,7 +43,8 @@ bool PaymentIdIndex::add(const Transaction& transaction) {
     return false;
   }
 
-  index.emplace(paymentId, transactionHash);
+  //index.emplace(paymentId, transactionHash);
+  index.insert(std::make_pair(paymentId, transactionHash));
 
   return true;
 }
@@ -82,6 +83,19 @@ bool PaymentIdIndex::find(const Crypto::Hash& paymentId, std::vector<Crypto::Has
     transactionHashes.emplace_back(iter->second);
   }
   return found;
+}
+
+std::vector<Crypto::Hash> PaymentIdIndex::find(const Crypto::Hash& paymentId) {
+	if (!enabled) {
+		throw std::runtime_error("Payment id index disabled.");
+	}
+	std::vector<Crypto::Hash> transactionHashes;
+	bool found = false;
+	auto range = index.equal_range(paymentId);
+	for (auto iter = range.first; iter != range.second; ++iter) {
+		transactionHashes.emplace_back(iter->second);
+	}
+	return transactionHashes;
 }
 
 void PaymentIdIndex::clear() {

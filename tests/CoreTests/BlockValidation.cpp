@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BlockValidation.h"
 #include "TestGenerator.h"
@@ -239,9 +239,9 @@ bool gen_block_invalid_prev_id::generate(std::vector<test_event_entry>& events) 
 bool gen_block_invalid_prev_id::check_block_verification_context(const CryptoNote::block_verification_context& bvc, size_t event_idx, const CryptoNote::Block& /*blk*/)
 {
   if (1 == event_idx)
-    return bvc.m_marked_as_orphaned && !bvc.m_added_to_main_chain && !bvc.m_verifivation_failed;
+    return bvc.m_marked_as_orphaned && !bvc.m_added_to_main_chain && !bvc.m_verification_failed;
   else
-    return !bvc.m_marked_as_orphaned && bvc.m_added_to_main_chain && !bvc.m_verifivation_failed;
+    return !bvc.m_marked_as_orphaned && bvc.m_added_to_main_chain && !bvc.m_verification_failed;
 }
 
 bool gen_block_invalid_nonce::generate(std::vector<test_event_entry>& events) const
@@ -732,7 +732,7 @@ bool gen_block_invalid_binary_format::check_block_verification_context(const Cry
   }
   else
   {
-    return !bvc.m_added_to_main_chain && (bvc.m_already_exists || bvc.m_marked_as_orphaned || bvc.m_verifivation_failed);
+    return !bvc.m_added_to_main_chain && (bvc.m_already_exists || bvc.m_marked_as_orphaned || bvc.m_verification_failed);
   }
 }
 

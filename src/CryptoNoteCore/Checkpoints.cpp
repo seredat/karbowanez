@@ -2,22 +2,23 @@
 // Copyright (c) 2018, The TurtleCoin developers
 // Copyright (c) 2018, The Karbo developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstdlib>
+#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
@@ -27,9 +28,9 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
-#include <boost/regex.hpp>
 
 #include "Checkpoints.h"
+#include "../CryptoNoteConfig.h"
 #include "Common/StringTools.h"
 #include "Common/DnsTools.h"
 
@@ -47,7 +48,7 @@ bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
     return false;
   }
 
-  if (!(0 == m_points.count(height))) {
+  if (!m_points.insert({ height, h }).second) {
     logger(WARNING) << "Checkpoint already exists.";
     return false;
   }
@@ -56,50 +57,31 @@ bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
   return true;
 }
 //---------------------------------------------------------------------------
-const boost::regex linesregx("\\r\\n|\\n\\r|\\n|\\r");
-const boost::regex fieldsregx(",(?=(?:[^\"]*\"[^\"]*\")*(?![^\"]*\"))");
 bool Checkpoints::load_checkpoints_from_file(const std::string& fileName) {
-  std::string buff;
-  if (!Common::loadFileToString(fileName, buff)) {
-    logger(Logging::ERROR, BRIGHT_RED) << "Could not load checkpoints file: " << fileName;
-    return false;
-  }
-  const char* data = buff.c_str();
-  unsigned int length = strlen(data);
-
-  boost::cregex_token_iterator li(data, data + length, linesregx, -1);
-  boost::cregex_token_iterator end;
-
-  int count = 0;
-  while (li != end) {
-    std::string line = li->str();
-    ++li;
- 
-    boost::sregex_token_iterator ti(line.begin(), line.end(), fieldsregx, -1);
-    boost::sregex_token_iterator end2;
- 
-    std::vector<std::string> row;
-    while (ti != end2) {
-      std::string token = ti->str();
-      ++ti;
-      row.push_back(token);
-    }
-    if (row.size() != 2) {
-      logger(Logging::ERROR, BRIGHT_RED) << "Invalid checkpoint file format";
-      return false;
-    } else {
-      uint32_t height = stoi(row[0]);
-      bool r = add_checkpoint(height, row[1]);
-      if (!r) {
-        return false;
-      }
-      count += 1;
-    }
-  }
-
-  logger(Logging::INFO) << "Loaded " << count << " checkpoint(s) from " << fileName;
-  return true;
+	std::ifstream file(fileName);
+	if (!file) {
+		logger(Logging::ERROR, BRIGHT_RED) << "Could not load checkpoints file: " << fileName;
+		return false;
+	}
+	std::string indexString;
+	std::string hash;
+	uint32_t height;
+	while (std::getline(file, indexString, ','), std::getline(file, hash)) {
+		try {
+			height = std::stoi(indexString);
+		} catch (const std::invalid_argument &)	{
+			logger(ERROR, BRIGHT_RED) << "Invalid checkpoint file format - "
+				<< "could not parse height as a number";
+			return false;
+		}
+		if (!add_checkpoint(height, hash)) {
+			return false;
+		}
+	}
+	logger(Logging::INFO) << "Loaded " << m_points.size() << " checkpoints from "	<< fileName;
+	return true;
 }
+
 //---------------------------------------------------------------------------
 bool Checkpoints::is_in_checkpoint_zone(uint32_t  height) const {
   return !m_points.empty() && (height <= (--m_points.end())->first);
@@ -134,6 +116,14 @@ bool Checkpoints::is_alternative_block_allowed(uint32_t  blockchain_height,
   if (0 == block_height)
     return false;
 
+  if (block_height < blockchain_height - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW
+    && !is_in_checkpoint_zone(block_height)) {
+    logger(Logging::WARNING, Logging::WHITE) << "An attempt of too deep reorganization: "
+      << blockchain_height - block_height << ", BLOCK REJECTED";
+
+    return false;
+  }
+
   auto it = m_points.upper_bound(blockchain_height);
   // Is blockchain_height before the first checkpoint?
   if (it == m_points.begin())
@@ -160,6 +150,8 @@ bool Checkpoints::load_checkpoints_from_dns()
   std::string domain("checkpoints.karbo.org");
   std::vector<std::string>records;
 
+  logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;
+
   if (!Common::fetch_dns_txt(domain, records)) {
     logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " << domain;
   }
@@ -168,11 +160,12 @@ bool Checkpoints::load_checkpoints_from_dns()
     uint32_t height;
     Crypto::Hash hash = NULL_HASH;
     std::stringstream ss;
-    int del = record.find_first_of(':');
+    size_t del = record.find_first_of(':');
     std::string height_str = record.substr(0, del), hash_str = record.substr(del + 1, 64);
     ss.str(height_str);
     ss >> height;
     char c;
+    if (del == std::string::npos) continue;
     if ((ss.fail() || ss.get(c)) || !Common::podFromHex(hash_str, hash)) {
       logger(Logging::INFO) << "Failed to parse DNS checkpoint record: " << record;
       continue;
@@ -182,6 +175,7 @@ bool Checkpoints::load_checkpoints_from_dns()
       logger(DEBUGGING) << "Checkpoint already exists for height: " << height << ". Ignoring DNS checkpoint.";
     } else {
       add_checkpoint(height, hash_str);
+	  logger(DEBUGGING) << "Added DNS checkpoint: " << height_str << ":" << hash_str;
     }
   }
 

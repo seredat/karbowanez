@@ -1,19 +1,19 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 //
-// This file is part of Bytecoin.
+// This file is part of Karbo.
 //
-// Bytecoin is free software: you can redistribute it and/or modify
+// Karbo is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// Bytecoin is distributed in the hope that it will be useful,
+// Karbo is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with Bytecoin.  If not, see <http://www.gnu.org/licenses/>.
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "gtest/gtest.h"
 
@@ -2114,6 +2114,28 @@ TEST_F(WalletApi, transferFromTrackingKeyThrows) {
 
   ASSERT_ANY_THROW(sendMoney(bob, RANDOM_ADDRESS, SENT, FEE));
   bob.shutdown();
+}
+
+TEST_F(WalletApi, createAddressListSuccessfullyCreatesAddresses) {
+  ASSERT_EQ(1, alice.getAddressCount());
+  for (size_t i = 0; i < 10; ++i) {
+    alice.createAddress();
+  }
+
+  WalletGreen bob(dispatcher, currency, node, logger, TRANSACTION_SOFTLOCK_TIME);
+  bob.initializeWithViewKey(BOB_WALLET_PATH, "pass", alice.getViewKey().secretKey);
+
+  std::vector<Crypto::SecretKey> spendSecretKeys(alice.getAddressCount());
+  for (size_t i = 0; i < spendSecretKeys.size(); ++i) {
+    spendSecretKeys[i] = alice.getAddressSpendKey(i).secretKey;
+  }
+
+  ASSERT_NO_THROW(bob.createAddressList(spendSecretKeys));
+  compareWalletsAddresses(alice, bob);
+
+  bob.shutdown();
+
+  wait(100);
 }
 
 TEST_F(WalletApi, walletGetsSyncCompletedEvent) {
