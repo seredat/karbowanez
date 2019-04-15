@@ -58,8 +58,6 @@ struct EllipticCurveScalar {
 	friend void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
 	static SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key = SecretKey(), bool recover = false);
 	friend SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key, bool recover);
-    static void generate_keys_from_seed(PublicKey &, SecretKey &, SecretKey &);
-    friend void generate_keys_from_seed(PublicKey &, SecretKey &, SecretKey &);
     static bool check_key(const PublicKey &);
     friend bool check_key(const PublicKey &);
     static bool secret_key_to_public_key(const SecretKey &, PublicKey &);
@@ -159,12 +157,6 @@ struct EllipticCurveScalar {
 
   inline SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key = SecretKey(), bool recover = false) {
     return crypto_ops::generate_m_keys(pub, sec, recovery_key, recover);
-  }
-  
-  /* Generate a new key pair from a seed
-   */
-  inline void generate_keys_from_seed(PublicKey &pub, SecretKey &sec, SecretKey &seed) {
-    crypto_ops::generate_keys_from_seed(pub, sec, seed);
   }
 
   /* Check a public key. Returns true if it is valid, false otherwise.

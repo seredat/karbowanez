@@ -75,7 +75,7 @@ To build, change to a directory where this file is located, and run theas comman
 ```
 mkdir build
 cd build
-cmake -G "Visual Studio 12 Win64" ..
+cmake -G "Visual Studio 15 Win64" ..
 ```
 
 And then do Build.

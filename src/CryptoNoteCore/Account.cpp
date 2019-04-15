@@ -43,19 +43,7 @@ void AccountBase::generate() {
   m_creation_timestamp = time(NULL);
 
 }
-void AccountBase::generateViewFromSpend(Crypto::SecretKey &spend, Crypto::SecretKey &viewSecret, Crypto::PublicKey &viewPublic) {
-  Crypto::SecretKey viewKeySeed;
 
-  keccak((uint8_t *)&spend, sizeof(spend), (uint8_t *)&viewKeySeed, sizeof(viewKeySeed));
-
-  Crypto::generate_keys_from_seed(viewPublic, viewSecret, viewKeySeed);
-}
-
-void AccountBase::generateViewFromSpend(Crypto::SecretKey &spend, Crypto::SecretKey &viewSecret) {
-  /* If we don't need the pub key */
-  Crypto::PublicKey unused_dummy_variable;
-  generateViewFromSpend(spend, viewSecret, unused_dummy_variable);
-}
 //-----------------------------------------------------------------
 void AccountBase::generateDeterministic() { 
   Crypto::SecretKey second;

@@ -91,14 +91,6 @@ namespace Crypto {
     ge_p3_tobytes(reinterpret_cast<unsigned char*>(&pub), &point);
   }
  
-  void crypto_ops::generate_keys_from_seed(PublicKey &pub, SecretKey &sec, SecretKey &seed) {
-    ge_p3 point;
-    sec = seed;
-    sc_reduce32(reinterpret_cast<unsigned char*>(&sec));
-    ge_scalarmult_base(&point, reinterpret_cast<unsigned char*>(&sec));
-    ge_p3_tobytes(reinterpret_cast<unsigned char*>(&pub), &point);
-  }
-
   SecretKey crypto_ops::generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key, bool recover) {
     lock_guard<mutex> lock(random_lock);
     ge_p3 point;
