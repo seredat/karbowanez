@@ -95,14 +95,6 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY ON)
 set(CMAKE_SUPPRESS_REGENERATION ON)
 
-set(FORCE_READLINE ON CACHE STRING "Make readline support mandatory on Linux and Mac? Defaults to ON")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# GNU Readline isn't easy to get working on windows :(
-if (MSVC)
-    set(FORCE_READLINE OFF)
-endif()
-
 # enable_testing()
 
 # copy CTestCustom.cmake to build dir to disable long running tests in 'make test'
@@ -236,30 +228,9 @@ if(STATIC OR IOS)
   include_directories(${UPNP_INCLUDE})
  endif()
 
-# Don't bother searching for readline on windows
-if (NOT MSVC)
-    # If we're forcing readline, then exit if it's not found
-    if (FORCE_READLINE)
-        find_package(Readline REQUIRED)
-    else()
-        find_package(Readline)
-    endif()
-endif()
-
-if(READLINE_FOUND)
-    add_definitions(-DHAVE_READLINE)
-    include_directories(${Readline_INCLUDE_DIR})
-    link_libraries(${Readline_LIBRARY})
-    message(STATUS "Found readline library at: ${Readline_ROOT_DIR}")
-else()
-    message(STATUS "Could not find readline library")
-endif()
-
 if(MSVC)
   set (CMAKE_MSVC_FLAGS_BASE "/D_CRT_SECURE_NO_WARNINGS /wd4996 /wd4345 /D_WIN32_WINNT=0x0600 /DWIN32_LEAN_AND_MEAN /DGTEST_HAS_TR1_TUPLE=0 /D_VARIADIC_MAX=8 /D__SSE4_1__")
   set (CMAKE_MSVC_FLAGS_EXT "/bigobj /MP /W3 /GS-")
-  #add_definitions("/bigobj /MP /W3 /GS- /D_CRT_SECURE_NO_WARNINGS /wd4996 /wd4345 /D_WIN32_WINNT=0x0600 /DWIN32_LEAN_AND_MEAN /DGTEST_HAS_TR1_TUPLE=0 /D_VARIADIC_MAX=8 /D__SSE4_1__")
-  #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Dinline=__inline")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_MSVC_FLAGS_BASE} ${CMAKE_MSVC_FLAGS_EXT}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_MSVC_FLAGS_BASE} ${CMAKE_MSVC_FLAGS_EXT}")
   set(CMAKE_RC_FLAGS ${CMAKE_MSVC_FLAGS_BASE})
@@ -283,16 +254,15 @@ else()
     set(ARCH_FLAG "-march=${ARCH}")
   endif()
 
-  set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result")
-  if(NOT MINGW)
-    set(WARNINGS_AS_ERRORS_FLAG "-Werror")
-
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.4)
     set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result -Wno-error=implicit-fallthrough -Wno-error=format-truncation -Wno-error=unused-const-variable")
   else()
     set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result")
   endif()
   
+  if(NOT MINGW)
+    set(WARNINGS_AS_ERRORS_FLAG "-Werror")
+
   endif()
   if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
     # maybe remove
@@ -330,7 +300,7 @@ else()
     set(STATIC_ASSERT_FLAG "-Dstatic_assert=_Static_assert")
   endif()
   
-  try_compile(STATIC_ASSERT_CPP_RES "${CMAKE_CURRENT_BINARY_DIR}/static-assert" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-static-assert.cpp" COMPILE_DEFINITIONS "-std=c++17")
+  try_compile(STATIC_ASSERT_CPP_RES "${CMAKE_CURRENT_BINARY_DIR}/static-assert" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/test-static-assert.cpp" COMPILE_DEFINITIONS "-std=c++11")
   if(STATIC_ASSERT_CPP_RES)
     set(STATIC_ASSERT_CPP_FLAG "")
   else()
