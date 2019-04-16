@@ -23,18 +23,13 @@ The example of Karbo config is here: https://github.com/Karbovanets/cryptonote-n
 
 ### On *nix
 
-Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, and Boost 1.55.
-
-On Apple or Linux and can't get readline installed? Run cmake with `cmake .. -DFORCE_READLINE=FALSE` to disable readline support.
-
-Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, GNU Readline, and Boost 1.55 or later.
+Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, and Boost 1.55 or later.
 
 You may download them from:
 
 - http://gcc.gnu.org/
 - http://www.cmake.org/
 - http://www.boost.org/
-- https://tiswww.case.edu/php/chet/readline/rltop.html (Mac + Linux only)
 
 Alternatively, it may be possible to install them using a package manager.
 
@@ -45,8 +40,8 @@ or
 Run these commands:
 ```
 cd ~
-sudo apt-get install build-essential git cmake libboost-all-dev libreadline-dev
-git clone https://github.com/seredat/karbowanec.git 
+sudo apt-get install build-essential git cmake libboost-all-dev
+git clone https://github.com/seredat/karbowanec.git
 cd karbowanec
 mkdir build
 cd build
@@ -82,16 +77,22 @@ And then do Build.
 Good luck!
 
 
-### On Apple:
+### Building for macOS
 
-`brew install git cmake boost readline`
-`brew link --force readline`
-`git clone https://github.com/seredat/karbowanec.git`
-`cd karbowanec`
-`mkdir build`
-`cd build`
-`cmake ..`
-`make`
+Dependencies: cmake boost and Xcode
+
+Download Xcode from the App store and the Xcode command line tools with `xcode-select --install`
+For the other we recommand you to use [Homebrew](https://brew.sh)
+
+Continue with:
+```
+brew install git cmake boost
+git clone https://github.com/seredat/karbowanec.git
+cd karbowanec
+cd build
+cmake ..
+make
+```
 
 
 ### Building for Android on Linux
