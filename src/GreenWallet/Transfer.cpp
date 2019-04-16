@@ -19,6 +19,10 @@
 
 #include "IWallet.h"
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(name) 0
+#endif
+
 /* NodeErrors.h and WalletErrors.h have some conflicting enums, e.g. they
    both export NOT_INITIALIZED, we can get round this by using a namespace */
 namespace NodeErrors
@@ -438,8 +442,8 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 
 uint64_t calculateNodeFee(uint64_t amount) {
 	uint32_t node_fee = static_cast<int64_t>(amount * 0.0025);
-	if (node_fee > 10000000000000)
-		node_fee = 10000000000000;
+	if (node_fee > (uint64_t)10000000000000)
+		node_fee = (uint64_t)10000000000000;
 	return node_fee;
 }
 

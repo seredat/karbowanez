@@ -320,8 +320,8 @@ struct TransferCommand {
           if (!remote_fee_address.empty()) {
             destination.address = remote_fee_address;
             int64_t remote_node_fee = static_cast<int64_t>(de.amount * 0.0025);
-            if (remote_node_fee > 10000000000000)
-                remote_node_fee = 10000000000000;
+            if (remote_node_fee > (uint64_t)10000000000000)
+                remote_node_fee = (uint64_t)10000000000000;
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
