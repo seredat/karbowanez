@@ -87,7 +87,8 @@ void syncWallet(CryptoNote::INode &node,
 
         transactionCount = 0;
 
-        walletInfo->wallet.clearCaches();
+		// WalletGreen will handle it
+        //walletInfo->wallet.clearCaches();
     }
 
     if (walletHeight == 1)
