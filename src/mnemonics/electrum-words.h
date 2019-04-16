@@ -45,7 +45,7 @@
 #include <boost/algorithm/string.hpp>
 #include "crypto/crypto.h"  // for declaration of Crypto::SecretKey
 #include "language_base.h"
-
+#include "Common/ConsoleTools.h"
 
 namespace Crypto {
 namespace ElectrumWords
