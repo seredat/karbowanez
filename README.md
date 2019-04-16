@@ -58,6 +58,22 @@ cmake -G "Visual Studio 12 Win64" ..
 And then do Build.
 Good luck!
 
+### Building for macOS
+
+Dependencies: cmake boost and Xcode
+
+Download Xcode from the App store and the Xcode command line tools with `xcode-select --install`
+For the other we recommand you to use [Homebrew](https://brew.sh)
+
+Continue with:
+```
+brew install git cmake boost
+git clone https://github.com/seredat/karbowanec.git
+cd build
+cmake ..
+make
+```
+
 ### Building for Android on Linux
 
 Set up the 32 bit toolchain
