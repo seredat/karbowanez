@@ -88,6 +88,9 @@ void syncWallet(CryptoNote::INode &node,
         transactionCount = 0;
 
 		// WalletGreen will handle it
+		transactionCount = walletInfo->wallet.getTransactionCount();
+		walletInfo->knownTransactionCount = transactionCount;
+		walletHeight = walletInfo->wallet.getTransaction(transactionCount - 1).blockHeight;
         //walletInfo->wallet.clearCaches();
     }
 
