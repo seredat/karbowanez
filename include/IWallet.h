@@ -183,6 +183,8 @@ public:
   virtual std::vector<size_t> getDelayedTransactionIds() const = 0;
   virtual std::vector<TransactionOutputInformation> getTransfers(size_t index, uint32_t flags) const = 0;
 
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) = 0;
+
   virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey &txSecretKey) = 0;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) = 0;
