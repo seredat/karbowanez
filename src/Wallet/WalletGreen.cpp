@@ -2696,15 +2696,23 @@ std::vector<TransactionOutputInformation> WalletGreen::getTransfers(size_t index
 }
 
 Crypto::SecretKey WalletGreen::getTransactionSecretKey(size_t transactionIndex) const {
-	throwIfNotInitialized();
-	throwIfStopped();
+  throwIfNotInitialized();
+  throwIfStopped();
 
-	if (m_transactions.size() <= transactionIndex) {
-		m_logger(ERROR, BRIGHT_RED) << "Failed to get transaction: invalid index " << transactionIndex << ". Number of transactions: " << m_transactions.size();
-		throw std::system_error(make_error_code(CryptoNote::error::INDEX_OUT_OF_RANGE));
-	}
+  if (m_transactions.size() <= transactionIndex) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to get transaction: invalid index " << transactionIndex << ". Number of transactions: " << m_transactions.size();
+    throw std::system_error(make_error_code(CryptoNote::error::INDEX_OUT_OF_RANGE));
+  }
 
-    return m_transactions.get<RandomAccessIndex>()[transactionIndex].secretKey.get();
+  return m_transactions.get<RandomAccessIndex>()[transactionIndex].secretKey.get();
+}
+
+Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transactionHash) const {
+  throwIfNotInitialized();
+  throwIfStopped();
+
+  auto txInfo = getTransaction(transactionHash);
+  return txInfo.transaction.secretKey.get();
 }
 
 void WalletGreen::start() {
