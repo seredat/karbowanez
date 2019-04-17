@@ -237,7 +237,7 @@ bool DaemonCommandsHandler::print_bci(const std::vector<std::string>& args)
 bool DaemonCommandsHandler::set_log(const std::vector<std::string>& args)
 {
   if (args.size() != 1) {
-    std::cout << "use: set_log <log_level_number_0-5>" << ENDL;
+    std::cout << "use: set_log <log_level_number_0-4>" << ENDL;
     return true;
   }
 
