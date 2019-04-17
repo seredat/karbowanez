@@ -88,17 +88,6 @@
 
 #if defined(WIN32)
 #include <Windows.h>
-#include <crtdbg.h>
-#include <winsock2.h>
-#include <windns.h>
-#include <Rpc.h>
-# else 
-#include <arpa/nameser.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <netdb.h>
 #endif
 
 #include "ITransfersContainer.h"
