@@ -42,6 +42,9 @@ namespace WalletErrors
 
 #include <Wallet/WalletGreen.h>
 
+#include "Common/DnsTools.h"
+#include "Common/UrlTools.h"
+
 bool parseAmount(std::string strAmount, uint64_t &amount)
 {
     boost::algorithm::trim(strAmount);
@@ -496,7 +499,7 @@ BalanceInfo doWeHaveEnoughBalance(uint64_t amount, uint64_t fee,
 		if (!WalletConfig::mixinZeroDisabled ||
 			height < WalletConfig::mixinZeroDisabledHeight)
 		{
-			std::cout << "Alternatively, you can sent the mixin "
+			std::cout << "Alternatively, you can set the mixin "
 				<< "count to 0." << std::endl;
 
 			if (confirm("Set mixin to 0? This will compromise privacy."))
@@ -883,6 +886,12 @@ Maybe<std::string> getDestinationAddress()
             return Nothing<std::string>();
         }
 
+        std::string aliasAddress;
+        if (getOpenAlias(transferAddr, aliasAddress))
+        {
+           return Just<std::string>(aliasAddress);
+        }
+
         if (parseAddress(transferAddr))
         {
             return Just<std::string>(transferAddr);
@@ -938,7 +947,7 @@ bool parseAddress(std::string address)
     }
     /* We can't get the actual prefix if the address is invalid for other
        reasons. To work around this, we can just check that the address starts
-       with TRTL, as long as the prefix is the TRTL prefix. This keeps it
+       with K, as long as the prefix is the K prefix. This keeps it
        working on testnets with different prefixes. */
     else if (address.substr(0, WalletConfig::addressPrefix.length()) 
           != WalletConfig::addressPrefix)
@@ -986,4 +995,110 @@ bool parseAmount(std::string amountString)
     }
 
     return true;
+}
+
+bool getOpenAlias(const std::string& alias, std::string& address)
+{
+    // If string doesn't contain a dot, we won't consider it an URL
+    if (strchr(alias.c_str(), '.') == NULL)
+    {
+        return false;
+    }
+
+	std::string aliasAddress;
+
+    try
+    {
+        aliasAddress = resolveAlias(alias);
+    }
+    catch (std::exception& e)
+    {
+        std::cout << WarningMsg("Couldn't resolve alias: ") << alias
+                  << WarningMsg(" due to: ") << e.what() << std::endl;
+        return false;
+    }
+
+    // Validate address
+    if (!parseAddress(aliasAddress))
+    {
+        return false;
+    }
+
+    // Ask for confirmation that this is intended address
+    if (!askAliasesTransfersConfirmation(aliasAddress))
+    {
+        return false;
+    }
+
+    address = aliasAddress;
+
+    return true;
+}
+
+std::string resolveAlias(const std::string& aliasUrl)
+{
+    std::string host, uri, address;
+    std::vector<std::string>records;
+
+    if (!Common::fetch_dns_txt(aliasUrl, records)) {
+        throw std::runtime_error("Failed to lookup DNS record");
+    }
+
+    for (const auto& record : records) {
+        if (processServerAliasResponse(record, address)) {
+            return address; // return first found address
+        }
+    }
+    throw std::runtime_error("Failed to parse server response");
+}
+
+bool processServerAliasResponse(const std::string& s, std::string& address)
+{
+    try {
+        // Courtesy of Monero Project
+        // make sure the txt record has "oa1:krb" and find it
+        auto pos = s.find("oa1:krb");
+        if (pos == std::string::npos)
+            return false;
+
+        // search from there to find "recipient_address="
+        pos = s.find("recipient_address=", pos);
+        if (pos == std::string::npos)
+            return false;
+        pos += 18; // move past "recipient_address="
+
+        // find the next semicolon
+        auto pos2 = s.find(";", pos);
+        if (pos2 != std::string::npos)
+        {
+            // length of address == 95, we can at least validate that much here
+            if (pos2 - pos == 95)
+            {
+                address = s.substr(pos, 95);
+            }
+            else {
+                return false;
+            }
+        }
+    }
+    catch (std::exception&) {
+        return false;
+    }
+
+    return true;
+}
+
+bool askAliasesTransfersConfirmation(const std::string address)
+{
+    std::cout << InformationMsg("Would you like to send money ")
+              << InformationMsg("to the following address?")
+              << std::endl << SuggestionMsg(address) << std::endl;
+
+    std::string answer;
+    do {
+        std::cout << InformationMsg("y/n: ");
+        std::getline(std::cin, answer);
+    } while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
+
+    return answer == "y" || answer == "Y";
 }

@@ -84,11 +84,11 @@ class SuggestionMsg : public ColouredMsg
 {
     public:
         explicit SuggestionMsg(std::string msg) 
-               : ColouredMsg(msg, Common::Console::Color::BrightYellow) {}
+               : ColouredMsg(msg, Common::Console::Color::BrightBlue) {}
 
         explicit SuggestionMsg(std::string msg, int padding)
                : ColouredMsg(msg, padding, 
-                             Common::Console::Color::BrightYellow) {}
+                             Common::Console::Color::BrightBlue) {}
 };
 
 class WarningMsg : public ColouredMsg
