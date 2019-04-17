@@ -111,8 +111,9 @@ bool confirmTransaction(CryptoNote::TransactionParameters t,
 
     std::cout << "You are sending "
               << SuccessMsg(formatAmount(t.destinations[0].amount))
-              << ", with a network fee of " << SuccessMsg(formatAmount(t.fee))
-              << " and a node fee of " << SuccessMsg(formatAmount(nodeFee));
+              << ", with a network fee of " << SuccessMsg(formatAmount(t.fee));
+    if(nodeFee != 0)
+        std::cout << " and a node fee of " << SuccessMsg(formatAmount(nodeFee));
 
     const std::string paymentID = getPaymentIDFromExtra(t.extra);
 
@@ -339,7 +340,8 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 		}
 		amount = maybeAmount.x;
 
-		nodeFee = calculateNodeFee(amount);
+		if (!nodeAddress.empty())
+			nodeFee = calculateNodeFee(amount);
 
 		switch (doWeHaveEnoughBalance(amount, WalletConfig::defaultFee,
 			walletInfo, height, nodeFee))
@@ -399,7 +401,8 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 
 			amount = balanceNoDust - fee - nodeFee;
 
-			nodeFee = calculateNodeFee(amount);
+			if (!nodeAddress.empty())
+				nodeFee = calculateNodeFee(amount);
 
 			std::cout << WarningMsg("Due to dust inputs, we are unable to ")
 				<< WarningMsg("send ")
