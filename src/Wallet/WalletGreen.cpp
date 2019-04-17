@@ -59,6 +59,12 @@
 #include "WalletErrors.h"
 #include "WalletUtils.h"
 
+extern "C"
+{
+#include "crypto/keccak.h"
+#include "crypto/crypto-ops.h"
+}
+
 using namespace Common;
 using namespace Crypto;
 using namespace CryptoNote;
@@ -2713,6 +2719,36 @@ Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transaction
 
   auto txInfo = getTransaction(transactionHash);
   return txInfo.transaction.secretKey.get();
+}
+
+bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const std::string& address, Crypto::SecretKey& txKey, std::string& transactionProof) {
+  CryptoNote::AccountPublicAddress destinationAddress;
+  if (!m_currency.parseAccountAddressString(address, destinationAddress)) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to parse address";
+	return false;
+  }
+
+  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&txKey);
+  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
+  Crypto::PublicKey R;
+  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
+  Crypto::secret_key_to_public_key(txKey, R);
+  Crypto::Signature sig;
+
+  try {
+    Crypto::generate_tx_proof(transactionHash, R, destinationAddress.viewPublicKey, rA, txKey, sig);
+  }
+  catch (const std::runtime_error &e) {
+    m_logger(ERROR, BRIGHT_RED) << "Proof generation error: " << *e.what();
+    return false;
+  }
+
+  transactionProof = std::string("ProofV1") +
+    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
+    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
+
+  return true;
 }
 
 void WalletGreen::start() {
