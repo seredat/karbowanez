@@ -2718,7 +2718,7 @@ Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transaction
   throwIfStopped();
 
   auto txInfo = getTransaction(transactionHash);
-  return txInfo.transaction.secretKey.get();
+  return txInfo.transaction.secretKey.get_value_or(CryptoNote::NULL_SECRET_KEY);
 }
 
 bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const std::string& address, Crypto::SecretKey& txKey, std::string& transactionProof) {

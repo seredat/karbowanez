@@ -332,6 +332,20 @@ struct GetUnconfirmedTransactionHashes {
   };
 };
 
+struct GetTransactionSecretKey {
+  struct Request {
+    std::string transactionHash;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string transactionSecretKey;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
 struct WalletRpcOrder {
   std::string address;
   uint64_t amount;

@@ -921,6 +921,31 @@ std::error_code WalletService::getTransaction(const std::string& transactionHash
   return std::error_code();
 }
 
+std::error_code WalletService::getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey) {
+  try {
+    System::EventLock lk(readyEvent);
+    Crypto::Hash hash = parseHash(transactionHash, logger);
+
+    Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(hash);
+
+	if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction " << transactionHash << " secret key is not available";
+      return make_error_code(CryptoNote::error::OBJECT_NOT_FOUND);
+    }
+
+    transactionSecretKey = Common::podToHex(txSecretKey);
+
+  } catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return x.code();
+  } catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
 std::error_code WalletService::getAddresses(std::vector<std::string>& addresses) {
   try {
     System::EventLock lk(readyEvent);
