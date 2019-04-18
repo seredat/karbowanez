@@ -188,7 +188,7 @@ std::error_code PaymentServiceJsonRpcServer::handleGetTransactionProof(const Get
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleGetReserveProof(const GetReserveProof::Request& request, GetReserveProof::Response& response) {
-  return service.getReserveProof(request.address, request.amount, request.message, response.reserveProof);
+  return service.getReserveProof(response.reserveProof, request.address, request.message, request.amount);
 }
 
 std::error_code PaymentServiceJsonRpcServer::handleSendTransaction(const SendTransaction::Request& request, SendTransaction::Response& response) {

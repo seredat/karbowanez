@@ -101,7 +101,7 @@ public:
     const std::string& destinationAddress, std::string& transactionHash);
   std::error_code estimateFusion(uint64_t threshold, const std::vector<std::string>& addresses, uint32_t& fusionReadyCount, uint32_t& totalOutputCount);
   std::error_code validateAddress(const std::string& address, bool& isvalid, std::string& _address, std::string& spendPublicKey, std::string& viewPublicKey);
-  std::error_code getReserveProof(const std::string& address, const uint64_t& amount, const std::string& message, std::string& reserveProof);
+  std::error_code getReserveProof(std::string& reserveProof, const std::string& address, const std::string& message, const uint64_t& amount = 0);
 
 private:
   void refresh();

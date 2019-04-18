@@ -276,9 +276,7 @@ void GetReserveProof::Request::serialize(CryptoNote::ISerializer& serializer) {
   if (!serializer(address, "address")) {
     throw RequestSerializationError();
   }
-  if (!serializer(amount, "amount")) {
-    throw RequestSerializationError();
-  }
+  serializer(amount, "amount");
   serializer(message, "message");
 }
 

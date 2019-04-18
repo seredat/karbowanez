@@ -1000,11 +1000,16 @@ std::error_code WalletService::getTransactionProof(const std::string& transactio
   return std::error_code();
 }
 
-std::error_code WalletService::getReserveProof(const std::string& address, const uint64_t& amount, const std::string& message, std::string& reserveProof) {
+std::error_code WalletService::getReserveProof(std::string& reserveProof, const std::string& address, const std::string& message, const uint64_t& amount) {
   try {
     System::EventLock lk(readyEvent);
 
-    reserveProof = wallet.getReserveProof(amount != 0 ? amount : wallet.getActualBalance(address), address, !message.empty() ? message : "");
+    uint64_t balance = wallet.getActualBalance(address);
+    if (amount != 0 && balance < amount) {
+      return make_error_code(CryptoNote::error::WRONG_AMOUNT);
+    }
+
+    reserveProof = wallet.getReserveProof(amount != 0 ? amount : balance, address, !message.empty() ? message : "");
 
   } catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();

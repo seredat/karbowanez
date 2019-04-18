@@ -366,7 +366,7 @@ struct GetReserveProof {
   struct Request {
     std::string address;
 	std::string message;
-	uint64_t amount;
+	uint64_t amount = 0;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
