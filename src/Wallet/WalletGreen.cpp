@@ -2721,15 +2721,9 @@ Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transaction
   return txInfo.transaction.secretKey.get_value_or(CryptoNote::NULL_SECRET_KEY);
 }
 
-bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const std::string& address, Crypto::SecretKey& txKey, std::string& transactionProof) {
-  CryptoNote::AccountPublicAddress destinationAddress;
-  if (!m_currency.parseAccountAddressString(address, destinationAddress)) {
-    m_logger(ERROR, BRIGHT_RED) << "Failed to parse address";
-	return false;
-  }
-
-  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
-  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&txKey);
+bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) {
+  Crypto::KeyImage p = *reinterpret_cast<const Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<const Crypto::KeyImage*>(&txKey);
   Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
   Crypto::PublicKey R;
   Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);

@@ -258,6 +258,20 @@ void GetTransactionSecretKey::Response::serialize(CryptoNote::ISerializer& seria
   serializer(transactionSecretKey, "transactionSecretKey");
 }
 
+void GetTransactionProof::Request::serialize(CryptoNote::ISerializer& serializer) {
+  if (!serializer(transactionHash, "transactionHash")) {
+    throw RequestSerializationError();
+  }
+  if (!serializer(destinationAddress, "destinationAddress")) {
+    throw RequestSerializationError();
+  }
+  serializer(transactionSecretKey, "transactionSecretKey");
+}
+
+void GetTransactionProof::Response::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(transactionProof, "transactionProof");
+}
+
 void WalletRpcOrder::serialize(CryptoNote::ISerializer& serializer) {
   bool r = serializer(address, "address");
   r &= serializer(amount, "amount");

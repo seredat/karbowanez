@@ -88,6 +88,7 @@ public:
     uint32_t blockCount, const std::string& paymentId, std::vector<TransactionsInBlockRpcInfo>& transactionHashes);
   std::error_code getTransaction(const std::string& transactionHash, TransactionRpcInfo& transaction);
   std::error_code getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey);
+  std::error_code getTransactionProof(const std::string& transactionHash, const std::string& destinationAddress, const std::string& transactionSecretKey, std::string& transactionProof);
   std::error_code getAddresses(std::vector<std::string>& addresses);
   std::error_code sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code createDelayedTransaction(const CreateDelayedTransaction::Request& request, std::string& transactionHash);

@@ -346,6 +346,23 @@ struct GetTransactionSecretKey {
   };
 };
 
+struct GetTransactionProof {
+  struct Request {
+    std::string transactionHash;
+    std::string destinationAddress;
+    std::string transactionSecretKey;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string transactionProof;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
+
 struct WalletRpcOrder {
   std::string address;
   uint64_t amount;
