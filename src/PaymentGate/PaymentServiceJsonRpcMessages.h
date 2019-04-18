@@ -362,6 +362,21 @@ struct GetTransactionProof {
   };
 };
 
+struct GetReserveProof {
+  struct Request {
+    std::string address;
+	std::string message;
+	uint64_t amount;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    std::string reserveProof;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
 
 struct WalletRpcOrder {
   std::string address;
