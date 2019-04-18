@@ -21,7 +21,7 @@
 #include <iostream>
 
 #include <GreenWallet/ColouredMsg.h>
-#include <GreenWallet/PasswordContainer.h>
+#include <Common/PasswordContainer.h>
 #include <GreenWallet/WalletConfig.h>
 
 void confirmPassword(std::string walletPass, std::string msg)

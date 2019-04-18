@@ -2,6 +2,21 @@
 // Copyright (c) 2014-2018, The Monero Project
 // Copyright (c) 2018, The TurtleCoin Developers
 // Copyright (c) 2018-2019, The Karbo Developers
+//
+// This file is part of Karbo.
+//
+// Karbo is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Karbo is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 // 
 // Please see the included LICENSE file for more information.
 
@@ -67,6 +82,76 @@ namespace Tools
 
   bool PasswordContainer::read_password() {
     return read_password(false, "Enter password: ");
+  }
+
+  bool PasswordContainer::read_and_validate() {
+	  std::string tmpPassword = m_password;
+
+	  if (!read_password())
+	  {
+		  std::cout << "Failed to read password!";
+		  return false;
+	  }
+	  bool validPass = m_password == tmpPassword;
+	  m_password = tmpPassword;
+
+	  return validPass;
+  }
+
+  bool PasswordContainer::read_password(bool verify)
+  {
+    clear();
+
+    bool r;
+    if (is_cin_tty())
+    {
+      std::cout << "password: ";
+      if (verify)
+      {
+        std::string password1;
+        std::string password2;
+        r = read_from_tty(password1);
+        if (r)
+        {
+          std::cout << "confirm password: ";
+          r = read_from_tty(password2);
+          if (r)
+          {
+            if (password1 == password2)
+            {
+              m_password = std::move(password2);
+              m_empty = false;
+	          return true;
+            }
+            else
+            {
+              std::cout << "Passwords do not match, try again." << std::endl;
+              clear();
+              return read_password(true);
+            }
+          }
+        }
+      }
+      else
+      {
+        r = read_from_tty(m_password);
+      }
+    }
+    else
+    {
+      r = read_from_file();
+    }
+
+    if (r)
+    {
+      m_empty = false;
+    }
+    else
+    {
+      clear();
+    }
+
+    return r;
   }
 
   bool PasswordContainer::read_and_validate(std::string msg) {

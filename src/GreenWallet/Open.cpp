@@ -24,7 +24,7 @@
 #include <GreenWallet/Tools.h>
 #include <GreenWallet/Transfer.h>
 #include <GreenWallet/Types.h>
-#include <GreenWallet/PasswordContainer.h>
+#include <Common/PasswordContainer.h>
 #include <GreenWallet/WalletConfig.h>
 
 std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
