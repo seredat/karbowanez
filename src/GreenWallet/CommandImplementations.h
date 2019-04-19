@@ -59,3 +59,9 @@ std::string getGUIPrivateKey(CryptoNote::WalletGreen &wallet);
 void help(std::shared_ptr<WalletInfo> wallet);
 
 void advanced(std::shared_ptr<WalletInfo> wallet);
+
+void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet);
+
+void txSecretKey(CryptoNote::WalletGreen &wallet);
+
+void txProof(CryptoNote::WalletGreen &wallet);

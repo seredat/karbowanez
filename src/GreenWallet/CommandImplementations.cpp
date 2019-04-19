@@ -13,6 +13,7 @@
 #include "Common/StringTools.h"
 #include "Common/FormatTools.h"
 #include "CryptoNoteCore/Account.h"
+#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 
 #ifndef MSVC
 #include <fstream>
@@ -622,5 +623,266 @@ void advanced(std::shared_ptr<WalletInfo> wallet)
     {
         printCommands(advancedCommands(),
                       (int)basicCommands().size());
+    }
+}
+
+void txSecretKey(CryptoNote::WalletGreen &wallet)
+{
+    std::string hashStr;
+	Crypto::Hash txid;
+
+    while (true)
+    {
+        std::cout << InformationMsg("Enter transaction hash: ");
+
+        std::getline(std::cin, hashStr);
+        boost::algorithm::trim(hashStr);
+
+        if (!parse_hash256(hashStr, txid)) {
+            std::cout << WarningMsg("Failed to parse txid") << std::endl;
+            return;
+        }
+        else {
+            break;
+        }
+    }
+
+    Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
+
+    if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+        std::cout << WarningMsg("Transaction ") 
+                  << WarningMsg(hashStr)
+                  << WarningMsg(" secret key is not available")
+                  << std::endl;
+        return;
+    }
+		
+    std::cout << SuccessMsg("Transaction secret key: ")
+              << std::endl
+              << SuccessMsg(Common::podToHex(txSecretKey))
+              << std::endl;
+}
+
+void txProof(CryptoNote::WalletGreen &wallet)
+{
+    std::string txHashStr;
+    Crypto::Hash txid;
+
+    while (true)
+    {
+        std::cout << InformationMsg("Enter transaction hash: ");
+
+        std::getline(std::cin, txHashStr);
+        boost::algorithm::trim(txHashStr);
+
+        if (!parse_hash256(txHashStr, txid)) {
+            std::cout << WarningMsg("Failed to parse txid") << std::endl;
+            return;
+        }
+        else {
+            break;
+        }
+    }
+	  
+    Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
+
+    if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+        std::cout << InformationMsg("Transaction ")
+                  << InformationMsg(txHashStr)
+                  << InformationMsg(" secret key is not available.")
+                  << std::endl
+                  << InformationMsg("If you have it elsewhere, ")
+                  << InformationMsg("enter it here to continue: ")
+                  << std::endl;
+
+        Crypto::Hash tx_key_hash;
+
+        while (true)
+        {
+            std::string keyStr;
+			
+            std::getline(std::cin, keyStr);
+            boost::algorithm::trim(keyStr);
+
+            size_t size;
+
+            if (!Common::fromHex(keyStr, &tx_key_hash, sizeof(tx_key_hash), size)
+                || size != sizeof(tx_key_hash))
+            {
+                std::cout << WarningMsg("Failed to parse tx secret key ")
+                          << WarningMsg(keyStr) << std::endl;
+                return;
+            }
+            else {     
+                txSecretKey = *(struct Crypto::SecretKey *) &tx_key_hash;
+				break;
+            }
+        }
+    }
+
+    CryptoNote::AccountPublicAddress destAddress;
+
+    while (true)
+    {
+        std::cout << InformationMsg("Enter destination address: ");
+
+		std::string addrStr;
+		uint64_t prefix;
+
+        std::getline(std::cin, addrStr);
+        boost::algorithm::trim(addrStr);
+
+        if (!CryptoNote::parseAccountAddressString(prefix, destAddress, addrStr))
+        {
+            std::cout << WarningMsg("Failed to parse address") << std::endl;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    try {
+        std::string sig;
+
+        if (wallet.getTransactionProof(txid, destAddress, txSecretKey, sig)) {
+            std::cout << SuccessMsg("Transaction proof: ")
+                      << std::endl
+                      << SuccessMsg(sig)
+                      << std::endl;
+        }
+        else {
+            std::cout << WarningMsg("Failed to get transaction proof") << std::endl;
+        }
+    }
+    catch (std::system_error& x) {
+        std::cout << WarningMsg("Error while getting transaction proof: ")
+                  << WarningMsg(x.what())
+                  << std::endl;
+    }
+    catch (std::exception& x) {
+        std::cout << WarningMsg("Error while getting transaction proof: ")
+                  << WarningMsg(x.what())
+                  << std::endl;
+    }
+}
+
+void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet)
+{
+    if (viewWallet)
+    {
+        std::cout << WarningMsg("This is tracking wallet. ")
+                  << WarningMsg("The reserve proof can be generated ")
+                  << WarningMsg("only by a full wallet.")
+                  << std::endl;
+        return;
+    }
+
+    uint64_t amount;
+    uint64_t actualBalance = walletInfo->wallet.getActualBalance();
+
+    while (true)
+    {
+        std::cout << InformationMsg("Enter amount to prove ")
+                  << InformationMsg("or type ") << "\"all\" "
+                  << InformationMsg("if you want to prove all balance: ");
+
+        std::string amtStr;
+
+        std::getline(std::cin, amtStr);
+
+        if (amtStr == "all")
+        {
+            amount = actualBalance;
+            break;
+        }
+
+        if (parseAmount(amtStr, amount))
+        {
+            if (amount > actualBalance)
+            {
+                std::cout << WarningMsg("Amount is bigger than ")
+                          << WarningMsg("actual balance ")
+                          << WarningMsg(formatAmount(actualBalance))
+                          << std::endl;
+            }
+            else {
+                break;
+            }
+        }
+    }
+
+    std::string message;
+
+    while (true)
+    {
+        std::cout << InformationMsg("Enter optional challenge message: ");
+
+        std::getline(std::cin, message);
+        boost::algorithm::trim(message);
+
+        if (message == "")
+        {
+            break;
+        }
+
+        break;
+    }
+
+    try
+    {
+        const std::string sig = 
+            walletInfo->wallet.getReserveProof(amount, 
+                                               walletInfo->walletAddress,
+                                               message.empty() ? "" : message);
+
+        std::string fileName;
+
+        while (true)
+        {
+            std::cout << InformationMsg("Enter file name ")
+                      << InformationMsg("where to save your proof: ");
+
+            std::getline(std::cin, fileName);
+            boost::algorithm::trim(fileName);
+
+            if (boost::filesystem::portable_name(fileName))
+            {
+                break;
+            }
+            else {
+                std::cout << WarningMsg("Enter valid file name") << std::endl;
+            }
+        }
+
+        fileName += ".txt";
+
+        boost::system::error_code ec;
+        if (boost::filesystem::exists(fileName, ec)) {
+            boost::filesystem::remove(fileName, ec);
+        }
+
+        std::ofstream proofFile(fileName, 
+                                std::ios::out | 
+                                std::ios::trunc | 
+                                std::ios::binary);
+          
+        if (!proofFile.good())
+        {
+            std::cout << WarningMsg("Failed to save reserve proof to file")
+                      << std::endl;
+            return;
+        }
+
+        proofFile << sig;
+
+        std::cout << SuccessMsg("Proof signature saved to file: ") 
+                  << SuccessMsg(fileName)
+                  << std::endl;
+    }
+    catch (const std::exception &e) {
+        std::cout << WarningMsg("Failed to get reserve proof: ")
+                  << WarningMsg(e.what())
+                  << std::endl;
     }
 }

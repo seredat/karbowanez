@@ -89,6 +89,10 @@ bool handleCommand(const std::string command,
     {
         reset(node, walletInfo);
     }
+    else if (command == "reserve_proof")
+    {
+        reserveProof(walletInfo, walletInfo->viewWallet);
+    }
     else if (command == "save")
     {
 		save(walletInfo->wallet);
@@ -104,6 +108,14 @@ bool handleCommand(const std::string command,
     else if (command == "status")
     {
         status(node, walletInfo->wallet);
+    }
+    else if (command == "tx_key")
+    {
+        txSecretKey(walletInfo->wallet);
+    }
+    else if (command == "tx_proof")
+    {
+        txProof(walletInfo->wallet);
     }
     /* This should never happen */
     else

@@ -29,6 +29,8 @@ void splitTx(CryptoNote::WalletGreen &wallet,
 bool confirmTransaction(CryptoNote::TransactionParameters t,
                         std::shared_ptr<WalletInfo> walletInfo, uint32_t nodeFee);
 
+bool parseAmount(std::string strAmount, uint64_t &amount);
+
 bool parseAmount(std::string amountString);
 
 bool parseAddress(std::string address);

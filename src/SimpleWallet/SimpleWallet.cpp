@@ -854,7 +854,7 @@ bool simple_wallet::get_reserve_proof(const std::vector<std::string> &args)
 		}
 		proofFile << sig_str;
 
-		success_msg_writer() << "signature file saved to: " << filename;
+		success_msg_writer() << "signature saved to file: " << filename;
 
 	} catch (const std::exception &e) {
 		fail_msg_writer() << e.what();
