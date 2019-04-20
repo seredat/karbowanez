@@ -757,6 +757,10 @@ Maybe<std::string> getPaymentID(std::string msg)
             continue;
         }
 
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+        }
+
         return Just<std::string>(paymentID);
     }
 }
@@ -842,6 +846,10 @@ Maybe<uint64_t> getFee()
             parseAmount(stringAmount, amount);
             return Just<uint64_t>(amount);
         }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+        }
     }
 }
 
@@ -869,6 +877,10 @@ Maybe<uint64_t> getTransferAmount()
         {
             parseAmount(stringAmount, amount);
             return Just<uint64_t>(amount);
+        }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
         }
     }
 }
@@ -899,6 +911,10 @@ Maybe<std::string> getDestinationAddress()
         if (parseAddress(transferAddr))
         {
             return Just<std::string>(transferAddr);
+        }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
         }
     }
 }
@@ -1102,6 +1118,12 @@ bool askAliasesTransfersConfirmation(const std::string address)
     do {
         std::cout << InformationMsg("y/n: ");
         std::getline(std::cin, answer);
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+            break;
+        }
+
     } while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
 
     return answer == "y" || answer == "Y";

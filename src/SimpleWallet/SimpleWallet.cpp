@@ -584,6 +584,13 @@ bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<Wal
 	do {
 		std::cout << "y/n: ";
 		std::getline(std::cin, answer);
+
+		if (std::cin.fail() || std::cin.eof()) {
+			std::cin.clear();
+
+			break;
+		}
+
 	} while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
 
 	return answer == "y" || answer == "Y";

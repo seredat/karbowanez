@@ -645,6 +645,11 @@ void txSecretKey(CryptoNote::WalletGreen &wallet)
         else {
             break;
         }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+            break;
+        }        
     }
 
     Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
@@ -682,6 +687,11 @@ void txProof(CryptoNote::WalletGreen &wallet)
         else {
             break;
         }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+            break;
+        }
     }
 	  
     Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(txid);
@@ -717,6 +727,11 @@ void txProof(CryptoNote::WalletGreen &wallet)
                 txSecretKey = *(struct Crypto::SecretKey *) &tx_key_hash;
 				break;
             }
+
+            if (std::cin.fail() || std::cin.eof()) {
+                std::cin.clear();
+                break;
+            }
         }
     }
 
@@ -738,6 +753,11 @@ void txProof(CryptoNote::WalletGreen &wallet)
         }
         else
         {
+            break;
+        }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
             break;
         }
     }
@@ -810,6 +830,11 @@ void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet)
                 break;
             }
         }
+
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+            break;
+        }
     }
 
     std::string message;
@@ -826,7 +851,10 @@ void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet)
             break;
         }
 
-        break;
+        if (std::cin.fail() || std::cin.eof()) {
+            std::cin.clear();
+            break;
+        }
     }
 
     try
@@ -852,6 +880,11 @@ void reserveProof(std::shared_ptr<WalletInfo> walletInfo, bool viewWallet)
             }
             else {
                 std::cout << WarningMsg("Enter valid file name") << std::endl;
+            }
+
+	        if (std::cin.fail() || std::cin.eof()) {
+                std::cin.clear();
+                break;
             }
         }
 
