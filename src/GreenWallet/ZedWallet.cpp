@@ -58,12 +58,11 @@ int main(int argc, char **argv)
     const CryptoNote::Currency currency 
         = CryptoNote::CurrencyBuilder(logManager).currency();
 
-    System::Dispatcher localDispatcher;
-    System::Dispatcher *dispatcher = &localDispatcher;
+	System::Dispatcher dispatcher;
 
-    /* Our connection to turtlecoind */
-    std::unique_ptr<CryptoNote::INode> node(
-        new CryptoNote::NodeRpcProxy(config.host, config.port));
+    /* Our connection to daemon */
+	CryptoNote::INode* node = new CryptoNote::NodeRpcProxy(config.host, config.port);
+	std::unique_ptr<CryptoNote::INode> nodeGuard(node);
 
     std::promise<std::error_code> errorPromise;
 
@@ -122,10 +121,11 @@ int main(int argc, char **argv)
 	}
 
     /* Create the wallet instance */
-    CryptoNote::WalletGreen wallet(*dispatcher, currency, *node, logManager);
+	CryptoNote::WalletGreen* wallet = new CryptoNote::WalletGreen(dispatcher, currency, *node, logManager);
+	std::unique_ptr<CryptoNote::WalletGreen> walletGuard(wallet);
 
     /* Run the interactive wallet interface */
-    run(wallet, *node, config);
+    run(*wallet, *node, config);
 }
 
 void run(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node,
