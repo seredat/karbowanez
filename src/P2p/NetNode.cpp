@@ -563,7 +563,9 @@ namespace CryptoNote
     //only in case if we really sure that we have external visible ip
     m_have_address = true;
     m_ip_address = 0;
+#ifdef ALLOW_DEBUG_COMMANDS
     m_last_stat_request_time = 0;
+#endif
 
     //configure self
     // m_net_server.get_config_object().m_pcommands_handler = this;
