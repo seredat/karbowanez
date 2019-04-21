@@ -22,7 +22,8 @@
 #include <vector>
 
 #include "CryptoTypes.h"
-
+#include "CryptoNote.h"
+#include "BlockchainExplorerData.h"
 #include <boost/variant.hpp>
 
 namespace CryptoNote {
@@ -88,6 +89,36 @@ struct TransactionExtraDetails {
   std::vector<uint8_t> raw;
 };
 
+struct transactionOutputDetails2 {
+	TransactionOutput output;
+	uint64_t globalIndex;
+};
+
+struct BaseInputDetails {
+	BaseInput input;
+	uint64_t amount;
+};
+
+struct KeyInputDetails {
+	KeyInput input;
+	uint64_t mixin;
+	std::vector<TransactionOutputReferenceDetails> outputs;
+};
+
+struct MultisignatureInputDetails {
+	MultisignatureInput input;
+	TransactionOutputReferenceDetails output;
+};
+
+typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> transactionInputDetails2;
+
+struct TransactionExtraDetails2 {
+	std::vector<size_t> padding;
+	Crypto::PublicKey publicKey;
+	BinaryArray nonce;
+	BinaryArray raw;
+};
+
 struct TransactionDetails {
   Crypto::Hash hash;
   uint64_t size = 0;
@@ -102,10 +133,10 @@ struct TransactionDetails {
   bool inBlockchain = false;
   Crypto::Hash blockHash;
   uint32_t blockHeight = 0;
-  TransactionExtraDetails extra;
+  TransactionExtraDetails2 extra;
   std::vector<std::vector<Crypto::Signature>> signatures;
-  std::vector<TransactionInputDetails> inputs;
-  std::vector<TransactionOutputDetails> outputs;
+  std::vector<transactionInputDetails2> inputs;
+  std::vector<transactionOutputDetails2> outputs;
 };
 
 struct BlockDetails {

@@ -430,6 +430,15 @@ uint64_t InProcessNode::getMinimalFee() const {
   return core.getMinimalFee();
 }
 
+void InProcessNode::getFeeAddress() {
+  // Do nothing
+  return;
+}
+
+std::string InProcessNode::feeAddress() const { 
+  return std::string();
+}
+
 BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {
@@ -652,6 +661,23 @@ void InProcessNode::getBlocks(const std::vector<uint32_t>& blockHeights, std::ve
       callback
     )
   );
+}
+
+void InProcessNode::getBlock(const uint32_t blockHeight, BlockDetails &block, const Callback& callback) {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    lock.unlock();
+    callback(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    return;
+  }
+
+  std::vector<uint32_t> blockHeights;
+  std::vector<std::vector<BlockDetails>> blocks;
+  blockHeights.push_back(blockHeight);
+ 
+  getBlocksAsync(blockHeights, blocks, callback);
+
+  block = blocks[0][0];
 }
 
 void InProcessNode::getBlocksAsync(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks, const Callback& callback) {

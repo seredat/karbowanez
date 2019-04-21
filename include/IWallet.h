@@ -145,6 +145,7 @@ public:
 
   virtual void changePassword(const std::string& oldPassword, const std::string& newPassword) = 0;
   virtual void save(WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") = 0;
+  virtual void reset(const uint64_t scanHeight) = 0;
   virtual void exportWallet(const std::string& path, bool encrypt = true, WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") = 0;
 
   virtual size_t getAddressCount() const = 0;
@@ -168,6 +169,8 @@ public:
   virtual size_t getTransactionCount() const = 0;
   virtual WalletTransaction getTransaction(size_t transactionIndex) const = 0;
   virtual Crypto::SecretKey getTransactionSecretKey(size_t transactionIndex) const = 0;
+  virtual Crypto::SecretKey getTransactionSecretKey(Crypto::Hash& transactionHash) const = 0;
+  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) = 0;
   virtual size_t getTransactionTransferCount(size_t transactionIndex) const = 0;
   virtual WalletTransfer getTransactionTransfer(size_t transactionIndex, size_t transferIndex) const = 0;
 
@@ -179,6 +182,8 @@ public:
   virtual std::vector<WalletTransactionWithTransfers> getUnconfirmedTransactions() const = 0;
   virtual std::vector<size_t> getDelayedTransactionIds() const = 0;
   virtual std::vector<TransactionOutputInformation> getTransfers(size_t index, uint32_t flags) const = 0;
+
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) = 0;
 
   virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey &txSecretKey) = 0;
 

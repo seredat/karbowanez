@@ -88,17 +88,6 @@
 
 #if defined(WIN32)
 #include <Windows.h>
-#include <crtdbg.h>
-#include <winsock2.h>
-#include <windns.h>
-#include <Rpc.h>
-# else 
-#include <arpa/nameser.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <netdb.h>
 #endif
 
 #include "ITransfersContainer.h"
@@ -320,8 +309,8 @@ struct TransferCommand {
           if (!remote_fee_address.empty()) {
             destination.address = remote_fee_address;
             int64_t remote_node_fee = static_cast<int64_t>(de.amount * 0.0025);
-            if (remote_node_fee > 10000000000000)
-                remote_node_fee = 10000000000000;
+            if (remote_node_fee > (uint64_t)10000000000000)
+                remote_node_fee = (uint64_t)10000000000000;
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
@@ -595,6 +584,13 @@ bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<Wal
 	do {
 		std::cout << "y/n: ";
 		std::getline(std::cin, answer);
+
+		if (std::cin.fail() || std::cin.eof()) {
+			std::cin.clear();
+
+			break;
+		}
+
 	} while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
 
 	return answer == "y" || answer == "Y";
@@ -865,7 +861,7 @@ bool simple_wallet::get_reserve_proof(const std::vector<std::string> &args)
 		}
 		proofFile << sig_str;
 
-		success_msg_writer() << "signature file saved to: " << filename;
+		success_msg_writer() << "signature saved to file: " << filename;
 
 	} catch (const std::exception &e) {
 		fail_msg_writer() << e.what();

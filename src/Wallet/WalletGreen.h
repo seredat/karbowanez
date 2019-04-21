@@ -53,6 +53,7 @@ public:
 
   virtual void changePassword(const std::string& oldPassword, const std::string& newPassword) override;
   virtual void save(WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") override;
+  virtual void reset(const uint64_t scanHeight) override;
   virtual void exportWallet(const std::string& path, bool encrypt = true, WalletSaveLevel saveLevel = WalletSaveLevel::SAVE_ALL, const std::string& extra = "") override;
 
   virtual size_t getAddressCount() const override;
@@ -76,6 +77,10 @@ public:
   virtual size_t getTransactionCount() const override;
   virtual WalletTransaction getTransaction(size_t transactionIndex) const override;
   virtual Crypto::SecretKey getTransactionSecretKey(size_t transactionIndex) const override;
+  virtual Crypto::SecretKey getTransactionSecretKey(Crypto::Hash& transactionHash) const override;
+
+  virtual bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) override;
+
   virtual size_t getTransactionTransferCount(size_t transactionIndex) const override;
   virtual WalletTransfer getTransactionTransfer(size_t transactionIndex, size_t transferIndex) const override;
 
@@ -87,6 +92,8 @@ public:
   virtual std::vector<WalletTransactionWithTransfers> getUnconfirmedTransactions() const override;
   virtual std::vector<size_t> getDelayedTransactionIds() const override;
   virtual std::vector<TransactionOutputInformation> getTransfers(size_t index, uint32_t flags) const override;
+
+  virtual std::string getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) override;
 
   virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey& txSecretKey) override;
 
@@ -102,6 +109,18 @@ public:
     const std::vector<std::string>& sourceAddresses = {}, const std::string& destinationAddress = "") override;
   virtual bool isFusionTransaction(size_t transactionId) const override;
   virtual IFusionManager::EstimateResult estimate(uint64_t threshold, const std::vector<std::string>& sourceAddresses = {}) const override;
+
+  void updateInternalCache();
+  size_t getMaxTxSize();
+  bool txIsTooLarge(const TransactionParameters& sendingTransaction);
+  void clearCaches() { return clearCaches(true, true); };
+  size_t getTxSize(const TransactionParameters &sendingTransaction);
+  void clearCacheAndShutdown();
+  void createViewWallet(const std::string &password,
+	const std::string address,
+	const Crypto::SecretKey &viewSecretKey,
+	const std::string& path);
+  uint64_t getBalanceMinusDust(const std::vector<std::string>& addresses);
 
 protected:
   struct NewAddressData {
@@ -129,6 +148,11 @@ protected:
   void initWithKeysAndTimestamp(const std::string& path, const std::string& password, const Crypto::PublicKey& viewPublicKey, const Crypto::SecretKey& viewSecretKey, const uint64_t& _creationTimestamp);
   std::string doCreateAddress(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp);
   std::vector<std::string> doCreateAddressList(const std::vector<NewAddressData>& addressDataList);
+
+  CryptoNote::BlockDetails getBlock(const uint64_t blockHeight);
+
+  uint64_t scanHeightToTimestamp(const uint64_t scanHeight);
+  uint64_t getCurrentTimestampAdjusted();
 
   struct InputInfo {
     TransactionTypes::InputKeyInfo keyInfo;

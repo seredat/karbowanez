@@ -40,7 +40,7 @@
 
 #include "android.h"
 #include "IWalletLegacy.h"
-#include "PasswordContainer.h"
+#include "Common/PasswordContainer.h"
 
 #include "Common/ConsoleHandler.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"

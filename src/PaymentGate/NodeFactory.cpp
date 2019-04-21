@@ -41,6 +41,8 @@ public:
   virtual uint32_t getNodeHeight() const override { return 0; }
   virtual uint64_t getMinimalFee() const override{ return 0; }
 
+  virtual void getFeeAddress() override { }
+
   virtual CryptoNote::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return CryptoNote::BlockHeaderInfo(); }
 
   virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override { callback(std::error_code()); }
@@ -74,6 +76,9 @@ public:
   virtual void getBlocks(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<CryptoNote::BlockDetails>& blocks, uint32_t& blocksNumberWithinTimestamps,
     const Callback& callback) override { }
 
+  virtual void getBlock(const uint32_t blockHeight, CryptoNote::BlockDetails &block,
+    const Callback& callback) override { }
+
   virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<CryptoNote::TransactionDetails>& transactions,
     const Callback& callback) override { }
 
@@ -87,6 +92,8 @@ public:
     const Callback& callback) override { }
 
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
+
+  virtual std::string feeAddress() const override { return std::string(); }
 
 };
 

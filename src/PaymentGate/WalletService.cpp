@@ -921,6 +921,107 @@ std::error_code WalletService::getTransaction(const std::string& transactionHash
   return std::error_code();
 }
 
+std::error_code WalletService::getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey) {
+  try {
+    System::EventLock lk(readyEvent);
+    Crypto::Hash hash = parseHash(transactionHash, logger);
+
+    Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(hash);
+
+	if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction " << transactionHash << " secret key is not available";
+      return make_error_code(CryptoNote::error::OBJECT_NOT_FOUND);
+    }
+
+    transactionSecretKey = Common::podToHex(txSecretKey);
+
+  } catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return x.code();
+  } catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
+std::error_code WalletService::getTransactionProof(const std::string& transactionHash, const std::string& destinationAddress, const std::string& transactionSecretKey, std::string& transactionProof) {
+  try {
+    System::EventLock lk(readyEvent);
+    Crypto::Hash hash = parseHash(transactionHash, logger);
+
+    Crypto::SecretKey txSecretKey = wallet.getTransactionSecretKey(hash);
+
+    if (!transactionSecretKey.empty()) {  
+      Crypto::SecretKey txSecretKeyFromReq;
+      Crypto::Hash tx_key_hash;
+      size_t size;
+      if (!Common::fromHex(transactionSecretKey, &tx_key_hash, sizeof(tx_key_hash), size) || size != sizeof(tx_key_hash)) {
+        logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to parse tx secret key: " << transactionSecretKey;
+        return make_error_code(CryptoNote::error::WRONG_TX_SECRET_KEY);
+      }
+	  txSecretKeyFromReq = *(struct Crypto::SecretKey *) &tx_key_hash;
+
+	  if (txSecretKey != CryptoNote::NULL_SECRET_KEY && txSecretKey != txSecretKeyFromReq) {
+        logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction secret keys do not match";
+        return make_error_code(CryptoNote::error::WRONG_TX_SECRET_KEY);
+      }
+      txSecretKey = txSecretKeyFromReq;
+    }
+    else if (txSecretKey == CryptoNote::NULL_SECRET_KEY) {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Transaction secret key not found";
+      return make_error_code(CryptoNote::error::WRONG_PARAMETERS);
+    }
+
+    CryptoNote::AccountPublicAddress destAddress;
+    if (!currency.parseAccountAddressString(destinationAddress, destAddress)) {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to parse address: " << destinationAddress;
+      return make_error_code(CryptoNote::error::BAD_ADDRESS);
+    }
+
+    std::string sig_str;
+    if (wallet.getTransactionProof(hash, destAddress, txSecretKey, sig_str)) {
+      transactionProof = sig_str;
+    }
+    else {
+      logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to get transaction proof";
+      return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+    }
+
+  } catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction proof: " << x.what();
+    return x.code();
+  } catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction proof: " << x.what();
+    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
+std::error_code WalletService::getReserveProof(std::string& reserveProof, const std::string& address, const std::string& message, const uint64_t& amount) {
+  try {
+    System::EventLock lk(readyEvent);
+
+    uint64_t balance = wallet.getActualBalance(address);
+    if (amount != 0 && balance < amount) {
+      return make_error_code(CryptoNote::error::WRONG_AMOUNT);
+    }
+
+    reserveProof = wallet.getReserveProof(amount != 0 ? amount : balance, address, !message.empty() ? message : "");
+
+  } catch (std::system_error& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return x.code();
+  } catch (std::exception& x) {
+    logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while getting transaction secret key: " << x.what();
+    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
 std::error_code WalletService::getAddresses(std::vector<std::string>& addresses) {
   try {
     System::EventLock lk(readyEvent);
