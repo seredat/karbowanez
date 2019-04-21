@@ -102,6 +102,9 @@ cmake ..
 make
 ```
 
+You many need to specify the location of OpenSSL files like this (check your version):
+`export OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2r`
+
 
 ### Building for Android on Linux
 
