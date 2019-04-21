@@ -23,13 +23,14 @@ The example of Karbo config is here: https://github.com/Karbovanets/cryptonote-n
 
 ### On *nix
 
-Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, and Boost 1.55 or later.
+Dependencies: GCC 4.7.3 or later, CMake 2.8.6 or later, Boost 1.55 or later, OpenSSL.
 
 You may download them from:
 
-- http://gcc.gnu.org/
-- http://www.cmake.org/
-- http://www.boost.org/
+* http://gcc.gnu.org/
+* http://www.cmake.org/
+* http://www.boost.org/
+* https://www.openssl.org/
 
 Alternatively, it may be possible to install them using a package manager.
 
@@ -40,7 +41,7 @@ or
 Run these commands:
 ```
 cd ~
-sudo apt-get install build-essential git cmake libboost-all-dev
+sudo apt-get install build-essential git cmake libboost-all-dev libssl-dev
 git clone https://github.com/seredat/karbowanec.git
 cd karbowanec
 mkdir build
@@ -60,13 +61,14 @@ make
 * Building with Clang: it may be possible to use Clang instead of GCC, but this may not work everywhere. To build, run `export CC=clang CXX=clang++` before running `make`.
 
 ### On Windows
-Dependencies: MSVC 2013 or later, CMake 2.8.6 or later, and Boost 1.55. You may download them from:
+Dependencies: MSVC 2013 or later, CMake 2.8.6 or later, and Boost 1.55, OpenSSL. You may download them from:
 
 * http://www.microsoft.com/
 * http://www.cmake.org/
 * http://www.boost.org/
+* https://www.openssl.org/
 
-To build, change to a directory where this file is located, and run theas commands: 
+To build, change to a directory where this file is located, and run these commands: 
 ```
 mkdir build
 cd build
@@ -76,17 +78,23 @@ cmake -G "Visual Studio 15 Win64" ..
 And then do Build.
 Good luck!
 
+You many need to specify where OpenSSL files are located in the project property pages:
+*    [C/C++ -> General -> Additional Include Directories] value: OpenSSL’s include directory in your machine (e.g `C:\openssl\include`)
+*    [Linker -> General -> Additional Library Directories] value: OpenSSL’s lib directory in your machine (e.g `C:\openssl\lib`)
+*    [Linker -> Input -> Additional Dependencies] value: `Rpcrt4.lib;libcryptoMT.lib;libsslMT.lib;crypt32.lib;`
+
+
 
 ### Building for macOS
 
 Dependencies: cmake boost and Xcode
 
 Download Xcode from the App store and the Xcode command line tools with `xcode-select --install`
-For the other we recommand you to use [Homebrew](https://brew.sh)
+For the other we recommend you to use [Homebrew](https://brew.sh)
 
 Continue with:
 ```
-brew install git cmake boost
+brew install git cmake boost openssl
 git clone https://github.com/seredat/karbowanec.git
 cd karbowanec
 cd build
