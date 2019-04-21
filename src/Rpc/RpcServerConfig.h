@@ -33,6 +33,11 @@ public:
 
   std::string bindIp;
   uint16_t bindPort;
+  bool EnableSSL;
+  uint16_t bindPortSSL;
+  std::string chain_file;
+  std::string key_file;
+  std::string dh_file;
 };
 
 }

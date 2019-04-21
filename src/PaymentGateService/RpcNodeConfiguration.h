@@ -31,6 +31,11 @@ public:
 
   std::string daemonHost;
   uint16_t daemonPort;
+  uint16_t daemonPortSSL;
+  bool m_enable_ssl;
+  std::string m_chain_file = "";
+  std::string m_key_file = "";
+  std::string m_dh_file = "";
 };
 
 } //namespace PaymentService

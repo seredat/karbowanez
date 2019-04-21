@@ -47,8 +47,13 @@ struct Configuration {
 
   std::string bindAddress;
   uint16_t bindPort;
+  uint16_t bindPortSSL;
   std::string m_rpcUser;
   std::string m_rpcPassword;
+  bool m_enable_ssl;
+  std::string m_chain_file;
+  std::string m_key_file;
+  std::string m_dh_file;
 
   std::string containerFile;
   std::string containerPassword;
