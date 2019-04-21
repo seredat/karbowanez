@@ -41,7 +41,7 @@ std::string getPrompt(std::shared_ptr<WalletInfo> walletInfo)
 
     const std::string shortFileName = walletName.substr(0, promptLength - 9);
 
-	const std::string addrStart = walletInfo->walletAddress.substr(0, 6);
+    const std::string addrStart = walletInfo->walletAddress.substr(0, 6);
 
     return "[" + addrStart + " " + shortFileName + "]: ";
 }
