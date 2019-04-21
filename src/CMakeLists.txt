@@ -75,9 +75,10 @@ endif()
 
 if(MSVC)
   target_link_libraries(System ws2_32)
-  target_link_libraries(Daemon Rpcrt4)
-  target_link_libraries(SimpleWallet Rpcrt4)
-  target_link_libraries(PaymentGateService Rpcrt4)
+  target_link_libraries(Daemon Rpcrt4 crypt32)
+  target_link_libraries(SimpleWallet Rpcrt4 crypt32)
+  target_link_libraries(PaymentGateService Rpcrt4 crypt32)
+  target_link_libraries(GreenWallet Rpcrt4 crypt32)
 endif()
 
 target_link_libraries(Daemon Rpc CryptoNoteCore P2P System Http Logging Common Crypto upnpc-static BlockchainExplorer ${Boost_LIBRARIES} Serialization ${EXTRA_LIBRARIES})
