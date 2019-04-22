@@ -31,13 +31,13 @@ namespace CryptoNote {
     const std::string DEFAULT_RPC_KEY_FILE = std::string(RPC_DEFAULT_KEY_FILE);
     const std::string DEFAULT_RPC_DH_FILE = std::string(RPC_DEFAULT_DH_FILE);
 
-    const command_line::arg_descriptor<std::string> arg_rpc_bind_ip = { "rpc-bind-ip", "", DEFAULT_RPC_IP };
-    const command_line::arg_descriptor<uint16_t> arg_rpc_bind_port = { "rpc-bind-port", "", DEFAULT_RPC_PORT };
-    const command_line::arg_descriptor<bool> arg_rpc_bind_ssl_enable = { "rpc-bind-ssl-enable", "", false };
-    const command_line::arg_descriptor<uint16_t> arg_rpc_bind_ssl_port = { "rpc-bind-ssl-port", "", DEFAULT_RPC_SSL_PORT };
-    const command_line::arg_descriptor<std::string> arg_chain_file = { "rpc-chain-file", "", DEFAULT_RPC_CHAIN_FILE };
-    const command_line::arg_descriptor<std::string> arg_key_file = { "rpc-key-file", "", DEFAULT_RPC_KEY_FILE };
-    const command_line::arg_descriptor<std::string> arg_dh_file = { "rpc-dh-file", "", DEFAULT_RPC_DH_FILE };
+    const command_line::arg_descriptor<std::string> arg_rpc_bind_ip = { "rpc-bind-ip", "Interface for RPC service", DEFAULT_RPC_IP };
+    const command_line::arg_descriptor<uint16_t> arg_rpc_bind_port = { "rpc-bind-port", "Port for RPC service", DEFAULT_RPC_PORT };
+    const command_line::arg_descriptor<bool> arg_rpc_bind_ssl_enable = { "rpc-bind-ssl-enable", "Enable SSL for RPC service", false };
+    const command_line::arg_descriptor<uint16_t> arg_rpc_bind_ssl_port = { "rpc-bind-ssl-port", "SSL port for RPC service", DEFAULT_RPC_SSL_PORT };
+    const command_line::arg_descriptor<std::string> arg_chain_file = { "rpc-chain-file", "SSL chain file", DEFAULT_RPC_CHAIN_FILE };
+    const command_line::arg_descriptor<std::string> arg_key_file = { "rpc-key-file", "SSL key file", DEFAULT_RPC_KEY_FILE };
+    const command_line::arg_descriptor<std::string> arg_dh_file = { "rpc-dh-file", "SSL DH file", DEFAULT_RPC_DH_FILE };
   }
 
   RpcServerConfig::RpcServerConfig() : bindIp(DEFAULT_RPC_IP), bindPort(DEFAULT_RPC_PORT) {
