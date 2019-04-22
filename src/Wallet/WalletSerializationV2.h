@@ -53,7 +53,7 @@ public:
   static const uint8_t SERIALIZATION_VERSION = 6;
 
 private:
-  void loadKeyListAndBanalces(CryptoNote::ISerializer& serializer, bool saveCache);
+  void loadKeyListAndBalances(CryptoNote::ISerializer& serializer, bool saveCache);
   void saveKeyListAndBanalces(CryptoNote::ISerializer& serializer, bool saveCache);
     
   void loadTransactions(CryptoNote::ISerializer& serializer);
