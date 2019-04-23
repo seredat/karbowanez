@@ -95,8 +95,6 @@ set(CMAKE_SKIP_INSTALL_RULES ON)
 set(CMAKE_SKIP_PACKAGE_ALL_DEPENDENCY ON)
 set(CMAKE_SUPPRESS_REGENERATION ON)
 
-# enable_testing()
-
 # copy CTestCustom.cmake to build dir to disable long running tests in 'make test'
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -254,15 +252,10 @@ else()
     set(ARCH_FLAG "-march=${ARCH}")
   endif()
 
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.4)
-    set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result -Wno-error=implicit-fallthrough -Wno-error=format-truncation -Wno-error=unused-const-variable")
-  else()
-    set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result")
-  endif()
+  set(WARNINGS "-Wall -Wextra -Wpointer-arith -Wundef -Wvla -Wwrite-strings -Wno-error=extra -Wno-error=unused-function -Wno-error=deprecated-declarations -Wno-error=sign-compare -Wno-error=strict-aliasing -Wno-error=type-limits -Wno-unused-parameter -Wno-error=unused-variable -Wno-error=undef -Wno-error=uninitialized -Wno-error=unused-result")
   
   if(NOT MINGW)
     set(WARNINGS_AS_ERRORS_FLAG "-Werror")
-
   endif()
   if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
     # maybe remove
@@ -576,8 +569,8 @@ option(BUILD_TESTS "Build tests." OFF)
 
 if(BUILD_TESTS)
   add_subdirectory(tests)
+  enable_testing()
 endif()
-
 
 
 set(COMMIT_ID_IN_VERSION ON CACHE BOOL "Include commit ID in version")
