@@ -29,6 +29,7 @@
 #include "Common/StringTools.h"
 #include "Common/PathTools.h"
 #include "crypto/hash.h"
+#include "CheckpointsData.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/Core.h"
 #include "CryptoNoteCore/CoreConfig.h"
