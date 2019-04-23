@@ -49,7 +49,7 @@
 #include "WalletLegacy/WalletUtils.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
-#include "mnemonics/electrum-words.h"
+#include "Mnemonics/electrum-words.h"
 
 extern "C"
 {
