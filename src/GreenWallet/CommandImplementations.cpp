@@ -19,7 +19,7 @@
 #include <fstream>
 #endif
 
-#include "mnemonics/electrum-words.h"
+#include "Mnemonics/electrum-words.h"
 
 #include <GreenWallet/AddressBook.h>
 #include <GreenWallet/ColouredMsg.h>

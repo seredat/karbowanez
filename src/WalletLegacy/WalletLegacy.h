@@ -1,23 +1,23 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, The Monero Project
 // Copyright (c) 2017-2018, Karbo developers
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -77,7 +77,7 @@ public:
   virtual void shutdown() override;
   virtual void reset() override;
 
-  virtual Crypto::SecretKey generateKey(const std::string& password, const Crypto::SecretKey& recovery_param = Crypto::SecretKey(), 
+  virtual Crypto::SecretKey generateKey(const std::string& password, const Crypto::SecretKey& recovery_param = Crypto::SecretKey(),
 	  bool recover = false, bool two_random = false) override;
 
   virtual void save(std::ostream& destination, bool saveDetailed = true, bool saveCache = true) override;
@@ -112,13 +112,13 @@ public:
   virtual TransactionId sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual std::error_code cancelTransaction(size_t transactionId) override;
 
-  virtual size_t estimateFusion(const uint64_t& threshold);
-  virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount);
+  virtual size_t estimateFusion(const uint64_t& threshold) override;
+  virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount) override;
 
   virtual std::string sign_message(const std::string &data) override;
   virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) override;
 
-  virtual bool isTrackingWallet();
+  virtual bool isTrackingWallet() override;
 
 private:
 

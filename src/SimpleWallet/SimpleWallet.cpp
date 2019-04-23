@@ -82,7 +82,7 @@
 #include "WalletLegacy/WalletHelper.h"
 
 #include "version.h"
-#include "mnemonics/electrum-words.h"
+#include "Mnemonics/electrum-words.h"
 
 #include <Logging/LoggerManager.h>
 
