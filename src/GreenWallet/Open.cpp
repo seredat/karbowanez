@@ -217,7 +217,7 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
 
     wallet.initializeWithViewKey(walletFileName, walletPass, privateViewKey);
 
-    const std::string walletAddress = wallet.createAddress(spendKey.secretKey);
+    const std::string walletAddress = wallet.createAddress(spendKey.secretKey, true);
 
     promptSaveKeys(wallet);
 
