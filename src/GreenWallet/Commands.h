@@ -15,8 +15,8 @@ class Command
         Command(std::string commandName, std::string description) :
                 commandName(commandName), description(description) {}
 
-        const std::string commandName;
-        const std::string description;
+        std::string commandName;
+        std::string description;
 };
 
 class AdvancedCommand : public Command
@@ -28,8 +28,8 @@ class AdvancedCommand : public Command
                         viewWalletSupport(viewWalletSupport),
                         advanced(advanced) {}
 
-        const bool viewWalletSupport;
-        const bool advanced;
+        bool viewWalletSupport;
+        bool advanced;
 };
 
 std::vector<Command> startupCommands();
