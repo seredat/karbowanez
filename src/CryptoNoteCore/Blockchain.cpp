@@ -1177,57 +1177,58 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
 }
 
 bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
-  BinaryArray bd;
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return get_block_longhash(context, b, res);
+  }
+
+  BinaryArray bd, pot;
   if (!get_block_hashing_blob(b, bd)) {
     return false;
   }
 
   // Phase 1
 
-  uint32_t m_cost1 = (1 << 7);
-  uint32_t lanes = 2;
-  uint32_t threads = 1;
-  uint32_t t_cost = 2;
   Crypto::Hash hash_1;
 
   // Hashing the current blockdata (preprocessing it)
-  //cn_fast_hash(bd.data(), bd.size(), hash_1);
-  Crypto::argon2d_hash(bd.data(), 64, bd.data(), m_cost1, lanes, threads, t_cost, hash_1);
+  cn_fast_hash(bd.data(), bd.size(), hash_1);
+  
+  // Phase 2
+
+  // throw our block into common pot
+  pot.insert(std::end(pot), std::begin(bd), std::end(bd));
 
   // Splitting the hash_1 into 8 chunks and getting the corresponding 8 blocks from blockchain
-  BinaryArray scratchpad;
+  // and throwing them into the pot too
+
+  size_t currentMinedMoneyUnlockWindow = !m_currency.isTestnet() ? m_currency.minedMoneyUnlockWindow_v1() : m_currency.minedMoneyUnlockWindow();
+  uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
+  uint32_t allowedHeight = currentHeight - 1 - currentMinedMoneyUnlockWindow;
+
   for (uint8_t i = 1; i <= 8; i++) {
-    uint64_t cd = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
-    uint32_t height_i = cd % (boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex - 1 - m_currency.minedMoneyUnlockWindow_v1());
+    uint32_t chunk = *reinterpret_cast<uint32_t *>(&hash_1.data[i * 4 - 4]);
+    uint32_t height_i = chunk % allowedHeight;
     Crypto::Hash hash_i = getBlockIdByHeight(height_i);
 
-    Block b;
-    if (!getBlockByHash(hash_i, b)) {
+    Block bl;
+    if (!getBlockByHash(hash_i, bl)) {
       return false;
     }
     BinaryArray ba;
-    if (!toBinaryArray(b, ba)) {
+    if (!get_block_hashing_blob(bl, ba)) {
       return false;
     }
-    scratchpad.insert(std::end(scratchpad), std::begin(ba), std::end(ba));
+    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
   }
 
-  // Phase 2
-
-  uint32_t m_cost2 = (1 << 6);
-  Crypto::Hash hash_2;
-
-  // Hashing the eight blocks as one continous block, salt is hash_1
-  Crypto::argon2d_hash(scratchpad.data(), 64, &hash_1, m_cost2, lanes, threads, t_cost, hash_2);
-
   // Phase 3
-	
-  uint32_t m_cost3 = (1 << 5);
 
-  // Hashing using the generated hash_2 as a salt for argon, taking the previous hash_1 as the password for argon
-  // Crypto::argon2d_hash(&hash_1, 64, &hash_2, m_cost3, lanes, threads, t_cost, res);
-  // additionally using keccak and pseudorandom finalizer function
-  Crypto::an_slow_hash(&hash_1, sizeof(&hash_1), &hash_2, m_cost3, t_cost, res);
+  uint32_t m_cost = 128;
+  uint32_t lanes = 2;
+  uint32_t t_cost = 2;
+
+  // stir the pot - hashing the 1 + 8 blocks as one continous data, salt is hash_1
+  Crypto::argon2d_hash(pot.data(), pot.size(), &hash_1, sizeof(&hash_1), m_cost, lanes, t_cost, res);
 
   return true;
 }
@@ -1262,7 +1263,8 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
 
   // get fresh checkpoints from DNS - the best we have right now
 #ifndef __ANDROID__
-  m_checkpoints.load_checkpoints_from_dns();
+  if (!m_currency.isTestnet())
+    m_checkpoints.load_checkpoints_from_dns();
 #endif
 
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
@@ -2251,6 +2253,10 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   pushBlock(block);
 
   auto block_processing_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - blockProcessingStart).count();
+
+  if (block.height % 1000 == 0) {
+	  logger(INFO) << "+++++ Blockchain loaded to height: " << block.height;
+  }
 
   logger(DEBUGGING) <<
     "+++++ BLOCK SUCCESSFULLY ADDED" << ENDL << "id:\t" << blockHash

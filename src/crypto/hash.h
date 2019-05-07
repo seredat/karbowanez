@@ -23,6 +23,8 @@
 
 #include <CryptoTypes.h>
 #include "generic-ops.h"
+#include "argon2/argon2.h"
+#include "argon2/blake2.h"
 
 namespace Crypto {
 
@@ -61,15 +63,11 @@ namespace Crypto {
   };
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
-	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+    cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  inline void an_slow_hash(const void *data, size_t length, const void *salt, uint32_t m_cost, uint32_t t_cost, Hash &hash) {
-    an_slow_hash(data, length, salt, m_cost, t_cost, reinterpret_cast<char *>(&hash));
-  }
-
-  inline void argon2d_hash(const void *in, const size_t size, const void *salt, uint32_t m_cost, uint32_t lanes, uint32_t threads, uint32_t t_cost, Hash &hash) {
-    argon2d_hash(in, size, salt, m_cost, lanes, threads, t_cost, reinterpret_cast<char *>(&hash));
+  inline void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t t_cost, Hash &hash) {
+    argon2d_hash_raw(t_cost, m_cost, lanes, in, inlen, salt, saltlen, reinterpret_cast<char *>(&hash), 64);
   }
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {
