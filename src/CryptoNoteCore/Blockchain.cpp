@@ -1198,6 +1198,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   BinaryArray bd, pot;
   if (!get_block_hashing_blob(b, bd)) {
+    logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
     return false;
   }
 
@@ -1227,10 +1228,12 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
     Block bl;
     if (!getBlockByHash(hash_i, bl)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hash_i) << " at height " << height_i;
       return false;
     }
     BinaryArray ba;
     if (!get_block_hashing_blob(bl, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
       return false;
     }
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
