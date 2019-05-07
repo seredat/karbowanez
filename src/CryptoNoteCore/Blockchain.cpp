@@ -583,7 +583,7 @@ void Blockchain::rebuildCache() {
 bool Blockchain::storeCache() {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
-  logger(INFO, BRIGHT_WHITE) << "Saving blockchain...";
+  logger(INFO, BRIGHT_WHITE) << "Saving blockchain at height " << m_blocks.size() - 1 << "...";
   BlockCacheSerializer ser(*this, getTailId(), logger.getLogger());
   if (!ser.save(appendPath(m_config_folder, m_currency.blocksCacheFileName()))) {
     logger(ERROR, BRIGHT_RED) << "Failed to save blockchain cache";
@@ -1063,6 +1063,12 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
   if (!(b.baseTransaction.inputs.size() == 1)) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction in the block has no inputs";
+    return false;
+  }
+
+  if (!(b.baseTransaction.signatures.empty())) {
+    logger(ERROR, BRIGHT_RED)
+      << "coinbase transaction in the block shouldn't have signatures";
     return false;
   }
 
@@ -1611,6 +1617,13 @@ uint64_t Blockchain::blockDifficulty(size_t i) {
   return m_blocks[i].cumulative_difficulty - m_blocks[i - 1].cumulative_difficulty;
 }
 
+uint64_t Blockchain::blockCumulativeDifficulty(size_t i) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  if (!(i < m_blocks.size())) { logger(ERROR, BRIGHT_RED) << "wrong block index i = " << i << " at Blockchain::block_difficulty()"; return false; }
+
+  return m_blocks[i].cumulative_difficulty;
+}
+
 void Blockchain::print_blockchain(uint64_t start_index, uint64_t end_index) {
   std::stringstream ss;
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
@@ -1819,8 +1832,10 @@ bool Blockchain::is_tx_spendtime_unlocked(uint64_t unlock_time) {
       return false;
   } else {
     //interpret as time
-    uint64_t current_time = static_cast<uint64_t>(time(NULL));
-    if (current_time + m_currency.lockedTxAllowedDeltaSeconds() >= unlock_time)
+
+    // compare with last block timestamp + delta seconds
+    const uint64_t lastBlockTimestamp = getBlockTimestamp(getCurrentBlockchainHeight() - 1);
+    if (lastBlockTimestamp + m_currency.lockedTxAllowedDeltaSeconds() >= unlock_time)
       return true;
     else
       return false;

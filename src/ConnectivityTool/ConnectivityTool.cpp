@@ -45,7 +45,7 @@ using namespace CryptoNote;
 #ifndef ENDL
 #define ENDL std::endl
 #endif
-
+#ifdef ALLOW_DEBUG_COMMANDS
 namespace {
   const command_line::arg_descriptor<std::string, true> arg_ip           = {"ip", "set ip"};
   const command_line::arg_descriptor<uint16_t>      arg_port = { "port", "set port" };
@@ -385,3 +385,4 @@ int main(int argc, char *argv[]) {
   std::cerr << desc_all << ENDL;
   return 1;
 }
+#endif

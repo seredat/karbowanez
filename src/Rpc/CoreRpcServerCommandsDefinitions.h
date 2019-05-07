@@ -24,8 +24,6 @@
 #include "CryptoNoteCore/Difficulty.h"
 #include "crypto/hash.h"
 
-#include "BlockchainExplorerData2.h"
-
 #include "Serialization/SerializationOverloads.h"
 #include "Serialization/BlockchainExplorerDataSerialization.h"
 
@@ -582,6 +580,7 @@ struct f_block_details_response {
   uint64_t depth;
   std::string hash;
   difficulty_type difficulty;
+  difficulty_type cumulativeDifficulty;
   uint64_t reward;
   uint64_t blockSize;
   size_t sizeMedian;
@@ -605,6 +604,7 @@ struct f_block_details_response {
     KV_MEMBER(depth)
     KV_MEMBER(hash)
     KV_MEMBER(difficulty)
+    KV_MEMBER(cumulativeDifficulty)
     KV_MEMBER(reward)
     KV_MEMBER(blockSize)
     KV_MEMBER(sizeMedian)
@@ -614,8 +614,8 @@ struct f_block_details_response {
     KV_MEMBER(alreadyGeneratedTransactions)
     KV_MEMBER(baseReward)
     KV_MEMBER(penalty)
-    KV_MEMBER(transactions)
     KV_MEMBER(totalFeeAmount)
+    KV_MEMBER(transactions)
   }
 };
 
@@ -945,7 +945,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS {
   };
 
   struct response {
-    std::vector<BlockDetails2> blocks;
+    std::vector<BlockDetails> blocks;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -965,7 +965,7 @@ struct COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES {
   };
 
   struct response {
-    std::vector<BlockDetails2> blocks;
+    std::vector<BlockDetails> blocks;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -985,7 +985,7 @@ struct COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT {
   };
 
   struct response {
-    BlockDetails2 block;
+    BlockDetails block;
     std::string status;
 
     void serialize(ISerializer& s) {
@@ -1041,7 +1041,7 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
   };
 };
 
-struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
+struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES {
   struct request {
     std::vector<Crypto::Hash> transactionHashes;
 
@@ -1051,7 +1051,7 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
   };
 
   struct response {
-    std::vector<TransactionDetails2> transactions;
+    std::vector<TransactionDetails> transactions;
     std::string status;
 
     void serialize(ISerializer &s) {
@@ -1059,6 +1059,26 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASHES {
       KV_MEMBER(transactions)
     }
   };
+};
+
+struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
+	struct request {
+		Crypto::Hash hash;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(hash);
+		}
+	};
+
+	struct response {
+		TransactionDetails transaction;
+		std::string status;
+
+		void serialize(ISerializer &s) {
+			KV_MEMBER(status)
+			KV_MEMBER(transaction)
+		}
+	};
 };
 
 //-----------------------------------------------

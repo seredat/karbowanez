@@ -21,7 +21,6 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include "BlockchainExplorerData.h"
-#include "BlockchainExplorerData2.h"
 #include "P2p/NetNodeCommon.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "Currency.h"
@@ -79,6 +78,7 @@ namespace CryptoNote {
                                  uint64_t& reward, int64_t& emissionChange) override;
      virtual bool scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) override;
      virtual bool getBlockDifficulty(uint32_t height, difficulty_type& difficulty) override;
+     virtual bool getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) override;
      virtual bool getBlockContainingTx(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight) override;
      virtual bool getMultisigOutputReference(const MultisignatureInput& txInMultisig, std::pair<Crypto::Hash, size_t>& output_reference) override;
      virtual bool getGeneratedTransactionsNumber(uint32_t height, uint64_t& generatedTransactions) override;
@@ -93,18 +93,15 @@ namespace CryptoNote {
      virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
      virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
      virtual uint64_t getMinimalFee() override;
-     
+
      virtual bool addMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
      virtual bool removeMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) override;
 
      virtual std::time_t getStartTime() const;
-	 
-     uint32_t get_current_blockchain_height();
+
+     uint32_t get_current_blockchain_height() override;
      uint8_t getCurrentBlockMajorVersion() override;
 	 uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
-
-	 bool fillBlockDetails(const CryptoNote::Block& block, BlockDetails2& blockDetails);
-	 bool fillTransactionDetails(const Transaction &tx, TransactionDetails2& txRpcInfo, uint64_t timestamp = 0);
 
 	 static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 
@@ -144,7 +141,7 @@ namespace CryptoNote {
      virtual std::vector<Crypto::Hash> findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds, size_t maxCount,
        uint32_t& totalBlockCount, uint32_t& startBlockIndex) override;
      bool get_stat_info(core_stat_info& st_inf) override;
-     
+
      virtual bool get_tx_outputs_gindexs(const Crypto::Hash& tx_id, std::vector<uint32_t>& indexs) override;
      Crypto::Hash get_tail_id();
      virtual bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS_response& res) override;
@@ -169,11 +166,9 @@ namespace CryptoNote {
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
-     bool f_getMixin(const Transaction& transaction, uint64_t& mixin);
+     virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
-
-     bool fillTxExtra(const std::vector<uint8_t>& rawExtra, TransactionExtraDetails2& extraDetails);
 
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
@@ -188,6 +183,8 @@ namespace CryptoNote {
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
 	 bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height, bool loose_check);
+	 //check if tx is not sending unmixable outputs
+	 bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 
      bool check_tx_ring_signature(const KeyInput& tx, const Crypto::Hash& tx_prefix_hash, const std::vector<Crypto::Signature>& sig);
      bool is_tx_spendtime_unlocked(uint64_t unlock_time);
@@ -201,8 +198,6 @@ namespace CryptoNote {
 
      bool findStartAndFullOffsets(const std::vector<Crypto::Hash>& knownBlockIds, uint64_t timestamp, uint32_t& startOffset, uint32_t& startFullOffset);
      std::vector<Crypto::Hash> findIdsForShortBlocks(uint32_t startOffset, uint32_t startFullOffset);
-
-	 size_t median(std::vector<size_t>& v);
 
      const Currency& m_currency;
      Logging::LoggerRef logger;

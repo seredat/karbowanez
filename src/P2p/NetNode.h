@@ -169,7 +169,9 @@ namespace CryptoNote
     bool init_config();
     bool make_default_config();
     bool store_config();
+#ifdef ALLOW_DEBUG_COMMANDS
     bool check_trust(const proof_of_trust& tr);
+#endif
     void initUpnp();
 
     bool handshake(CryptoNote::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist = false);

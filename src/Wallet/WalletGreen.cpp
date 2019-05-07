@@ -37,6 +37,7 @@
 
 #include "ITransaction.h"
 
+#include "Common/Base58.h"
 #include "Common/ScopeExit.h"
 #include "Common/ShuffleGenerator.h"
 #include "Common/StdInputStream.h"
@@ -57,6 +58,12 @@
 #include "WalletSerializationV2.h"
 #include "WalletErrors.h"
 #include "WalletUtils.h"
+
+extern "C"
+{
+#include "crypto/keccak.h"
+#include "crypto/crypto-ops.h"
+}
 
 using namespace Common;
 using namespace Crypto;
@@ -638,6 +645,8 @@ void WalletGreen::loadWalletCache(std::unordered_set<Crypto::PublicKey>& addedKe
 }
 
 void WalletGreen::saveWalletCache(ContainerStorage& storage, const Crypto::chacha8_key& key, WalletSaveLevel saveLevel, const std::string& extra) {
+  m_logger(DEBUGGING) << "Saving cache...";
+
   WalletTransactions transactions;
   WalletTransfers transfers;
 
@@ -689,6 +698,14 @@ void WalletGreen::saveWalletCache(ContainerStorage& storage, const Crypto::chach
 
 void WalletGreen::copyContainerStorageKeys(ContainerStorage& src, const chacha8_key& srcKey, ContainerStorage& dst, const chacha8_key& dstKey) {
   dst.reserve(src.size());
+
+  dst.setAutoFlush(false);
+  Tools::ScopeExit exitHandler([&dst] {
+    dst.setAutoFlush(true);
+    dst.flush();
+  });
+
+  size_t counter = 0;
 
   for (auto& encryptedSpendKeys : src) {
     Crypto::PublicKey publicKey;
@@ -1044,34 +1061,83 @@ std::string WalletGreen::createAddress(const Crypto::PublicKey& spendPublicKey) 
   return doCreateAddress(spendPublicKey, NULL_SECRET_KEY, 0);
 }
 
+std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, bool reset) {
+  std::vector<NewAddressData> addressDataList(spendSecretKeys.size());
+  for (size_t i = 0; i < spendSecretKeys.size(); ++i) {
+    Crypto::PublicKey spendPublicKey;
+    if (!Crypto::secret_key_to_public_key(spendSecretKeys[i], spendPublicKey)) {
+      m_logger(ERROR, BRIGHT_RED) << "createAddressList(): failed to convert secret key to public key, secret key " << spendSecretKeys[i];
+      throw std::system_error(make_error_code(CryptoNote::error::KEY_GENERATION_ERROR));
+    }
+
+    addressDataList[i].spendSecretKey = spendSecretKeys[i];
+    addressDataList[i].spendPublicKey = spendPublicKey;
+    addressDataList[i].creationTimestamp = reset ? 0 : static_cast<uint64_t>(time(nullptr));
+  }
+
+  return doCreateAddressList(addressDataList);
+}
+
 std::string WalletGreen::doCreateAddress(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp) {
   assert(creationTimestamp <= std::numeric_limits<uint64_t>::max() - m_currency.blockFutureTimeLimit());
 
+  std::vector<NewAddressData> addressDataList;
+  addressDataList.push_back(NewAddressData{ spendPublicKey, spendSecretKey, creationTimestamp });
+  std::vector<std::string> addresses = doCreateAddressList(addressDataList);
+  assert(addresses.size() == 1);
+
+  return addresses.front();
+}
+
+std::vector<std::string> WalletGreen::doCreateAddressList(const std::vector<NewAddressData>& addressDataList) {
   throwIfNotInitialized();
   throwIfStopped();
 
   stopBlockchainSynchronizer();
 
-  std::string address;
+  std::vector<std::string> addresses;
   try {
-    address = addWallet(spendPublicKey, spendSecretKey, creationTimestamp);
-    auto currentTime = static_cast<uint64_t>(time(nullptr));
+    uint64_t minCreationTimestamp = std::numeric_limits<uint64_t>::max();
 
-    if (creationTimestamp + m_currency.blockFutureTimeLimit() < currentTime) {
+    {
+      if (addressDataList.size() > 1) {
+        m_containerStorage.setAutoFlush(false);
+      }
+
+      Tools::ScopeExit exitHandler([this] {
+        if (!m_containerStorage.getAutoFlush()) {
+          m_containerStorage.setAutoFlush(true);
+          m_containerStorage.flush();
+        }
+      });
+
+      for (auto& addressData : addressDataList) {
+        assert(addressData.creationTimestamp <= std::numeric_limits<uint64_t>::max() - m_currency.blockFutureTimeLimit());
+        std::string address = addWallet(addressData.spendPublicKey, addressData.spendSecretKey, addressData.creationTimestamp);
+        m_logger(INFO, BRIGHT_WHITE) << "New wallet added " << address << ", creation timestamp " << addressData.creationTimestamp;
+        addresses.push_back(std::move(address));
+
+        minCreationTimestamp = std::min(minCreationTimestamp, addressData.creationTimestamp);
+      }
+    }
+
+    m_containerStorage.setAutoFlush(true);
+    auto currentTime = static_cast<uint64_t>(time(nullptr));
+    if (minCreationTimestamp + m_currency.blockFutureTimeLimit() < currentTime) {
+      m_logger(DEBUGGING) << "Reset is required";
       save(WalletSaveLevel::SAVE_KEYS_AND_TRANSACTIONS, m_extra);
       shutdown();
       load(m_path, m_password);
     }
   } catch (const std::exception& e) {
-    m_logger(ERROR, BRIGHT_RED) << "Failed to add wallet: " << e.what();
+    m_logger(ERROR, BRIGHT_RED) << "Failed to add wallets: " << e.what();
     startBlockchainSynchronizer();
     throw;
   }
 
   startBlockchainSynchronizer();
-  m_logger(INFO, BRIGHT_WHITE) << "New wallet added " << address << ", creation timestamp " << creationTimestamp;
 
-  return address;
+  return addresses;
 }
 
 std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp) {
@@ -1138,6 +1204,134 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
 
     throw;
   }
+}
+
+CryptoNote::BlockDetails WalletGreen::getBlock(const uint64_t blockHeight)
+{
+	CryptoNote::BlockDetails block;
+
+	if (m_node.getLastKnownBlockHeight() == 0)
+	{
+		return block;
+	}
+
+	std::promise<std::error_code> errorPromise;
+
+	auto e = errorPromise.get_future();
+
+	auto callback = [&errorPromise](std::error_code e)
+	{
+		errorPromise.set_value(e);
+	};
+
+	m_node.getBlock(blockHeight, block, callback);
+
+	e.get();
+
+	return block;
+}
+
+uint64_t WalletGreen::scanHeightToTimestamp(const uint64_t scanHeight)
+{
+	if (scanHeight == 0)
+	{
+		return 0;
+	}
+
+	/* Get the block timestamp from the node if the node has it */
+	uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
+
+	if (timestamp != 0)
+	{
+		return timestamp;
+	}
+
+	/* Get the amount of seconds since the blockchain launched */
+	uint64_t secondsSinceLaunch = scanHeight *
+		CryptoNote::parameters::DIFFICULTY_TARGET;
+
+	/* Add a bit of a buffer in case of difficulty weirdness, blocks coming
+	   out too fast */
+	secondsSinceLaunch *= 0.95;
+
+	/* Get the genesis block timestamp and add the time since launch */
+	timestamp = UINT64_C(1464595534)
+		+ secondsSinceLaunch;
+
+	/* Timestamp in the future */
+	if (timestamp >= static_cast<uint64_t>(std::time(nullptr)))
+	{
+		return getCurrentTimestampAdjusted();
+	}
+
+	return timestamp;
+}
+
+uint64_t WalletGreen::getCurrentTimestampAdjusted()
+{
+	/* Get the current time as a unix timestamp */
+	std::time_t time = std::time(nullptr);
+
+	/* Take the amount of time a block can potentially be in the past/future */
+	std::initializer_list<uint64_t> limits =
+	{
+		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT,
+		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1
+	};
+
+	/* Get the largest adjustment possible */
+	uint64_t adjust = std::max(limits);
+
+	/* Take the earliest timestamp that will include all possible blocks */
+	return time - adjust;
+}
+
+void WalletGreen::reset(const uint64_t scanHeight)
+{
+    throwIfNotInitialized();
+    throwIfStopped();
+
+    /* Stop so things can't be added to the container as we're looping */
+    stop();
+
+    /* Grab the wallet encrypted prefix */
+    auto* prefix = reinterpret_cast<ContainerStoragePrefix*>(m_containerStorage.prefix());
+
+    uint64_t newTimestamp = scanHeightToTimestamp(scanHeight);
+
+    /* Reencrypt with the new creation timestamp so we rescan from here when we relaunch */
+    prefix->encryptedViewKeys = encryptKeyPair(m_viewPublicKey, m_viewSecretKey, newTimestamp);
+
+    /* As a reference so we can update it */
+    for (auto& encryptedSpendKeys : m_containerStorage)
+    {
+        Crypto::PublicKey publicKey;
+        Crypto::SecretKey secretKey;
+        uint64_t oldTimestamp;
+
+        /* Decrypt the key pair we're pointing to */
+        decryptKeyPair(encryptedSpendKeys, publicKey, secretKey, oldTimestamp);
+
+        /* Re-encrypt with the new timestamp */
+        encryptedSpendKeys = encryptKeyPair(publicKey, secretKey, newTimestamp);
+    }
+
+    /* Start again so we can save */
+    start();
+
+    /* Save just the keys + timestamp to file */
+    save(CryptoNote::WalletSaveLevel::SAVE_KEYS_ONLY);
+
+    /* Stop and shutdown */
+    stop();
+
+    /* Shutdown the wallet */
+    shutdown();
+
+    start();
+
+    /* Reopen from truncated storage */
+    load(m_path, m_password);
 }
 
 void WalletGreen::deleteAddress(const std::string& address) {
@@ -1316,6 +1510,25 @@ size_t WalletGreen::transfer(const TransactionParameters& transactionParameters,
   return id;
 }
 
+uint64_t WalletGreen::getBalanceMinusDust(const std::vector<std::string>& addresses)
+{
+    std::vector<WalletOuts> wallets = addresses.empty() ? pickWalletsWithMoney() : pickWallets(addresses);
+    std::vector<OutputToTransfer> unused;
+
+	/* We want to get the full balance, so don't stop getting outputs early */
+	uint64_t needed = std::numeric_limits<uint64_t>::max();
+
+	return selectTransfers
+	(
+		needed,
+		/* Don't include dust outputs */
+		false,
+		m_currency.defaultDustThreshold(),
+		std::move(wallets),
+		unused
+	);
+}
+
 void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   const std::vector<WalletOrder>& orders,
   uint64_t fee,
@@ -1331,7 +1544,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   preparedTransaction.neededMoney = countNeededMoney(preparedTransaction.destinations, fee);
 
   std::vector<OutputToTransfer> selectedTransfers;
-  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, m_currency.defaultDustThreshold(), std::move(wallets), selectedTransfers);
+  uint64_t foundMoney = selectTransfers(preparedTransaction.neededMoney, mixIn == 0, 0, std::move(wallets), selectedTransfers);
 
   if (foundMoney < preparedTransaction.neededMoney) {
     m_logger(ERROR, BRIGHT_RED) << "Failed to create transaction: not enough money. Needed " << m_currency.formatAmount(preparedTransaction.neededMoney) <<
@@ -1352,7 +1565,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
   uint64_t donationAmount = pushDonationTransferIfPossible(donation, foundMoney - preparedTransaction.neededMoney, m_currency.defaultDustThreshold(), preparedTransaction.destinations);
   preparedTransaction.changeAmount = foundMoney - preparedTransaction.neededMoney - donationAmount;
 
-  std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, m_currency.defaultDustThreshold(), m_currency);
+  std::vector<ReceiverAmounts> decomposedOutputs = splitDestinations(preparedTransaction.destinations, 0, m_currency);
   if (preparedTransaction.changeAmount != 0) {
     WalletTransfer changeTransfer;
     changeTransfer.type = WalletTransferType::CHANGE;
@@ -1360,7 +1573,7 @@ void WalletGreen::prepareTransaction(std::vector<WalletOuts>&& wallets,
     changeTransfer.amount = static_cast<int64_t>(preparedTransaction.changeAmount);
     preparedTransaction.destinations.emplace_back(std::move(changeTransfer));
 
-    auto splittedChange = splitAmount(preparedTransaction.changeAmount, changeDestination, m_currency.defaultDustThreshold());
+    auto splittedChange = splitAmount(preparedTransaction.changeAmount, changeDestination, 0);
     decomposedOutputs.emplace_back(std::move(splittedChange));
   }
 
@@ -2101,7 +2314,7 @@ void WalletGreen::sendTransaction(const CryptoNote::Transaction& cryptoNoteTrans
 size_t WalletGreen::validateSaveAndSendTransaction(const ITransactionReader& transaction, const std::vector<WalletTransfer>& destinations, bool isFusion, bool send) {
   BinaryArray transactionData = transaction.getTransactionData();
 
-  if (transactionData.size() > m_upperTransactionSizeLimit) {
+  if (transactionData.size() > getMaxTxSize()) {
     m_logger(ERROR, BRIGHT_RED) << "Transaction is too big. Transaction hash " << transaction.getTransactionHash() <<
       ", size " << transactionData.size() << ", size limit " << m_upperTransactionSizeLimit;
     throw std::system_error(make_error_code(error::TRANSACTION_SIZE_TOO_BIG));
@@ -2294,7 +2507,7 @@ std::vector<CryptoNote::WalletGreen::ReceiverAmounts> WalletGreen::splitDestinat
   std::vector<ReceiverAmounts> decomposedOutputs;
   for (const auto& destination: destinations) {
     AccountPublicAddress address = parseAccountAddressString(destination.address);
-    decomposedOutputs.push_back(splitAmount(destination.amount, address, dustThreshold));
+    decomposedOutputs.push_back(splitAmount(destination.amount, address, 0));
   }
 
   return decomposedOutputs;
@@ -2308,7 +2521,7 @@ CryptoNote::WalletGreen::ReceiverAmounts WalletGreen::splitAmount(
   ReceiverAmounts receiverAmounts;
 
   receiverAmounts.receiver = destination;
-  decomposeAmount(amount, dustThreshold, receiverAmounts.amounts);
+  decomposeAmount(amount, 0, receiverAmounts.amounts);
   return receiverAmounts;
 }
 
@@ -2489,15 +2702,177 @@ std::vector<TransactionOutputInformation> WalletGreen::getTransfers(size_t index
 }
 
 Crypto::SecretKey WalletGreen::getTransactionSecretKey(size_t transactionIndex) const {
-	throwIfNotInitialized();
-	throwIfStopped();
+  throwIfNotInitialized();
+  throwIfStopped();
 
-	if (m_transactions.size() <= transactionIndex) {
-		m_logger(ERROR, BRIGHT_RED) << "Failed to get transaction: invalid index " << transactionIndex << ". Number of transactions: " << m_transactions.size();
-		throw std::system_error(make_error_code(CryptoNote::error::INDEX_OUT_OF_RANGE));
-	}
+  if (m_transactions.size() <= transactionIndex) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to get transaction: invalid index " << transactionIndex << ". Number of transactions: " << m_transactions.size();
+    throw std::system_error(make_error_code(CryptoNote::error::INDEX_OUT_OF_RANGE));
+  }
 
-    return m_transactions.get<RandomAccessIndex>()[transactionIndex].secretKey.get();
+  return m_transactions.get<RandomAccessIndex>()[transactionIndex].secretKey.get();
+}
+
+Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transactionHash) const {
+  throwIfNotInitialized();
+  throwIfStopped();
+
+  auto txInfo = getTransaction(transactionHash);
+  return txInfo.transaction.secretKey.get_value_or(CryptoNote::NULL_SECRET_KEY);
+}
+
+bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) {
+  Crypto::KeyImage p = *reinterpret_cast<const Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<const Crypto::KeyImage*>(&txKey);
+  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
+  Crypto::PublicKey R;
+  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
+  Crypto::secret_key_to_public_key(txKey, R);
+  Crypto::Signature sig;
+
+  try {
+    Crypto::generate_tx_proof(transactionHash, R, destinationAddress.viewPublicKey, rA, txKey, sig);
+  }
+  catch (const std::runtime_error &e) {
+    m_logger(ERROR, BRIGHT_RED) << "Proof generation error: " << *e.what();
+    return false;
+  }
+
+  transactionProof = std::string("ProofV1") +
+    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
+    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
+
+  return true;
+}
+
+std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) {
+  throwIfNotInitialized();
+  throwIfTrackingMode();
+  throwIfStopped();
+
+  if (getActualBalance() == 0) {
+    throw std::runtime_error("Zero balance");
+  }
+
+  std::vector<OutputToTransfer> selectedOutputsToTransfers;
+  std::vector<WalletOuts> wallets;
+
+  // determine which outputs to include in the proof
+  // if account is provided use it, otherwise try to find account with sufficient balance
+  if (!address.empty()) {
+    WalletOuts wallet = pickWallet(address);
+    wallets.push_back(wallet);	
+  }
+  else {
+    std::vector<WalletOuts> walletsWithMoney = pickWalletsWithMoney();
+	for (const auto& w : walletsWithMoney) {
+      if (w.wallet->actualBalance >= reserve) {
+        wallets.push_back(w);
+        break;
+      }
+    }
+  }
+
+  uint64_t found = selectTransfers(reserve, true, m_currency.defaultDustThreshold(), std::move(wallets), selectedOutputsToTransfers);
+
+  if (found < reserve) {
+    throw std::runtime_error("Not enough balance for the requested minimum reserve amount");
+  }
+
+  std::vector<TransactionOutputInformation> selectedTransfers;
+  for (const auto& ott : selectedOutputsToTransfers) {
+    selectedTransfers.push_back(ott.out);
+  }
+
+  CryptoNote::AccountKeys keys;
+  keys.spendSecretKey = wallets[0].wallet->spendSecretKey;
+  keys.viewSecretKey = m_viewSecretKey;
+  keys.address = { wallets[0].wallet->spendPublicKey, m_viewPublicKey };
+
+  // compute signature prefix hash
+  std::string prefix_data = message;
+  prefix_data.append((const char*)&keys.address, sizeof(CryptoNote::AccountPublicAddress));
+
+  std::vector<Crypto::KeyImage> kimages;
+  CryptoNote::KeyPair ephemeral;
+
+  for (size_t i = 0; i < selectedTransfers.size(); ++i) {
+    // have to repeat this to get key image as we don't store m_key_image
+    const TransactionOutputInformation &td = selectedTransfers[i];
+
+    // derive ephemeral secret key
+    Crypto::KeyImage ki;
+    const bool r = CryptoNote::generate_key_image_helper(keys, td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
+    if (!r) {
+      throw std::runtime_error("Failed to generate key image");
+    }
+    // now we can insert key image
+    prefix_data.append((const char*)&ki, sizeof(Crypto::PublicKey));
+    kimages.push_back(ki);
+  }
+
+  Crypto::Hash prefix_hash;
+  Crypto::cn_fast_hash(prefix_data.data(), prefix_data.size(), prefix_hash);
+
+  // generate proof entries
+  std::vector<reserve_proof_entry> proofs(selectedTransfers.size());
+
+  for (size_t i = 0; i < selectedTransfers.size(); ++i) {
+    const TransactionOutputInformation &td = selectedTransfers[i];
+    reserve_proof_entry& proof = proofs[i];
+    proof.key_image = kimages[i];
+    proof.txid = td.transactionHash;
+    proof.index_in_tx = td.outputInTransaction;
+
+    auto txPubKey = td.transactionPublicKey;
+
+    for (int i = 0; i < 2; ++i) {
+      Crypto::KeyImage sk = Crypto::scalarmultKey(*reinterpret_cast<const Crypto::KeyImage*>(&txPubKey), *reinterpret_cast<const Crypto::KeyImage*>(&m_viewSecretKey));
+      proof.shared_secret = *reinterpret_cast<const Crypto::PublicKey *>(&sk);
+
+      Crypto::KeyDerivation derivation;
+      if (!Crypto::generate_key_derivation(proof.shared_secret, m_viewSecretKey, derivation)) {
+        throw std::runtime_error("Failed to generate key derivation");
+      }
+    }
+
+    // generate signature for shared secret
+    Crypto::generate_tx_proof(prefix_hash, keys.address.viewPublicKey, txPubKey, proof.shared_secret, m_viewSecretKey, proof.shared_secret_sig);
+
+    // derive ephemeral secret key
+    Crypto::KeyImage ki;
+    CryptoNote::KeyPair ephemeral;
+
+    const bool r = CryptoNote::generate_key_image_helper(keys, td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
+    if (!r) {
+      throw std::runtime_error("Failed to generate key image");
+    }
+
+    if (ephemeral.publicKey != td.outputKey) {
+      throw std::runtime_error("Derived public key doesn't agree with the stored one");
+    }
+
+    // generate signature for key image
+    const std::vector<const Crypto::PublicKey *>& pubs = { &ephemeral.publicKey };
+
+    Crypto::generate_ring_signature(prefix_hash, proof.key_image, &pubs[0], 1, ephemeral.secretKey, 0, &proof.key_image_sig);
+  }
+
+  // generate signature for the spend key that received those outputs
+  Crypto::Signature signature;
+  Crypto::generate_signature(prefix_hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
+
+  // serialize & encode
+  reserve_proof p;
+  p.proofs.assign(proofs.begin(), proofs.end());
+  memcpy(&p.signature, &signature, sizeof(signature));
+
+  BinaryArray ba = toBinaryArray(p);
+  std::string ret = Common::toHex(ba);
+
+  ret = "ReserveProofV1" + Tools::Base58::encode(ret);
+
+  return ret;
 }
 
 void WalletGreen::start() {
@@ -3029,7 +3404,6 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint64_t mixin,
   std::unique_ptr<ITransaction> fusionTransaction;
   size_t transactionSize;
   int round = 0;
-  uint64_t transactionAmount;
   do {
     if (round != 0) {
       fusionInputs.pop_back();
@@ -3039,8 +3413,6 @@ size_t WalletGreen::createFusionTransaction(uint64_t threshold, uint64_t mixin,
     uint64_t inputsAmount = std::accumulate(fusionInputs.begin(), fusionInputs.end(), static_cast<uint64_t>(0), [] (uint64_t amount, const OutputToTransfer& input) {
       return amount + input.out.amount;
     });
-
-    transactionAmount = inputsAmount;
 
     ReceiverAmounts decomposedOutputs = decomposeFusionOutputs(destination, inputsAmount);
     assert(decomposedOutputs.amounts.size() <= MAX_FUSION_OUTPUT_COUNT);
@@ -3446,6 +3818,99 @@ void WalletGreen::deleteFromUncommitedTransactions(const std::vector<size_t>& de
   for (auto transactionId: deletedTransactions) {
     m_uncommitedTransactions.erase(transactionId);
   }
+}
+
+/* The blockchain events are sent to us from the blockchain synchronizer,
+   but they appear to not get executed on the dispatcher until the synchronizer
+   stops. After some investigation, it appears that we need to run this
+   archaic line of code to run other code on the dispatcher? */
+void WalletGreen::updateInternalCache() {
+    System::RemoteContext<void> updateInternalBC(m_dispatcher, [this] () {});
+    updateInternalBC.get();
+}
+
+size_t WalletGreen::getMaxTxSize()
+{
+  return m_upperTransactionSizeLimit;
+}
+
+bool WalletGreen::txIsTooLarge(const TransactionParameters& sendingTransaction)
+{
+  return getTxSize(sendingTransaction) > getMaxTxSize();
+}
+
+size_t WalletGreen::getTxSize(const TransactionParameters &sendingTransaction)
+{
+  System::EventLock lk(m_readyEvent);
+
+  throwIfNotInitialized();
+  throwIfTrackingMode();
+  throwIfStopped();
+
+  CryptoNote::AccountPublicAddress changeDestination = getChangeDestination(sendingTransaction.changeDestination, sendingTransaction.sourceAddresses);
+
+  std::vector<WalletOuts> wallets;
+  if (!sendingTransaction.sourceAddresses.empty()) {
+    wallets = pickWallets(sendingTransaction.sourceAddresses);
+  } else {
+    wallets = pickWalletsWithMoney();
+  }
+
+  PreparedTransaction preparedTransaction;
+  Crypto::SecretKey txSecretKey;
+  prepareTransaction(
+    std::move(wallets),
+    sendingTransaction.destinations,
+    sendingTransaction.fee,
+    sendingTransaction.mixIn,
+    sendingTransaction.extra,
+    sendingTransaction.unlockTimestamp,
+    sendingTransaction.donation,
+    changeDestination,
+    preparedTransaction,
+    txSecretKey);
+
+  BinaryArray transactionData = preparedTransaction.transaction->getTransactionData();
+  return transactionData.size();
+}
+
+void WalletGreen::clearCacheAndShutdown()
+{
+  if (m_walletsContainer.size() != 0) {
+    m_synchronizer.unsubscribeConsumerNotifications(m_viewPublicKey, this);
+  }
+
+  stopBlockchainSynchronizer();
+  m_blockchainSynchronizer.removeObserver(this);
+
+  clearCaches(true, true);
+
+  m_walletsContainer.clear();
+
+  shutdown();
+}
+
+void WalletGreen::createViewWallet(const std::string &password,
+                                   const std::string address,
+                                   const Crypto::SecretKey &viewSecretKey,
+                                   const std::string &path)
+{
+    CryptoNote::AccountPublicAddress publicKeys;
+    uint64_t prefix;
+
+    std::string data;
+
+    if (!(Tools::Base58::decode_addr(address, prefix, data) &&
+          fromBinaryArray(publicKeys, asBinaryArray(data)) &&
+          // ::serialization::parse_binary(data, adr) &&
+          check_key(publicKeys.spendPublicKey) &&
+          check_key(publicKeys.viewPublicKey)))
+    {
+        throw std::runtime_error("Failed to parse address!");
+    }
+
+    initializeWithViewKey(path, password, viewSecretKey);
+    createAddress(publicKeys.spendPublicKey);
 }
 
 } //namespace CryptoNote

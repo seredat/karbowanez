@@ -68,6 +68,7 @@
 #include <Common/Base58.h>
 #include "Common/PathTools.h"
 #include "Common/DnsTools.h"
+#include "Common/UrlTools.h"
 #include "Common/Util.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
@@ -81,23 +82,12 @@
 #include "WalletLegacy/WalletHelper.h"
 
 #include "version.h"
-#include "mnemonics/electrum-words.h"
+#include "Mnemonics/electrum-words.h"
 
 #include <Logging/LoggerManager.h>
 
 #if defined(WIN32)
 #include <Windows.h>
-#include <crtdbg.h>
-#include <winsock2.h>
-#include <windns.h>
-#include <Rpc.h>
-# else 
-#include <arpa/nameser.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <resolv.h>
-#include <netdb.h>
 #endif
 
 #include "ITransfersContainer.h"
@@ -130,29 +120,6 @@ const command_line::arg_descriptor<bool> arg_testnet = { "testnet", "Used to dep
 const command_line::arg_descriptor<bool> arg_reset = { "reset", "Discard cache data and start synchronizing from scratch", false };
 const command_line::arg_descriptor< std::vector<std::string> > arg_command = { "command", "" };
 
-
-bool parseUrlAddress(const std::string& url, std::string& address, uint16_t& port) {
-  auto pos = url.find("://");
-  size_t addrStart = 0;
-
-  if (pos != std::string::npos) {
-    addrStart = pos + 3;
-  }
-
-  auto addrEnd = url.find(':', addrStart);
-
-  if (addrEnd != std::string::npos) {
-    auto portEnd = url.find('/', addrEnd);
-    port = Common::fromString<uint16_t>(url.substr(
-      addrEnd + 1, portEnd == std::string::npos ? std::string::npos : portEnd - addrEnd - 1));
-  } else {
-    addrEnd = url.find('/');
-    port = 80;
-  }
-
-  address = url.substr(addrStart, addrEnd - addrStart);
-  return true;
-}
 
 void seedFormater(std::string& seed){
   const unsigned int word_width = 12;
@@ -342,8 +309,8 @@ struct TransferCommand {
           if (!remote_fee_address.empty()) {
             destination.address = remote_fee_address;
             int64_t remote_node_fee = static_cast<int64_t>(de.amount * 0.0025);
-            if (remote_node_fee > 10000000000000)
-                remote_node_fee = 10000000000000;
+            if (remote_node_fee > (int64_t)10000000000000)
+                remote_node_fee = (int64_t)10000000000000;
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
@@ -617,6 +584,13 @@ bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<Wal
 	do {
 		std::cout << "y/n: ";
 		std::getline(std::cin, answer);
+
+		if (std::cin.fail() || std::cin.eof()) {
+			std::cin.clear();
+
+			break;
+		}
+
 	} while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
 
 	return answer == "y" || answer == "Y";
@@ -684,7 +658,9 @@ bool simple_wallet::exit(const std::vector<std::string> &args) {
 
 simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log) :
   m_dispatcher(dispatcher),
-  m_daemon_port(0), 
+  m_daemon_port(0),
+  m_daemon_path("/"),
+  m_daemon_ssl(false),
   m_currency(currency), 
   m_logManager(log),
   logger(log, "simplewallet"),
@@ -885,7 +861,7 @@ bool simple_wallet::get_reserve_proof(const std::vector<std::string> &args)
 		}
 		proofFile << sig_str;
 
-		success_msg_writer() << "signature file saved to: " << filename;
+		success_msg_writer() << "signature saved to file: " << filename;
 
 	} catch (const std::exception &e) {
 		fail_msg_writer() << e.what();
@@ -1012,7 +988,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
   
 	if (!m_daemon_address.empty())
 	{
-		if (!parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port))
+		if (!Common::parseUrlAddress(m_daemon_address, m_daemon_host, m_daemon_port, m_daemon_path, m_daemon_ssl))
 		{
 			fail_msg_writer() << "failed to parse daemon address: " << m_daemon_address;
 			return false;
@@ -2621,10 +2597,12 @@ int main(int argc, char* argv[]) {
 
     std::string daemon_address = command_line::get_arg(vm, arg_daemon_address);
     std::string daemon_host = command_line::get_arg(vm, arg_daemon_host);
+    std::string daemon_path = "/";
     uint16_t daemon_port = command_line::get_arg(vm, arg_daemon_port);
+    bool daemon_ssl = false;
 
     if (!daemon_address.empty()) {
-      if (!parseUrlAddress(daemon_address, daemon_host, daemon_port)) {
+      if (!Common::parseUrlAddress(daemon_address, daemon_host, daemon_port, daemon_path, daemon_ssl)) {
         logger(ERROR, BRIGHT_RED) << "failed to parse daemon address: " << daemon_address;
         return 1;
       }

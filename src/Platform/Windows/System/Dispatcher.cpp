@@ -129,13 +129,6 @@ void Dispatcher::dispatch() {
   assert(GetCurrentThreadId() == threadId);
   NativeContext* context;
   for (;;) {
-    if (firstResumingContext != nullptr) {
-      context = firstResumingContext;
-      firstResumingContext = context->next;
-      //assert(context->inExecutionQueue);
-      context->inExecutionQueue = false;
-      break;
-    }
 
     LARGE_INTEGER frequency;
     LARGE_INTEGER ticks;
@@ -152,7 +145,7 @@ void Dispatcher::dispatch() {
     if (firstResumingContext != nullptr) {
       context = firstResumingContext;
       firstResumingContext = context->next;
-      assert(context->inExecutionQueue);
+      //assert(context->inExecutionQueue);
       context->inExecutionQueue = false;
       break;
     }

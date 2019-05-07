@@ -1,4 +1,7 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Karbo Developers
 //
 // This file is part of Karbo.
 //
@@ -14,20 +17,29 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
+// 
+// Please see the included LICENSE file for more information.
 
+//////////////////////////////
 #include "PasswordContainer.h"
+//////////////////////////////
 
 #include <iostream>
 #include <memory.h>
 #include <stdio.h>
 
 #if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <io.h>
 #include <windows.h>
 #else
 #include <termios.h>
 #include <unistd.h>
 #endif
+
+#include <GreenWallet/ColouredMsg.h>
 
 namespace Tools
 {
@@ -69,7 +81,7 @@ namespace Tools
   }
 
   bool PasswordContainer::read_password() {
-    return read_password(false);
+    return read_password(false, "Enter password: ");
   }
 
   bool PasswordContainer::read_and_validate() {
@@ -136,6 +148,71 @@ namespace Tools
     }
     else
     {
+      clear();
+    }
+
+    return r;
+  }
+
+  bool PasswordContainer::read_and_validate(std::string msg) {
+    std::string tmpPassword = m_password;
+
+    if (msg == "") {
+        if (!read_password()) {
+            std::cout << WarningMsg("Failed to read password!") << std::endl;
+            return false;
+        }
+    } else {
+        if (!read_password(false, msg)) {
+            std::cout << WarningMsg("Failed to read password!") << std::endl;
+            return false;
+        }
+    }
+
+    bool validPass = m_password == tmpPassword;
+
+    m_password = tmpPassword;
+
+    return validPass;
+  }
+
+  bool PasswordContainer::read_password(bool verify, std::string msg) {
+    clear();
+
+    bool r;
+    if (is_cin_tty()) {
+      std::cout << InformationMsg(msg);
+
+      if (verify) {
+        std::string password1;
+        std::string password2;
+        r = read_from_tty(password1);
+        if (r) {
+          std::cout << InformationMsg("Confirm your new password: ");
+          r = read_from_tty(password2);
+          if (r) {
+            if (password1 == password2) {
+              m_password = std::move(password2);
+              m_empty = false;
+	            return true;
+            } else {
+              std::cout << WarningMsg("Passwords do not match, try again.")
+                        << std::endl;
+              clear();
+	            return read_password(true, msg);
+            }
+          }
+	      }
+      } else {
+	      r = read_from_tty(m_password);
+      }
+    } else {
+      r = read_from_file();
+    }
+
+    if (r) {
+      m_empty = false;
+    } else {
       clear();
     }
 

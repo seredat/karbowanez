@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright(c) 2014 - 2017 XDN - project developers
-// Copyright(c) 2018 The Karbo developers
+// Copyright (c) 2014 - 2017 XDN - project developers
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -24,7 +25,7 @@
 #include <boost/program_options.hpp>
 
 #include "Logging/ILogger.h"
-#include "SimpleWallet/PasswordContainer.cpp"
+#include "Common/PasswordContainer.cpp"
 
 namespace po = boost::program_options;
 
@@ -32,6 +33,7 @@ namespace PaymentService {
 
 Configuration::Configuration() {
   generateNewContainer = false;
+  generateDeterministic = false;
   daemonize = false;
   registerService = false;
   unregisterService = false;
@@ -43,6 +45,9 @@ Configuration::Configuration() {
   bindPort = 0;
   m_rpcUser = "";
   m_rpcPassword = "";
+  secretViewKey = "";
+  secretSpendKey = "";
+  mnemonicSeed = "";
 }
 
 void Configuration::initOptions(boost::program_options::options_description& desc) {
@@ -54,6 +59,10 @@ void Configuration::initOptions(boost::program_options::options_description& des
       ("container-file,w", po::value<std::string>(), "container file")
       ("container-password,p", po::value<std::string>(), "container password")
       ("generate-container,g", "generate new container file with one wallet and exit")
+      ("view-key", po::value<std::string>(), "generate a container with this secret key view")
+      ("spend-key", po::value<std::string>(), "generate a container with this secret spend key")
+      ("mnemonic-seed", po::value<std::string>(), "generate a container with this mnemonic seed")
+      ("deterministic", "generate a container with deterministic keys. View key is generated from spend key of the first address")
       ("daemon,d", "run as daemon in Unix or as service in Windows")
 #ifdef _WIN32
       ("register-service", "register service and exit (Windows only)")
@@ -130,6 +139,34 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("generate-container") != 0) {
     generateNewContainer = true;
+  }
+
+  if (options.count("deterministic") != 0) {
+    generateDeterministic = true;
+  }
+
+  if (options.count("view-key") != 0) {
+	if (!generateNewContainer) {
+	  throw ConfigurationError("generate-container parameter is required");
+	}
+	secretViewKey = options["view-key"].as<std::string>();
+  }
+
+  if (options.count("spend-key") != 0) {
+	if (!generateNewContainer) {
+	  throw ConfigurationError("generate-container parameter is required");
+	}
+	secretSpendKey = options["spend-key"].as<std::string>();
+  }
+
+  if (options.count("mnemonic-seed") != 0) {
+    if (!generateNewContainer) {
+      throw ConfigurationError("generate-container parameter is required");
+    }
+    else if (options.count("spend-key") != 0 || options.count("view-key") != 0) {
+      throw ConfigurationError("Cannot specify import via both mnemonic seed and private keys");
+    }
+    mnemonicSeed = options["mnemonic-seed"].as<std::string>();
   }
 
   if (options.count("address") != 0) {

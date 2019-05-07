@@ -1,4 +1,7 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2017, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2018, The Monero Project
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019, The Karbo Developers
 //
 // This file is part of Karbo.
 //
@@ -14,6 +17,8 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
+//
+// Please see the included LICENSE file for more information.
 
 #pragma once
 
@@ -34,10 +39,13 @@ namespace Tools
     void clear();
     bool empty() const { return m_empty; }
     const std::string& password() const { return m_password; }
-    void password(std::string&& val) { m_password = std::move(val); m_empty = false; }
+    void password(std::string&& val) { m_password = std::move(val); 
+                                       m_empty = false; }
     bool read_password();
     bool read_password(bool verify);
+    bool read_password(bool verify, std::string msg);
     bool read_and_validate();
+    bool read_and_validate(std::string msg);
 
   private:
     bool read_from_file();

@@ -137,7 +137,8 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << "network hashrate: " << get_mining_speed(hashrate) << ", next difficulty: " << difficulty << ", "
     << "block v. " << (int)majorVersion << ", alt. blocks: " << alt_block_count << ", "
     << outgoing_connections_count << " out. + " << incoming_connections_count << " inc. connection(s), "
-    << rpc_conn <<  " rpc connection(s), " << tx_pool_size << " transaction(s) in mempool, "
+    << rpc_conn <<  " rpc connection(s), " << "peers: " << white_peerlist_size << " white / " << grey_peerlist_size << " grey, "
+    << tx_pool_size << " transaction(s) in mempool, "
     << "uptime: " << (unsigned int)floor(uptime / 60.0 / 60.0 / 24.0) << "d " << (unsigned int)floor(fmod((uptime / 60.0 / 60.0), 24.0)) << "h "
     << (unsigned int)floor(fmod((uptime / 60.0), 60.0)) << "m " << (unsigned int)fmod(uptime, 60.0) << "s"
     << std::endl;
@@ -237,7 +238,7 @@ bool DaemonCommandsHandler::print_bci(const std::vector<std::string>& args)
 bool DaemonCommandsHandler::set_log(const std::vector<std::string>& args)
 {
   if (args.size() != 1) {
-    std::cout << "use: set_log <log_level_number_0-5>" << ENDL;
+    std::cout << "use: set_log <log_level_number_0-4>" << ENDL;
     return true;
   }
 

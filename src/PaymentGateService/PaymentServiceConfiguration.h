@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright(c) 2014 - 2017 XDN - project developers
-// Copyright(c) 2018 The Karbo developers
+// Copyright (c) 2014 - 2017 XDN - project developers
+// Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2016-2019 The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -25,7 +26,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "SimpleWallet/PasswordContainer.h"
+#include "Common/PasswordContainer.h"
 
 namespace {
 	Tools::PasswordContainer pwd_container;
@@ -53,8 +54,12 @@ struct Configuration {
   std::string containerPassword;
   std::string logFile;
   std::string serverRoot;
+  std::string secretViewKey;
+  std::string secretSpendKey;
+  std::string mnemonicSeed;
 
   bool generateNewContainer;
+  bool generateDeterministic;
   bool daemonize;
   bool registerService;
   bool unregisterService;
