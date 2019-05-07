@@ -157,7 +157,13 @@ namespace CryptoNote {
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
-			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+			// flat rate tail emission reward
+			//baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+
+			// inflation 2% of total coins in circulation
+			const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
+			uint64_t twoPercentOfEmission = static_cast<double>(alreadyGeneratedCoins) / 100 * 2;
+			baseReward = twoPercentOfEmission / blocksInOneYear;
 		}
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
