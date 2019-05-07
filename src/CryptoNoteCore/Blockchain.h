@@ -90,10 +90,10 @@ namespace CryptoNote {
     Crypto::Hash getTailId();
     Crypto::Hash getTailId(uint32_t& height);
     difficulty_type getDifficultyForNextBlock();
-	difficulty_type getAvgCumulativeDifficulty(uint32_t height);
-	difficulty_type getAvgDifficulty(uint32_t height, size_t window);
-	uint64_t getBlockTimestamp(uint32_t height);
-	uint64_t getMinimalFee(uint32_t height);
+    difficulty_type getAvgCumulativeDifficulty(uint32_t height);
+    difficulty_type getAvgDifficulty(uint32_t height, size_t window);
+    uint64_t getBlockTimestamp(uint32_t height);
+    uint64_t getMinimalFee(uint32_t height);
     uint64_t getCoinsInCirculation();
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
     bool addNewBlock(const Block& bl_, block_verification_context& bvc);
@@ -278,8 +278,8 @@ namespace CryptoNote {
     MultisignatureOutputsContainer m_multisignatureOutputs;
     UpgradeDetector m_upgradeDetectorV2;
     UpgradeDetector m_upgradeDetectorV3;
-	UpgradeDetector m_upgradeDetectorV4;
-	UpgradeDetector m_upgradeDetectorV5;
+    UpgradeDetector m_upgradeDetectorV4;
+    UpgradeDetector m_upgradeDetectorV5;
 
     PaymentIdIndex m_paymentIdIndex;
     TimestampBlocksIndex m_timestampIndex;
@@ -306,7 +306,7 @@ namespace CryptoNote {
     bool check_block_timestamp_main(const Block& b);
     bool check_block_timestamp(std::vector<uint64_t> timestamps, const Block& b);
     uint64_t get_adjusted_time();
-	bool complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_height, std::vector<uint64_t>& timestamps);
+    bool complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_height, std::vector<uint64_t>& timestamps);
     bool checkBlockVersion(const Block& b, const Crypto::Hash& blockHash);
     bool checkParentBlockSize(const Block& b, const Crypto::Hash& blockHash);
     bool checkCumulativeBlockSize(const Crypto::Hash& blockId, size_t cumulativeBlockSize, uint64_t height);
