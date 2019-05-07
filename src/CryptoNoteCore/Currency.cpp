@@ -437,13 +437,18 @@ namespace CryptoNote {
 		const uint64_t blocksInTwoYears = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365 * 2;
 		const double gauge = double(0.25);
 		uint64_t minimumFee(0);
-		double dailyDifficultyMoore = dailyDifficulty / pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
-		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgHistoricalDifficulty) 
-			/ dailyDifficultyMoore * static_cast<double>(reward)
-			/ static_cast<double>(medianHistoricalReward);
+		double dailyDifficultyMoore = static_cast<double>(dailyDifficulty) / pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
+		double minFee = gauge * CryptoNote::parameters::COIN * static_cast<double>(avgHistoricalDifficulty) /
+			dailyDifficultyMoore * static_cast<double>(reward) / static_cast<double>(medianHistoricalReward);
 		if (minFee == 0 || !std::isfinite(minFee))
 			return CryptoNote::parameters::MAXIMUM_FEE; // zero test 
 		minimumFee = static_cast<uint64_t>(minFee);
+
+		uint64_t i = 1000000000;
+		while (i > 1) {
+			if (minimumFee > i * 100) { minimumFee = ((minimumFee + i / 2) / i) * i; break; }
+			else { i /= 10; }
+		}
 
 		return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
 	}
