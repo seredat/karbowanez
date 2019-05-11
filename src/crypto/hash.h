@@ -21,10 +21,9 @@
 
 #include <stddef.h>
 
+#include <argon2.h>
 #include <CryptoTypes.h>
 #include "generic-ops.h"
-#include "argon2/argon2.h"
-#include "argon2/blake2.h"
 
 namespace Crypto {
 

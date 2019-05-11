@@ -1273,7 +1273,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 3
 
-  uint32_t m_cost = 128;
+  uint32_t m_cost = 1024;
   uint32_t lanes = 2;
   uint32_t t_cost = 2;
 
