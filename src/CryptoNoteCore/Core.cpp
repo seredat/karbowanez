@@ -75,8 +75,8 @@ m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndex
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
 m_miner(new miner(currency, *this, logger)),
 m_starter_message_showed(false) {
-  set_cryptonote_protocol(pprotocol);
-  m_blockchain.addObserver(this);
+    set_cryptonote_protocol(pprotocol);
+    m_blockchain.addObserver(this);
     m_mempool.addObserver(this);
   }
   //-----------------------------------------------------------------------------------------------
@@ -147,15 +147,15 @@ std::time_t core::getStartTime() const {
 
   //-----------------------------------------------------------------------------------------------
 bool core::init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing) {
-    m_config_folder = config.configFolder;
-    bool r = m_mempool.init(m_config_folder);
+  m_config_folder = config.configFolder;
+  bool r = m_mempool.init(m_config_folder);
   if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize memory pool"; return false; }
 
   r = m_blockchain.init(m_config_folder, load_existing);
   if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize blockchain storage"; return false; }
 
-    r = m_miner->init(minerConfig);
-  if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize blockchain storage"; return false; }
+  r = m_miner->init(minerConfig);
+  if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize miner"; return false; }
 
   start_time = std::time(nullptr);
 
@@ -601,8 +601,14 @@ void core::pause_mining() {
 }
 
 void core::update_block_template_and_resume_mining() {
-  update_miner_block_template();
-  m_miner->resume();
+  if (update_miner_block_template()) {
+    m_miner->resume();
+    logger(DEBUGGING) << "updated block template and resumed mining";
+  } 
+  else {
+    logger(ERROR) << "updating block template failed, mining not resumed";
+    m_miner->stop();
+  }
 }
 
 bool core::handle_block_found(Block& b) {
@@ -793,8 +799,7 @@ std::string core::print_pool(bool short_format) {
 }
 
 bool core::update_miner_block_template() {
-  m_miner->on_block_chain_update();
-  return true;
+  return m_miner->on_block_chain_update();
 }
 
 bool core::on_idle() {
