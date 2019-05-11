@@ -107,7 +107,7 @@ namespace CryptoNote {
 
 		m_genesisBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
 		m_genesisBlock.minorVersion = BLOCK_MINOR_VERSION_0;
-		m_genesisBlock.timestamp = 0;
+		m_genesisBlock.timestamp = 1556222777;
 		m_genesisBlock.nonce = 70;
 		if (m_testnet) {
 			++m_genesisBlock.nonce;
@@ -470,7 +470,7 @@ namespace CryptoNote {
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
 			return nextDifficultyV5(height, blockMajorVersion, timestamps, cumulativeDifficulties);
-		}
+		}/*
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
 			return nextDifficultyV4(height, blockMajorVersion, timestamps, cumulativeDifficulties);
 		}
@@ -479,7 +479,7 @@ namespace CryptoNote {
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
 			return nextDifficultyV2(timestamps, cumulativeDifficulties);
-		}
+		}*/
 		else {
 			return nextDifficultyV1(timestamps, cumulativeDifficulties);
 		}
@@ -578,7 +578,7 @@ namespace CryptoNote {
 
 		// minimum limit
 		if (!isTestnet() && nextDiffZ < 100000) {
-			nextDiffZ = 100000;
+		//	nextDiffZ = 100000;
 		}
 
 		return nextDiffZ;
@@ -641,7 +641,7 @@ namespace CryptoNote {
 		
 		// minimum limit
 		if (!isTestnet() && next_difficulty < 100000) {
-			next_difficulty = 100000;
+		//	next_difficulty = 100000;
 		}
 
 		return next_difficulty;
@@ -704,7 +704,7 @@ namespace CryptoNote {
 
 		// minimum limit
 		if (!isTestnet() && next_D < 100000) {
-			next_D = 100000;
+		//	next_D = 100000;
 		}
 
 		return next_D;
@@ -721,13 +721,15 @@ namespace CryptoNote {
 		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
 		int64_t N = difficultyBlocksCount4();
 		
-		// Genesis should be the only time sizes are < N+1.
-		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
-
 		// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
 		// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
-		uint64_t difficulty_guess = !isTestnet() ? 100000000 : 10000;
-		if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
+
+    uint64_t difficulty_guess = 10000;// !isTestnet() ? 1000000000 : 10000;
+
+    if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
+
+    // Genesis should be the only time sizes are < N+1.
+    assert(timestamps.size() == cumulativeDifficulties.size());// && timestamps.size() == N + 1);
 
 		uint64_t L(0), next_D, i, this_timestamp(0), previous_timestamp(0), avg_D;
 
@@ -757,7 +759,7 @@ namespace CryptoNote {
 
 		// minimum limit
 		if (!isTestnet() && next_D < 1000000) {
-			next_D = 1000000;
+		//	next_D = 1000000;
 		}
 
 		return next_D;
