@@ -118,6 +118,7 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
   size_t tx_pool_size = m_core.get_pool_transactions_count();
   size_t alt_blocks_count = m_core.get_alternative_blocks_count();
   uint32_t last_known_block_index = std::max(static_cast<uint32_t>(1), protocolQuery.getObservedHeight()) - 1;
+  Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(height);
   size_t total_conn = m_srv.get_connections_count();
   size_t rpc_conn = m_prpc_server->get_connections_count();
   size_t outgoing_connections_count = m_srv.get_outgoing_connections_count();
@@ -134,7 +135,8 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << (synced ? "Synced " : "Syncing ") << height << "/" << last_known_block_index 
     << " (" << get_sync_percentage(height, last_known_block_index) << "%) "
     << "on " << (m_core.currency().isTestnet() ? "testnet, " : "mainnet, ")
-    << "network hashrate: " << get_mining_speed(hashrate) << ", next difficulty: " << difficulty << ", "
+    << "last block hash: " << Common::podToHex(last_block_hash)
+    << ", network hashrate: " << get_mining_speed(hashrate) << ", next difficulty: " << difficulty << ", "
     << "block v. " << (int)majorVersion << ", alt. blocks: " << alt_block_count << ", "
     << outgoing_connections_count << " out. + " << incoming_connections_count << " inc. connection(s), "
     << rpc_conn <<  " rpc connection(s), " << "peers: " << white_peerlist_size << " white / " << grey_peerlist_size << " grey, "
