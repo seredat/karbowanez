@@ -116,7 +116,10 @@ bool Checkpoints::is_alternative_block_allowed(uint32_t  blockchain_height,
   if (0 == block_height)
     return false;
 
-  if (block_height < blockchain_height - CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW
+  if (block_height < blockchain_height - (blockchain_height <
+    CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? 
+    CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW : 
+    CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1)
     && !is_in_checkpoint_zone(block_height)) {
     logger(Logging::WARNING, Logging::WHITE) << "An attempt of too deep reorganization: "
       << blockchain_height - block_height << ", BLOCK REJECTED";
