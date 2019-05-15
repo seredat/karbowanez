@@ -9,9 +9,10 @@ if (STATIC AND MSVC)
 endif()
 
 add_subdirectory(miniupnpc)
+add_subdirectory(argon2)
 add_subdirectory(gtest)
 
-set_property(TARGET upnpc-static gtest gtest_main PROPERTY FOLDER "external")
+set_property(TARGET argon2 upnpc-static gtest gtest_main PROPERTY FOLDER "external")
 
 if(MSVC)
   if (STATIC)

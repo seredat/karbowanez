@@ -1236,7 +1236,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 1
 
-  Crypto::Hash hash_1;
+  Crypto::Hash hash_1, hash_2;
 
   // Hashing the current blockdata (preprocessing it)
   cn_fast_hash(bd.data(), bd.size(), hash_1);
@@ -1273,12 +1273,14 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 3
 
-  uint32_t m_cost = 128;
+  uint32_t m_cost = 1024;
   uint32_t lanes = 2;
   uint32_t t_cost = 2;
 
   // stir the pot - hashing the 1 + 32 blocks as one continuous data, salt is hash_1
-  Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, res);
+  Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
+
+  res = hash_2;
 
   return true;
 }
@@ -1419,7 +1421,7 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     if (!checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
       logger(INFO, BRIGHT_RED) <<
         "Block with id: " << id
-        << ENDL << " for alternative chain, have not enough proof of work: " << proof_of_work
+        << ENDL << " for alternative chain, has not enough proof of work: " << proof_of_work
         << ENDL << " expected difficulty: " << current_diff;
       bvc.m_verification_failed = true;
       return false;

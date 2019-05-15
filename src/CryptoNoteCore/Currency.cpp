@@ -722,7 +722,7 @@ namespace CryptoNote {
 		int64_t N = difficultyBlocksCount4();
 		
 		// Genesis should be the only time sizes are < N+1.
-		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
+		assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() <= static_cast<uint64_t>(N + 1));
 
 		// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
 		// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
