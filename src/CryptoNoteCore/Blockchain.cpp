@@ -1228,6 +1228,8 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     return get_block_longhash(context, b, res);
   }
 
+  //std::cout << "using blodha " << ENDL;
+
   BinaryArray bd, pot;
   if (!get_block_hashing_blob(b, bd)) {
     logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
@@ -1250,22 +1252,25 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   // and throw them into the pot too
 
   uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
-  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size(), currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
+  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size(), currentHeight - 1 - m_currency.minedMoneyUnlockWindow_v1());
   std::vector<uint64_t> heights;
 
   fillHeights(hash_1.data, sizeof(hash_1), maxHeight, heights, 32);
 
-  for (auto i = 0; i < 32; ++i) {
+  for (size_t i = 0; i < 32; ++i) {
     Crypto::Hash hash_i = getBlockIdByHeight(static_cast<uint32_t>(heights[i]));
-
-    Block bl;
-    if (!getBlockByHash(hash_i, bl)) {
+    Block bi;
+    if (!getBlockByHash(hash_i, bi)) {
       logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hash_i) << " at height " << heights[i];
       return false;
     }
     BinaryArray ba;
-    if (!get_block_hashing_blob(bl, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
+    //if (!get_block_hashing_blob(bl, ba)) {
+    //  logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
+    //  return false;
+    //}
+    if (!toBinaryArray(bi, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to convert to BinaryArray the additional block " << i << " in getBlockLongHash";
       return false;
     }
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
@@ -1273,14 +1278,12 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 3
 
-  uint32_t m_cost = currentHeight > 813 ? 512 : 128;
+  uint32_t m_cost = 1024;
   uint32_t lanes = 2;
   uint32_t t_cost = 2;
 
   // stir the pot - hashing the 1 + 32 blocks as one continuous data, salt is hash_1
   Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
-
-  //logger(INFO, BRIGHT_GREEN) << "getBlockLongHash: " << res;
 
   res = hash_2;
 
