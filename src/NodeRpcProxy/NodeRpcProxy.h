@@ -159,7 +159,7 @@ private:
   bool m_stop = false;
   std::atomic<size_t> m_peerCount;
   std::atomic<uint32_t> m_networkHeight;
-  std::atomic<uint64_t> m_nodeHeight;
+  std::atomic<uint32_t> m_nodeHeight;
   std::atomic<uint64_t> m_minimalFee;
 
   BlockHeaderInfo lastLocalBlockHeaderInfo;
