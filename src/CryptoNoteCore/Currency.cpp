@@ -107,7 +107,7 @@ namespace CryptoNote {
 
 		m_genesisBlock.majorVersion = BLOCK_MAJOR_VERSION_1;
 		m_genesisBlock.minorVersion = BLOCK_MINOR_VERSION_0;
-		m_genesisBlock.timestamp = 1556222777;
+		m_genesisBlock.timestamp = 0;
 		m_genesisBlock.nonce = 70;
 		if (m_testnet) {
 			++m_genesisBlock.nonce;
@@ -470,7 +470,7 @@ namespace CryptoNote {
 		std::vector<difficulty_type> cumulativeDifficulties) const {
 		if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
 			return nextDifficultyV5(height, blockMajorVersion, timestamps, cumulativeDifficulties);
-		}/*
+		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
 			return nextDifficultyV4(height, blockMajorVersion, timestamps, cumulativeDifficulties);
 		}
@@ -479,7 +479,7 @@ namespace CryptoNote {
 		}
 		else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
 			return nextDifficultyV2(timestamps, cumulativeDifficulties);
-		}*/
+		}
 		else {
 			return nextDifficultyV1(timestamps, cumulativeDifficulties);
 		}
