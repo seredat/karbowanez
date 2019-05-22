@@ -65,7 +65,7 @@ namespace CryptoNote {
             return false;
           }
 
-          uint32_t upgradeHeight = it - m_blockchain.begin();
+          uint32_t upgradeHeight = static_cast<uint32_t>(it - m_blockchain.begin());
           m_votingCompleteHeight = findVotingCompleteHeight(upgradeHeight);
           if (m_votingCompleteHeight == UNDEF_HEIGHT) {
             logger(Logging::ERROR, Logging::BRIGHT_RED) << "Internal error: voting complete height isn't found, upgrade height = " << upgradeHeight;
@@ -193,7 +193,7 @@ namespace CryptoNote {
       assert(m_currency.upgradeHeight(m_targetVersion) == UNDEF_HEIGHT);
 
       uint32_t probableVotingCompleteHeight = probableUpgradeHeight > m_currency.maxUpgradeDistance() ? probableUpgradeHeight - m_currency.maxUpgradeDistance() : 0;
-      for (size_t i = probableVotingCompleteHeight; i <= probableUpgradeHeight; ++i) {
+      for (uint32_t i = probableVotingCompleteHeight; i <= probableUpgradeHeight; ++i) {
         if (isVotingComplete(i)) {
           return i;
         }
