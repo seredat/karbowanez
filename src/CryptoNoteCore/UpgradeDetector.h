@@ -55,7 +55,7 @@ namespace CryptoNote {
           m_votingCompleteHeight = UNDEF_HEIGHT;
 
         } else if (m_targetVersion - 1 == m_blockchain.back().bl.majorVersion) {
-          m_votingCompleteHeight = findVotingCompleteHeight(m_blockchain.size() - 1);
+          m_votingCompleteHeight = findVotingCompleteHeight(static_cast<uint32_t>(m_blockchain.size()) - 1);
 
         } else if (m_targetVersion <= m_blockchain.back().bl.majorVersion) {
           auto it = std::lower_bound(m_blockchain.begin(), m_blockchain.end(), m_targetVersion,
@@ -152,7 +152,7 @@ namespace CryptoNote {
         }
 
       } else {
-        uint32_t lastBlockHeight = m_blockchain.size() - 1;
+        uint32_t lastBlockHeight = static_cast<uint32_t>(m_blockchain.size()) - 1;
         if (isVotingComplete(lastBlockHeight)) {
           m_votingCompleteHeight = lastBlockHeight;
           logger(Logging::INFO, Logging::BRIGHT_GREEN) << "###### UPGRADE voting complete at block index " << m_votingCompleteHeight <<

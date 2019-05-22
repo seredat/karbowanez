@@ -713,7 +713,7 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   std::vector<difficulty_type> cumulative_difficulties;
   uint8_t BlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(m_blocks.size()));
   size_t offset;
-  offset = m_blocks.size() - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
+  offset = m_blocks.size() - std::min(m_blocks.size(), static_cast<size_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
 
   if (offset == 0) {
     ++offset;
@@ -725,15 +725,15 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
-difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
+difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, uint32_t window) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   size_t offset;
-  offset = height - std::min(height, std::min<uint32_t>(m_blocks.size(), window));
+  offset = height - std::min(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), window));
   if (offset == 0) {
     ++offset;
   }
   difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
-  return cumulDiffForPeriod / std::min<uint32_t>(m_blocks.size(), window);
+  return cumulDiffForPeriod / std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), window);
 }
 
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
@@ -748,13 +748,13 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	    return 0;
 	}
 
-	if (height > m_blocks.size() - 1) {
-		height = m_blocks.size() - 1;
+	if (height > static_cast<uint32_t>(m_blocks.size()) - 1) {
+		height = static_cast<uint32_t>(m_blocks.size()) - 1;
 	}
 	if (height < 3) {
 		height = 3;
 	}
-	size_t window = std::min(height, std::min<uint32_t>(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay()));
+  uint32_t window = std::min(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), static_cast<uint32_t>(m_currency.expectedNumberOfBlocksPerDay())));
 	if (window == 0) {
 		++window;
 	}
