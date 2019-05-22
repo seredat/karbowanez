@@ -878,10 +878,10 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
   uint32_t last_height = req.height - print_blocks_count;
   if (req.height <= print_blocks_count)  {
     last_height = 0;
-  } 
+  }
 
   for (uint32_t i = req.height; i >= last_height; i--) {
-    Hash block_hash = m_core.getBlockIdByHeight(static_cast<uint32_t>(i));
+    Hash block_hash = m_core.getBlockIdByHeight(i);
     Block blk;
     if (!m_core.getBlockByHash(block_hash, blk)) {
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
@@ -956,8 +956,8 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   res.block.hash = block_header.hash;
   res.block.depth = block_header.depth;
   res.block.orphan_status = block_header.orphan_status;
-  m_core.getBlockDifficulty(static_cast<uint32_t>(res.block.height), res.block.difficulty);
-  m_core.getBlockCumulativeDifficulty(static_cast<uint32_t>(res.block.height), res.block.cumulativeDifficulty);
+  m_core.getBlockDifficulty(res.block.height, res.block.difficulty);
+  m_core.getBlockCumulativeDifficulty(res.block.height, res.block.cumulativeDifficulty);
 
   res.block.reward = block_header.reward;
 
@@ -1370,7 +1370,7 @@ namespace {
   }
 }
 
-void RpcServer::fill_block_header_response(const Block& blk, bool orphan_status, uint64_t height, const Hash& hash, block_header_response& responce) {
+void RpcServer::fill_block_header_response(const Block& blk, bool orphan_status, uint32_t height, const Hash& hash, block_header_response& responce) {
   responce.major_version = blk.majorVersion;
   responce.minor_version = blk.minorVersion;
   responce.timestamp = blk.timestamp;
@@ -1423,7 +1423,7 @@ bool RpcServer::on_get_block_header_by_hash(const COMMAND_RPC_GET_BLOCK_HEADER_B
       "Internal error: coinbase transaction in the block has the wrong type" };
   }
 
-  uint64_t block_height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  uint32_t block_height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
   Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(block_height);
   bool is_orphaned = block_hash != tmp_hash;
   fill_block_header_response(blk, is_orphaned, block_height, block_hash, res.block_header);

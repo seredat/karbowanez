@@ -149,9 +149,9 @@ protected:
   std::string doCreateAddress(const Crypto::PublicKey& spendPublicKey, const Crypto::SecretKey& spendSecretKey, uint64_t creationTimestamp);
   std::vector<std::string> doCreateAddressList(const std::vector<NewAddressData>& addressDataList);
 
-  CryptoNote::BlockDetails getBlock(const uint64_t blockHeight);
+  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
 
-  uint64_t scanHeightToTimestamp(const uint64_t scanHeight);
+  uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
   uint64_t getCurrentTimestampAdjusted();
 
   struct InputInfo {
