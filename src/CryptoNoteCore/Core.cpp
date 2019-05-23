@@ -269,6 +269,7 @@ bool core::check_tx_mixin(const Transaction& tx, uint32_t height) {
         logger(ERROR) << "Transaction " << getObjectHash(tx) << " has mixIn count below the required minimum, rejected";
         return false;
       }
+      ++inputIndex;
     }
   }
   return true;
