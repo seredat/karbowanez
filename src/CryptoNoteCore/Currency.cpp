@@ -726,7 +726,7 @@ namespace CryptoNote {
 
     uint64_t difficulty_guess = 10000;// !isTestnet() ? 1000000000 : 10000;
 
-    if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N) { return difficulty_guess; }
+    if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N + 1) { return difficulty_guess; }
 
     // Genesis should be the only time sizes are < N+1.
     assert(timestamps.size() == cumulativeDifficulties.size());// && timestamps.size() == N + 1);
