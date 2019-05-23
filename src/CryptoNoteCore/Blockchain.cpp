@@ -1255,17 +1255,16 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   fillHeights(hash_1.data, sizeof(hash_1), maxHeight, heights, 32);
 
-  for (auto i = 0; i < 32; ++i) {
+  for (size_t i = 0; i < 32; ++i) {
     Crypto::Hash hash_i = getBlockIdByHeight(static_cast<uint32_t>(heights[i]));
-
-    Block bl;
-    if (!getBlockByHash(hash_i, bl)) {
+    Block bi;
+    if (!getBlockByHash(hash_i, bi)) {
       logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hash_i) << " at height " << heights[i];
       return false;
     }
     BinaryArray ba;
-    if (!get_block_hashing_blob(bl, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
+    if (!toBinaryArray(bi, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to convert to BinaryArray the additional block " << i << " in getBlockLongHash";
       return false;
     }
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
