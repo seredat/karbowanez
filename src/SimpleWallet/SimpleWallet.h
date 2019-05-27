@@ -67,9 +67,13 @@ namespace CryptoNote
   /************************************************************************/
   class simple_wallet : public CryptoNote::INodeObserver, public CryptoNote::IWalletLegacyObserver, public CryptoNote::INodeRpcProxyObserver {
   public:
-    simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log);
+    simple_wallet(System::Dispatcher &dispatcher,
+                  const CryptoNote::Currency &currency,
+                  Logging::LoggerManager &log,
+                  bool &is_sys_dir,
+                  const std::string &default_data_dir);
 
-    bool init(const boost::program_options::variables_map& vm);
+    bool init(const boost::program_options::variables_map &vm);
     bool deinit();
     bool run();
     void stop();
@@ -209,11 +213,13 @@ namespace CryptoNote
     std::string m_daemon_path;
     std::string m_mnemonic_seed;
     std::string m_wallet_file;
+    std::string m_default_data_dir;
     uint16_t m_daemon_port;
     Crypto::SecretKey m_recovery_key;  // recovery key (used as random for wallet gen)
     bool m_restore_deterministic_wallet;  // recover flag
     bool m_non_deterministic;  // old 2-random generation
     bool m_daemon_ssl;
+    bool m_is_sys_dir;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 

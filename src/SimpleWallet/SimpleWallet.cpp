@@ -656,11 +656,16 @@ bool simple_wallet::exit(const std::vector<std::string> &args) {
   return true;
 }
 
-simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::Currency& currency, Logging::LoggerManager& log) :
+simple_wallet::simple_wallet(System::Dispatcher &dispatcher,
+                             const CryptoNote::Currency &currency, Logging::LoggerManager &log,
+                             bool &is_sys_dir,
+                             const std::string &default_data_dir) :
   m_dispatcher(dispatcher),
   m_daemon_port(0),
   m_daemon_path("/"),
   m_daemon_ssl(false),
+  m_is_sys_dir(is_sys_dir),
+  m_default_data_dir(default_data_dir),
   m_currency(currency), 
   m_logManager(log),
   logger(log, "simplewallet"),
@@ -881,6 +886,20 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		return false;
 	}
 
+	if (m_is_sys_dir) {
+		if (!m_wallet_file_arg.empty()){
+			if (!Common::HasParentPath(m_wallet_file_arg)) m_wallet_file_arg = Common::CombinePath(m_default_data_dir, m_wallet_file_arg);
+		} else if (!m_generate_new.empty()) {
+			if (!Common::HasParentPath(m_generate_new)) m_generate_new = Common::CombinePath(m_default_data_dir, m_generate_new);
+		} else if (!m_import_new.empty()) {
+			if (!Common::HasParentPath(m_import_new)) m_import_new = Common::CombinePath(m_default_data_dir, m_import_new);
+		} else if (!m_restore_new.empty()) {
+			if (!Common::HasParentPath(m_restore_new)) m_restore_new = Common::CombinePath(m_default_data_dir, m_restore_new);
+		} else if (!m_track_new.empty()) {
+			if (!Common::HasParentPath(m_track_new)) m_track_new = Common::CombinePath(m_default_data_dir, m_track_new);
+		}
+	}
+
 	if (m_generate_new.empty() && m_wallet_file_arg.empty())
 	{
 		std::cout << "Nor 'generate-new-wallet' neither 'wallet-file' argument was specified.\nWhat do you want to do?\n";
@@ -890,7 +909,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		std::cout << "R - restore backup/paperwallet\n";
 		std::cout << "T - import tracking wallet\n";
 		std::cout << "E - exit\n";
-		
+
 		char c;
 		do
 		{
@@ -915,13 +934,18 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			std::cout << "Wallet file name: ";
 			std::getline(std::cin, userInput);
 			boost::algorithm::trim(userInput);
-		
+
+			if (m_is_sys_dir && !Common::HasParentPath(userInput)) {
+				userInput = Common::CombinePath(m_default_data_dir, userInput);
+			}
+
 			if (c != 'o' && c != 'O')
 			{
 				std::string ignoredString;
 				std::string walletFileName;
 				
 				WalletHelper::prepareFileNames(userInput, ignoredString, walletFileName);
+
 				boost::system::error_code ignore;
 				if (boost::filesystem::exists(walletFileName, ignore))
 				{
@@ -2510,12 +2534,26 @@ int main(int argc, char* argv[]) {
 
   po::variables_map vm;
 
+  std::string exe_path;
+  std::string default_data_dir;
+  bool is_sys_dir = false;
+  if (Common::GetExePath(exe_path)) {
+    if (Common::IsSysDir(exe_path)) {
+      is_sys_dir = true;
+      default_data_dir = Common::NativePathToGeneric(Tools::getDefaultDataDirectory());
+      boost::filesystem::path path_data_dir(default_data_dir);
+      if (!boost::filesystem::exists(path_data_dir)) {
+        boost::filesystem::create_directory(path_data_dir);
+      }
+    }
+  }
+
   bool r = command_line::handle_error_helper(desc_all, [&]() {
     po::store(command_line::parse_command_line(argc, argv, desc_general, true), vm);
 
     if (command_line::get_arg(vm, command_line::arg_help)) {
       CryptoNote::Currency tmp_currency = CryptoNote::CurrencyBuilder(logManager).currency();
-      CryptoNote::simple_wallet tmp_wallet(dispatcher, tmp_currency, logManager);
+      CryptoNote::simple_wallet tmp_wallet(dispatcher, tmp_currency, logManager, is_sys_dir, default_data_dir);
 
       std::cout << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG << std::endl;
       std::cout << "Usage: simplewallet [--wallet-file=<file>|--generate-new-wallet=<file>] [--daemon-address=<host>:<port>] [<COMMAND>]";
@@ -2532,9 +2570,14 @@ int main(int argc, char* argv[]) {
     const std::string config = vm["config-file"].as<std::string>();
 	if (!config.empty()) {
       boost::filesystem::path full_path(boost::filesystem::current_path());
+      boost::filesystem::path path_data_dir(default_data_dir);
       boost::filesystem::path config_path(config);
       if (!config_path.has_parent_path()) {
-        config_path = full_path / config_path;
+        if (is_sys_dir) {
+          config_path = path_data_dir / config_path;
+        } else {
+          config_path = full_path / config_path;
+        }
       }
 
       boost::system::error_code ec;
@@ -2550,13 +2593,21 @@ int main(int argc, char* argv[]) {
   if (!r)
     return 1;
   
-  auto modulePath = Common::NativePathToGeneric(argv[0]);
-  auto cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));
+  std::string modulePath = Common::NativePathToGeneric(argv[0]);
+  std::string cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));
   if (cfgLogFile.empty()) {
-    cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
+    if (is_sys_dir) {
+      cfgLogFile = Common::CombinePath(default_data_dir, Common::ReplaceExtenstion(modulePath, ".log"));
     } else {
+      cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
+    }
+  } else {
     if (!Common::HasParentPath(cfgLogFile)) {
-      cfgLogFile = Common::CombinePath(Common::GetPathDirectory(modulePath), cfgLogFile);
+      if (is_sys_dir) {
+        cfgLogFile = Common::CombinePath(default_data_dir, cfgLogFile);
+      } else {
+        cfgLogFile = Common::CombinePath(Common::GetPathDirectory(modulePath), cfgLogFile);
+      }
     }
   }
 
@@ -2581,6 +2632,10 @@ int main(int argc, char* argv[]) {
     if (wallet_file.empty()) {
       logger(ERROR, BRIGHT_RED) << "Wallet file not set.";
       return 1;
+    } else {
+      if (is_sys_dir && !Common::HasParentPath(wallet_file)) {
+        wallet_file = Common::CombinePath(default_data_dir, wallet_file);
+      }
     }
 
     std::string wallet_password;
@@ -2663,7 +2718,7 @@ int main(int argc, char* argv[]) {
     }
   } else {
     //runs wallet with console interface
-    CryptoNote::simple_wallet wal(dispatcher, currency, logManager);
+    CryptoNote::simple_wallet wal(dispatcher, currency, logManager, is_sys_dir, default_data_dir);
     
     if (!wal.init(vm)) {
       logger(ERROR, BRIGHT_RED) << "Failed to initialize wallet"; 
