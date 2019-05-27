@@ -17,6 +17,12 @@
 
 #include "PathTools.h"
 #include <algorithm>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <libgen.h>
+#endif
 
 namespace {
 
@@ -105,6 +111,46 @@ std::string RemoveExtension(const std::string& filename) {
 
 bool HasParentPath(const std::string& path) {
   return path.find(GENERIC_PATH_SEPARATOR) != std::string::npos;
+}
+
+bool IsSysDir(const std::string &path) {
+  bool res = false;
+  const char *sys_dir[] = {
+    "/usr/sbin",
+    "/usr/local/sbin",
+    "Program Files"
+  };
+  size_t sys_dir_len = sizeof(sys_dir) / sizeof(sys_dir[0]);
+  for (size_t i = 0; i < sys_dir_len; i++) {
+    if (path.find(sys_dir[i]) != std::string::npos) {
+      res = true;
+      break;
+    }
+  }
+  return res;
+}
+
+bool GetExePath(std::string &path) {
+  const size_t PATH_MAX = 1024;
+  bool res = false;
+  path.clear();
+  char native_path[PATH_MAX + 1];
+#ifdef _WIN32
+  DWORD result = GetModuleFileNameA(nullptr, native_path, PATH_MAX);
+  if (result > 0 && result != PATH_MAX) {
+    path = std::string(native_path);
+    res = true;
+  }
+#else
+  ssize_t count = readlink("/proc/self/exe", native_path, PATH_MAX);
+  const char *path_base;
+  if (count != -1) {
+    path_base = dirname(native_path);
+    path = std::string(path_base);
+    res = true;
+  }
+#endif
+  return res;
 }
 
 

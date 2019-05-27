@@ -33,4 +33,7 @@ std::string RemoveExtension(const std::string& path);
 std::string ReplaceExtenstion(const std::string& path, const std::string& extension);
 bool HasParentPath(const std::string& path);
 
+bool IsSysDir(const std::string &path);
+bool GetExePath(std::string &path);
+
 }
