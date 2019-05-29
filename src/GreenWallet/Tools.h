@@ -47,3 +47,6 @@ std::vector<T> filter(std::vector<T> input, Function predicate)
 
 	return result;
 }
+
+void genBasePath(const std::string &path, const std::string &default_data_dir,
+                 const bool &is_sys_dir, std::string &base_path);

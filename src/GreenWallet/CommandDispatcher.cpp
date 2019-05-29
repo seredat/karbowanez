@@ -132,7 +132,7 @@ std::shared_ptr<WalletInfo> handleLaunchCommand(CryptoNote::WalletGreen &wallet,
 {
     if (launchCommand == "create")
     {
-        return generateWallet(wallet);
+        return generateWallet(wallet, config);
     }
     else if (launchCommand == "open")
     {
@@ -140,15 +140,15 @@ std::shared_ptr<WalletInfo> handleLaunchCommand(CryptoNote::WalletGreen &wallet,
     }
     else if (launchCommand == "seed_restore")
     {
-        return mnemonicImportWallet(wallet);
+        return mnemonicImportWallet(wallet, config);
     }
     else if (launchCommand == "key_restore")
     {
-        return importWallet(wallet);
+        return importWallet(wallet, config);
     }
     else if (launchCommand == "view_wallet")
     {
-        return createViewWallet(wallet);
+        return createViewWallet(wallet, config);
     }
     /* This should never happen */
     else

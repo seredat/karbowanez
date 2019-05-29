@@ -8,6 +8,8 @@
 ////////////////////////////////
 
 #include <Common/SignalHandler.h>
+#include <Common/PathTools.h>
+#include <Common/Util.h>
 
 #include <CryptoNoteCore/Currency.h>
 
@@ -51,6 +53,19 @@ int main(int argc, char **argv)
     {
         return 0;
     }
+
+	std::string exe_path;
+	config.is_sys_dir = false;
+	if (Common::GetExePath(exe_path)) {
+		if (Common::IsSysDir(exe_path)) {
+			config.is_sys_dir = true;
+			config.default_data_dir = Common::NativePathToGeneric(Tools::getDefaultDataDirectory());
+			boost::filesystem::path path_data_dir(config.default_data_dir);
+			if (!boost::filesystem::exists(path_data_dir)) {
+				boost::filesystem::create_directory(path_data_dir);
+			}
+		}
+	}
 
     Logging::LoggerManager logManager;
 

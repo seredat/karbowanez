@@ -9,27 +9,32 @@
 
 std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet, 
                                            Crypto::SecretKey privateSpendKey,
-                                           Crypto::SecretKey privateViewKey);
+                                           Crypto::SecretKey privateViewKey,
+                                           Config &config);
 
 std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
                                        Config &config);
 
+std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet,
+                                             Config &config);
+
+std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet,
+                                         Config &config);
+
 std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet,
+                                                 Config &config);
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet,
+                                           Config &config);
 
-std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen 
-                                                 &wallet);
-
-std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet);
-
-std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet);
+std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet,
+                                            Config &config);
 
 Crypto::SecretKey getPrivateKey(std::string outputMsg);
 
-std::string getNewWalletFileName();
+std::string getNewWalletFileName(Config &config);
 
 std::string getExistingWalletFileName(Config &config);
 

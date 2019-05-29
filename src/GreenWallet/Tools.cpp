@@ -13,6 +13,8 @@
 
 #include <Common/Base58.h>
 #include <Common/StringTools.h>
+#include <Common/PathTools.h>
+#include <Common/Util.h>
 
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <CryptoNoteCore/CryptoNoteTools.h>
@@ -331,4 +333,16 @@ bool shutdown(std::shared_ptr<WalletInfo> walletInfo, CryptoNote::INode &node,
     std::cout << "Bye." << std::endl;
     
     return true;
+}
+
+void genBasePath(const std::string &path,
+                 const std::string &default_data_dir,
+                 const bool &is_sys_dir,
+                 std::string &base_path) {
+    base_path.clear();
+    if (is_sys_dir) {
+        if (!Common::HasParentPath(path)) base_path = Common::CombinePath(default_data_dir, path);
+    } else {
+        base_path = path;
+    }
 }
