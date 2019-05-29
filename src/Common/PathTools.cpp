@@ -131,18 +131,23 @@ bool IsSysDir(const std::string &path) {
 }
 
 bool GetExePath(std::string &path) {
-  const size_t PATH_MAX = 1024;
+  const size_t PATH_LEN = 1024;
   bool res = false;
   path.clear();
-  char native_path[PATH_MAX + 1];
+  char native_path[PATH_LEN + 1];
 #ifdef _WIN32
-  DWORD result = GetModuleFileNameA(nullptr, native_path, PATH_MAX);
-  if (result > 0 && result != PATH_MAX) {
+  DWORD result = GetModuleFileNameA(nullptr, native_path, PATH_LEN);
+  if (result > 0 && result != PATH_LEN) {
     path = std::string(native_path);
     res = true;
   }
 #else
-  ssize_t count = readlink("/proc/self/exe", native_path, PATH_MAX);
+#ifdef __FreeBSD__
+  // Must be enable procfs
+  ssize_t count = readlink("/proc/curproc/file", native_path, PATH_LEN);
+#else
+  ssize_t count = readlink("/proc/self/exe", native_path, PATH_LEN);
+#endif
   const char *path_base;
   if (count != -1) {
     path_base = dirname(native_path);
