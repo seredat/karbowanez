@@ -7,6 +7,8 @@
 #include <GreenWallet/GetInput.h>
 ///////////////////////////////
 
+#include <Common/PathTools.h>
+
 #include <boost/algorithm/string.hpp>
 
 #include "linenoise.hpp"
@@ -26,26 +28,9 @@ std::string yellowANSIMsg(std::string msg)
 std::string getPrompt(std::shared_ptr<WalletInfo> walletInfo)
 {
     const int promptLength = 20;
-    const std::string extension = ".wallet";
 
-    std::string walletName = walletInfo->walletFileName;
-
-    /* Filename ends in .wallet, remove extension */
-    if (std::equal(extension.rbegin(), extension.rend(),
-                   walletInfo->walletFileName.rbegin()))
-    {
-
-        size_t sepPos = walletInfo->walletFileName.find_last_of('/');
-        if (sepPos == std::string::npos) {
-             sepPos = walletInfo->walletFileName.find_last_of('\\');
-        }
-        if (sepPos != std::string::npos) {
-             walletName = walletInfo->walletFileName.substr(sepPos + 1);
-        }
-
-        const size_t extPos = walletName.find_last_of('.');
-        walletName = walletName.substr(0, extPos);
-    }
+    std::string walletName;
+    Common::GetFileName(walletInfo->walletFileName, walletName);
 
     const std::string shortFileName = walletName.substr(0, promptLength - 9);
 
