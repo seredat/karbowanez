@@ -164,15 +164,20 @@ bool GetFileName(const std::string &path, std::string &fileName) {
     '\\'
   };
   const char end_sub = '.';
+  const size_t path_len = path.size();
   bool res = false;
-  size_t path_len = path.size();
   size_t fileNameStart = 0;
   size_t fileNameEnd = path_len - 1;
   fileName.clear();
+  size_t i = path_len;
   if (path_len > 0) {
-    for (size_t i = 0; i < path_len; i++) {
-      if (path[i] == path_separator[0] || path[i] == path_separator[1]) fileNameStart = i + 1;
-      if (path[i] == end_sub) fileNameEnd = i - 1;
+    while (i > 0) {
+      i--;
+      if (path[i] == end_sub && fileNameEnd == path_len - 1) fileNameEnd = i - 1;
+      if (path[i] == path_separator[0] || path[i] == path_separator[1]) {
+        fileNameStart = i + 1;
+        break;
+      }
     }
     fileName = path.substr(fileNameStart, fileNameEnd - fileNameStart + 1);
     if (fileName.size() > 0) res = true;
