@@ -36,4 +36,6 @@ bool HasParentPath(const std::string& path);
 bool IsSysDir(const std::string &path);
 bool GetExePath(std::string &path);
 
+bool GetFileName(const std::string &path, std::string &fileName);
+
 }
