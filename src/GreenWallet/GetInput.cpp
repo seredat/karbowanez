@@ -31,12 +31,20 @@ std::string getPrompt(std::shared_ptr<WalletInfo> walletInfo)
     std::string walletName = walletInfo->walletFileName;
 
     /* Filename ends in .wallet, remove extension */
-    if (std::equal(extension.rbegin(), extension.rend(), 
+    if (std::equal(extension.rbegin(), extension.rend(),
                    walletInfo->walletFileName.rbegin()))
     {
-        const size_t extPos = walletInfo->walletFileName.find_last_of('.');
 
-        walletName = walletInfo->walletFileName.substr(0, extPos);
+        size_t sepPos = walletInfo->walletFileName.find_last_of('/');
+        if (sepPos == std::string::npos) {
+             sepPos = walletInfo->walletFileName.find_last_of('\\');
+        }
+        if (sepPos != std::string::npos) {
+             walletName = walletInfo->walletFileName.substr(sepPos + 1);
+        }
+
+        const size_t extPos = walletName.find_last_of('.');
+        walletName = walletName.substr(0, extPos);
     }
 
     const std::string shortFileName = walletName.substr(0, promptLength - 9);
