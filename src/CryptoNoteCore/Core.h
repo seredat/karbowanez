@@ -49,7 +49,7 @@ namespace CryptoNote {
      ~core();
 
      bool on_idle() override;
-     virtual bool handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block, bool loose_check) override; //Deprecated. Should be removed with CryptoNoteProtocolHandler.
+     virtual bool handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block) override; //Deprecated. Should be removed with CryptoNoteProtocolHandler.
      bool handle_incoming_block_blob(const BinaryArray& block_blob, block_verification_context& bvc, bool control_miner, bool relay_block) override;
      virtual i_cryptonote_protocol* get_protocol() override {return m_pprotocol;}
      const Currency& currency() const { return m_currency; }
@@ -88,7 +88,7 @@ namespace CryptoNote {
      virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) override;
      virtual bool getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOutput& out) override;
      virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) override;
-     virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height, bool loose_check) override;
+     virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) override;
      virtual std::error_code executeLocked(const std::function<std::error_code()>& func) override;
      virtual uint64_t getMinimalFeeForHeight(uint32_t height) override;
      virtual uint64_t getMinimalFee() override;
@@ -181,7 +181,7 @@ namespace CryptoNote {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
-     bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height, bool loose_check);
+     bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height);
      //check if tx is not sending unmixable outputs
      bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 

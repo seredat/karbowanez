@@ -191,7 +191,7 @@ size_t core::addChain(const std::vector<const IBlock*>& chain) {
       getObjectHash(tx, txHash, blobSize);
       tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
 
-      if (!handleIncomingTransaction(tx, txHash, blobSize, tvc, true, get_block_height(block->getBlock()), true)) {
+      if (!handleIncomingTransaction(tx, txHash, blobSize, tvc, true, get_block_height(block->getBlock()))) {
         logger(ERROR, BRIGHT_RED) << "core::addChain() failed to handle transaction " << txHash << " from block " << blocksCounter << "/" << chain.size();
         allTransactionsAdded = false;
         break;
@@ -217,7 +217,7 @@ size_t core::addChain(const std::vector<const IBlock*>& chain) {
   return blocksCounter;
 }
 
-bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block, bool loose_check) { //Deprecated. Should be removed with CryptoNoteProtocolHandler.
+bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_context& tvc, bool keeped_by_block) { //Deprecated. Should be removed with CryptoNoteProtocolHandler.
   tvc = boost::value_initialized<tx_verification_context>();
   //want to process all transactions sequentially
 
@@ -242,7 +242,7 @@ bool core::handle_incoming_tx(const BinaryArray& tx_blob, tx_verification_contex
   uint32_t blockHeight;
   bool ok = getBlockContainingTx(tx_hash, blockId, blockHeight);
   if (!ok) blockHeight = this->get_current_blockchain_height();
-  return handleIncomingTransaction(tx, tx_hash, tx_blob.size(), tvc, keeped_by_block, blockHeight, loose_check);
+  return handleIncomingTransaction(tx, tx_hash, tx_blob.size(), tvc, keeped_by_block, blockHeight);
 }
 
 bool core::get_stat_info(core_stat_info& st_inf) {
@@ -278,7 +278,7 @@ bool core::check_tx_mixin(const Transaction& tx, uint32_t height) {
   return true;
 }
 
-bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height, bool loose_check) {
+bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) {
 	uint64_t inputs_amount = 0;
 	if (!get_inputs_money_amount(tx, inputs_amount)) {
 		tvc.m_verification_failed = true;
@@ -298,12 +298,12 @@ bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
 	getObjectHash(tx, h, blobSize);
 	const uint64_t fee = inputs_amount - outputs_amount;
 	bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, height);
-	if (!isFusionTransaction)
-		if (height < CryptoNote::parameters::MINIMUM_FEE_V2_HEIGHT ? fee < CryptoNote::parameters::MINIMUM_FEE_V1 : (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() :
-		fee < getMinimalFeeForHeight(loose_check ? height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY : height))) {
-		logger(ERROR) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
+  
+  if (!isFusionTransaction && (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() :
+      fee < (getMinimalFeeForHeight(height) - (getMinimalFeeForHeight(height) * 20 / 100)))) {
+      logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
 			m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : 
-			getMinimalFeeForHeight(loose_check ? height - CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY : height));
+        getMinimalFeeForHeight(height) - (getMinimalFeeForHeight(height) * 20 / 100));
 		tvc.m_verification_failed = true;
 		tvc.m_tx_fee_too_small = true;
 		return false;
@@ -1167,7 +1167,7 @@ bool core::getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId)
   return getPaymentIdFromTransactionExtraNonce(extraNonce.nonce, paymentId);
 }
 
-bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height, bool loose_check) {
+bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) {
   if (!check_tx_syntax(tx)) {
     logger(INFO) << "WRONG TRANSACTION BLOB, Failed to check tx " << txHash << " syntax, rejected";
     tvc.m_verification_failed = true;
@@ -1182,7 +1182,7 @@ bool core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
       return false;
     }
   
-    if (!check_tx_fee(tx, blobSize, tvc, height, loose_check)) {
+    if (!check_tx_fee(tx, blobSize, tvc, height)) {
       tvc.m_verification_failed = true;
       return false;
     }
