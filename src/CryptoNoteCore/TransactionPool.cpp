@@ -408,6 +408,12 @@ namespace CryptoNote {
         continue;
       }
 
+      tx_verification_context tvc;
+      if (m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
+        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
+        continue;
+      }
+
       TransactionCheckInfo checkInfo(txd);
       if (is_transaction_ready_to_go(txd.tx, checkInfo) && blockTemplate.addTransaction(txd.id, txd.tx)) {
         total_size += txd.blobSize;
