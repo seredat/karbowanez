@@ -2600,7 +2600,9 @@ int main(int argc, char* argv[]) {
   std::string cfgLogFile = Common::NativePathToGeneric(command_line::get_arg(vm, arg_log_file));
   if (cfgLogFile.empty()) {
     if (is_sys_dir) {
-      cfgLogFile = Common::CombinePath(default_data_dir, Common::ReplaceExtenstion(modulePath, ".log"));
+      std::string moduleName;
+      Common::GetFileName(modulePath, moduleName);
+      cfgLogFile = Common::CombinePath(default_data_dir, moduleName + ".log");
     } else {
       cfgLogFile = Common::ReplaceExtenstion(modulePath, ".log");
     }
