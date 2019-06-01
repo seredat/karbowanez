@@ -1228,8 +1228,6 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     return get_block_longhash(context, b, res);
   }
 
-  //std::cout << "using blodha " << ENDL;
-
   BinaryArray bd, pot;
   if (!get_block_hashing_blob(b, bd)) {
     logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
@@ -1258,21 +1256,21 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   fillHeights(hash_1.data, sizeof(hash_1), maxHeight, heights, 32);
 
   for (size_t i = 0; i < 32; ++i) {
-    Crypto::Hash hash_i = getBlockIdByHeight(static_cast<uint32_t>(heights[i]));
+    Crypto::Hash hi = getBlockIdByHeight(static_cast<uint32_t>(heights[i]));
     Block bi;
-    if (!getBlockByHash(hash_i, bi)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hash_i) << " at height " << heights[i];
+    if (!getBlockByHash(hi, bi)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hi) << " at height " << heights[i];
       return false;
     }
     BinaryArray ba;
-    //if (!get_block_hashing_blob(bl, ba)) {
-    //  logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
-    //  return false;
-    //}
-    if (!toBinaryArray(bi, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to convert to BinaryArray the additional block " << i << " in getBlockLongHash";
+    if (!get_block_hashing_blob(bi, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
       return false;
     }
+    //if (!toBinaryArray(bi, ba)) {
+    //  logger(ERROR, BRIGHT_RED) << "Failed to convert to BinaryArray the additional block " << i << " in getBlockLongHash";
+    //  return false;
+    //}
     pot.insert(std::end(pot), std::begin(ba), std::end(ba));
   }
 
