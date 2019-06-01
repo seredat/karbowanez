@@ -1206,7 +1206,7 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   }
 }
 
-CryptoNote::BlockDetails WalletGreen::getBlock(const uint64_t blockHeight)
+CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight)
 {
 	CryptoNote::BlockDetails block;
 
@@ -1231,7 +1231,7 @@ CryptoNote::BlockDetails WalletGreen::getBlock(const uint64_t blockHeight)
 	return block;
 }
 
-uint64_t WalletGreen::scanHeightToTimestamp(const uint64_t scanHeight)
+uint64_t WalletGreen::scanHeightToTimestamp(const uint32_t scanHeight)
 {
 	if (scanHeight == 0)
 	{
@@ -1252,7 +1252,7 @@ uint64_t WalletGreen::scanHeightToTimestamp(const uint64_t scanHeight)
 
 	/* Add a bit of a buffer in case of difficulty weirdness, blocks coming
 	   out too fast */
-	secondsSinceLaunch *= 0.95;
+	secondsSinceLaunch = static_cast<uint64_t>(secondsSinceLaunch * 0.95);
 
 	/* Get the genesis block timestamp and add the time since launch */
 	timestamp = UINT64_C(1464595534)
@@ -1297,7 +1297,7 @@ void WalletGreen::reset(const uint64_t scanHeight)
     /* Grab the wallet encrypted prefix */
     auto* prefix = reinterpret_cast<ContainerStoragePrefix*>(m_containerStorage.prefix());
 
-    uint64_t newTimestamp = scanHeightToTimestamp(scanHeight);
+    uint64_t newTimestamp = scanHeightToTimestamp((uint32_t) scanHeight);
 
     /* Reencrypt with the new creation timestamp so we rescan from here when we relaunch */
     prefix->encryptedViewKeys = encryptKeyPair(m_viewPublicKey, m_viewSecretKey, newTimestamp);

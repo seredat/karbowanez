@@ -17,7 +17,7 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height,
 void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 std::string extra, std::shared_ptr<WalletInfo> walletInfo,
                 uint32_t height, uint64_t mixin = WalletConfig::defaultMixin,
-                std::string nodeAddress = std::string(), uint32_t nodeFee = 0);
+                std::string nodeAddress = std::string(), uint64_t nodeFee = 0);
 
 void sendMultipleTransactions(CryptoNote::WalletGreen &wallet,
                               std::vector<CryptoNote::TransactionParameters>
@@ -27,7 +27,7 @@ void splitTx(CryptoNote::WalletGreen &wallet,
              CryptoNote::TransactionParameters p);
 
 bool confirmTransaction(CryptoNote::TransactionParameters t,
-                        std::shared_ptr<WalletInfo> walletInfo, uint32_t nodeFee);
+                        std::shared_ptr<WalletInfo> walletInfo, uint64_t nodeFee);
 
 bool parseAmount(std::string strAmount, uint64_t &amount);
 
@@ -59,6 +59,6 @@ Maybe<uint64_t> getTransferAmount();
 
 BalanceInfo doWeHaveEnoughBalance(uint64_t amount, uint64_t fee,
 	std::shared_ptr<WalletInfo> walletInfo,
-	uint64_t height, uint32_t nodeFee);
+	uint32_t height, uint64_t nodeFee);
 
 uint64_t calculateNodeFee(uint64_t amount);
