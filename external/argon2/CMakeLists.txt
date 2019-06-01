@@ -9,6 +9,10 @@ set (ARGON2_SRC
     "encoding.c"
 )
 
+if (MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4996")
+endif()
+
 if (ANDROID OR ARM)
   list(APPEND ARGON2_SRC "ref.c")
 else()
