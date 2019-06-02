@@ -2412,13 +2412,16 @@ bool simple_wallet::run() {
     }
   }
 
+  const int promptLength = 20;
+
   std::string walletName;
   Common::GetFileName(m_wallet_file, walletName);
 
-  std::cout << std::endl;
+  const std::string shortFileName = walletName.substr(0, promptLength - 9);
+  const std::string addr_start = m_wallet->getAddress().substr(0, 6);
 
-  std::string addr_start = m_wallet->getAddress().substr(0, 6);
-  m_consoleHandler.start(false, "[" + walletName + " " + addr_start + "]: ", Common::Console::Color::BrightYellow);
+  std::cout << std::endl;
+  m_consoleHandler.start(false, "[" + shortFileName + " " + addr_start + "]: ", Common::Console::Color::BrightYellow);
   return true;
 }
 //----------------------------------------------------------------------------------------------------
