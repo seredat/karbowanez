@@ -27,8 +27,7 @@
 #include <Common/PasswordContainer.h>
 #include <GreenWallet/WalletConfig.h>
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet,
-                                             Config &config)
+std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet)
 {
     std::cout << WarningMsg("View wallets are only for viewing incoming ")
               << WarningMsg("transactions, and cannot make transfers.")
@@ -62,7 +61,8 @@ std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet,
         }
     }
 
-    const std::string walletFileName = getNewWalletFileName(config);
+    const std::string walletFileName = getNewWalletFileName(WalletEnv::is_sys_dir,
+                                                            WalletEnv::default_data_dir);
 
     const std::string msg = "Give your new wallet a password: ";
 
@@ -81,8 +81,7 @@ std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet,
                                         address, true, wallet);
 }
 
-std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet,
-                                         Config &config)
+std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet)
 {
     const Crypto::SecretKey privateSpendKey
         = getPrivateKey("Enter your private spend key: ");
@@ -90,11 +89,10 @@ std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet,
     const Crypto::SecretKey privateViewKey
         = getPrivateKey("Enter your private view key: ");
 
-    return importFromKeys(wallet, privateSpendKey, privateViewKey, config);
+    return importFromKeys(wallet, privateSpendKey, privateViewKey);
 }
 
-std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet,
-                                            Config &config)
+std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet)
 {
     const int privateKeyLen = 184;
 
@@ -148,11 +146,10 @@ std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet,
     /* Copy the keys into the struct */
     std::memcpy(&keys, data.data(), sizeof(keys));
 
-    return importFromKeys(wallet, keys.spendSecretKey, keys.viewSecretKey, config);
+    return importFromKeys(wallet, keys.spendSecretKey, keys.viewSecretKey);
 }
 
-std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet,
-                                                 Config &config)
+std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet)
 {
     std::string mnemonicPhrase;
 
@@ -174,15 +171,15 @@ std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet
     CryptoNote::AccountBase::generateViewFromSpend(privateSpendKey, 
                                                    privateViewKey);
 
-    return importFromKeys(wallet, privateSpendKey, privateViewKey, config);
+    return importFromKeys(wallet, privateSpendKey, privateViewKey);
 }
 
 std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet,
                                            Crypto::SecretKey privateSpendKey, 
-                                           Crypto::SecretKey privateViewKey,
-                                           Config &config)
+                                           Crypto::SecretKey privateViewKey)
 {
-    const std::string walletFileName = getNewWalletFileName(config);
+    const std::string walletFileName = getNewWalletFileName(WalletEnv::is_sys_dir,
+                                                            WalletEnv::default_data_dir);
 
     const std::string msg = "Give your new wallet a password: ";
 
@@ -203,10 +200,10 @@ std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet,
                                         walletAddress, false, wallet);
 }
 
-std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet,
-                                           Config &config)
+std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
 {
-    const std::string walletFileName = getNewWalletFileName(config);
+    const std::string walletFileName = getNewWalletFileName(WalletEnv::is_sys_dir,
+                                                            WalletEnv::default_data_dir);
 
     const std::string msg = "Give your new wallet a password: ";
 
@@ -240,7 +237,9 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet,
 std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
                                        Config &config)
 {
-    const std::string walletFileName = getExistingWalletFileName(config);
+    const std::string walletFileName = getExistingWalletFileName(config,
+                                                                 WalletEnv::is_sys_dir,
+                                                                 WalletEnv::default_data_dir);
 
     bool initial = true;
 
@@ -437,7 +436,9 @@ Crypto::SecretKey getPrivateKey(std::string msg)
     }
 }
 
-std::string getExistingWalletFileName(Config &config)
+std::string getExistingWalletFileName(Config &config,
+                                      const bool &is_sys_dir,
+                                      const std::string &default_data_dir)
 {
     bool initial = true;
 
@@ -450,7 +451,7 @@ std::string getExistingWalletFileName(Config &config)
         if (config.walletGiven && initial)
         {
             walletName = config.walletFile;
-            genBasePath(walletName, config.default_data_dir, config.is_sys_dir, walletBasePath);
+            genBasePath(walletName, default_data_dir, is_sys_dir, walletBasePath);
         }
         else
         {
@@ -458,7 +459,7 @@ std::string getExistingWalletFileName(Config &config)
                       << InformationMsg("you want to open?: ");
 
             std::getline(std::cin, walletName);
-            genBasePath(walletName, config.default_data_dir, config.is_sys_dir, walletBasePath);
+            genBasePath(walletName, default_data_dir, is_sys_dir, walletBasePath);
         }
 
         initial = false;
@@ -495,7 +496,8 @@ std::string getExistingWalletFileName(Config &config)
     }
 }
 
-std::string getNewWalletFileName(Config &config)
+std::string getNewWalletFileName(const bool &is_sys_dir,
+                                 const std::string &default_data_dir)
 {
     std::string walletName;
     std::string walletBasePath;
@@ -506,7 +508,7 @@ std::string getNewWalletFileName(Config &config)
                   << InformationMsg("new wallet?: ");
 
         std::getline(std::cin, walletName);
-        genBasePath(walletName, config.default_data_dir, config.is_sys_dir, walletBasePath);
+        genBasePath(walletName, default_data_dir, is_sys_dir, walletBasePath);
 
         const std::string walletFileName = walletBasePath + ".wallet";
 

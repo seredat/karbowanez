@@ -428,12 +428,19 @@ void reset(CryptoNote::INode &node, std::shared_ptr<WalletInfo> walletInfo)
 	syncWallet(node, walletInfo);
 }
 
-void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node)
+void saveCSV(CryptoNote::WalletGreen &wallet,
+             CryptoNote::INode &node,
+             const bool &is_sys_dir,
+             const std::string &default_data_dir)
 {
     const size_t numTransactions = wallet.getTransactionCount();
 
     std::ofstream csv;
-    csv.open(WalletConfig::csvFilename);
+    std::string csvFilename = "";
+
+    genBasePath(WalletConfig::csvFilename, default_data_dir, is_sys_dir, csvFilename);
+
+    csv.open(csvFilename);
 
     if (!csv)
     {

@@ -9,34 +9,31 @@
 
 std::shared_ptr<WalletInfo> importFromKeys(CryptoNote::WalletGreen &wallet, 
                                            Crypto::SecretKey privateSpendKey,
-                                           Crypto::SecretKey privateViewKey,
-                                           Config &config);
+                                           Crypto::SecretKey privateViewKey);
 
 std::shared_ptr<WalletInfo> openWallet(CryptoNote::WalletGreen &wallet,
                                        Config &config);
 
-std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet,
-                                             Config &config);
+std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet,
-                                         Config &config);
+std::shared_ptr<WalletInfo> importWallet(CryptoNote::WalletGreen &wallet);
 
 std::shared_ptr<WalletInfo> createViewWallet(CryptoNote::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet,
-                                                 Config &config);
+std::shared_ptr<WalletInfo> mnemonicImportWallet(CryptoNote::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet,
-                                           Config &config);
+std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet);
 
-std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet,
-                                            Config &config);
+std::shared_ptr<WalletInfo> importGUIWallet(CryptoNote::WalletGreen &wallet);
 
 Crypto::SecretKey getPrivateKey(std::string outputMsg);
 
-std::string getNewWalletFileName(Config &config);
+std::string getNewWalletFileName(const bool &is_sys_dir,
+                                 const std::string &default_data_dir);
 
-std::string getExistingWalletFileName(Config &config);
+std::string getExistingWalletFileName(Config &config,
+                                      const bool &is_sys_dir,
+                                      const std::string &default_data_dir);
 
 std::string getWalletPassword(bool verifyPwd, std::string msg);
 

@@ -41,7 +41,10 @@ void balance(CryptoNote::INode &node, CryptoNote::WalletGreen &wallet,
 
 void exportKeys(std::shared_ptr<WalletInfo> walletInfo);
 
-void saveCSV(CryptoNote::WalletGreen &wallet, CryptoNote::INode &node);
+void saveCSV(CryptoNote::WalletGreen &wallet,
+             CryptoNote::INode &node,
+             const bool &is_sys_dir,
+             const std::string &default_data_dir);
 
 void save(CryptoNote::WalletGreen &wallet);
 

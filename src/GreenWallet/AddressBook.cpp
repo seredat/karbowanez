@@ -92,7 +92,8 @@ void addToAddressBook()
                                 "cancel adding someone to your address book")
               << std::endl << std::endl;
 
-    auto addressBook = getAddressBook();
+    auto addressBook = getAddressBook(WalletEnv::is_sys_dir,
+                                      WalletEnv::default_data_dir);
 
     const std::string friendlyName = getAddressBookName(addressBook);
 
@@ -122,7 +123,7 @@ void addToAddressBook()
 
     addressBook.emplace_back(friendlyName, maybeAddress.x, maybePaymentID.x);
 
-    if (saveAddressBook(addressBook))
+    if (saveAddressBook(addressBook, WalletEnv::is_sys_dir, WalletEnv::default_data_dir))
     {
         std::cout << std::endl
                   << SuccessMsg("A new entry has been added to your address ")
@@ -177,7 +178,8 @@ const Maybe<const AddressBookEntry> getAddressBookEntry(AddressBook addressBook)
 void sendFromAddressBook(std::shared_ptr<WalletInfo> walletInfo,
                          uint32_t height, std::string feeAddress)
 {
-    auto addressBook = getAddressBook();
+    auto addressBook = getAddressBook(WalletEnv::is_sys_dir,
+                                      WalletEnv::default_data_dir);
 
     if (isAddressBookEmpty(addressBook))
     {
@@ -230,7 +232,8 @@ bool isAddressBookEmpty(AddressBook addressBook)
 
 void deleteFromAddressBook()
 {
-    auto addressBook = getAddressBook();
+    auto addressBook = getAddressBook(WalletEnv::is_sys_dir,
+                                      WalletEnv::default_data_dir);
 
     if (isAddressBookEmpty(addressBook))
     {
@@ -265,7 +268,7 @@ void deleteFromAddressBook()
         {
             addressBook.erase(it);
 
-            if (saveAddressBook(addressBook))
+            if (saveAddressBook(addressBook, WalletEnv::is_sys_dir, WalletEnv::default_data_dir))
             {
                 std::cout << std::endl
                           << SuccessMsg("This entry has been deleted from ")
@@ -297,7 +300,8 @@ void deleteFromAddressBook()
 
 void listAddressBook()
 {
-    auto addressBook = getAddressBook();
+    auto addressBook = getAddressBook(WalletEnv::is_sys_dir,
+                                      WalletEnv::default_data_dir);
 
     if (isAddressBookEmpty(addressBook))
     {
@@ -338,11 +342,16 @@ void listAddressBook()
     }
 }
 
-AddressBook getAddressBook()
+AddressBook getAddressBook(const bool &is_sys_dir,
+                           const std::string &default_data_dir)
 {
     AddressBook addressBook = boost::value_initialized<decltype(addressBook)>();
 
-    std::ifstream input(WalletConfig::addressBookFilename);
+    std::string addressBookFilename;
+
+    genBasePath(WalletConfig::addressBookFilename, default_data_dir, is_sys_dir, addressBookFilename);
+
+    std::ifstream input(addressBookFilename);
 
     /* If file exists, read current values */
     if (input)
@@ -357,11 +366,17 @@ AddressBook getAddressBook()
     return addressBook;
 }
 
-bool saveAddressBook(AddressBook addressBook)
+bool saveAddressBook(AddressBook addressBook,
+                     const bool &is_sys_dir,
+                     const std::string &default_data_dir)
 {
     std::string jsonString = CryptoNote::storeToJson(addressBook);
 
-    std::ofstream output(WalletConfig::addressBookFilename);
+    std::string addressBookFilename;
+
+    genBasePath(WalletConfig::addressBookFilename, default_data_dir, is_sys_dir, addressBookFilename);
+
+    std::ofstream output(addressBookFilename);
 
     if (output)
     {

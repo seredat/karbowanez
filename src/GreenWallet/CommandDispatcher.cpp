@@ -13,6 +13,7 @@
 #include <GreenWallet/Fusion.h>
 #include <GreenWallet/Open.h>
 #include <GreenWallet/Transfer.h>
+#include <GreenWallet/WalletConfig.h>
 
 bool handleCommand(const std::string command,
                    std::shared_ptr<WalletInfo> walletInfo,
@@ -99,7 +100,8 @@ bool handleCommand(const std::string command,
     }
     else if (command == "save_csv")
     {
-        saveCSV(walletInfo->wallet, node);
+        saveCSV(walletInfo->wallet, node,
+                WalletEnv::is_sys_dir, WalletEnv::default_data_dir);
     }
     else if (command == "send_all")
     {
@@ -132,7 +134,7 @@ std::shared_ptr<WalletInfo> handleLaunchCommand(CryptoNote::WalletGreen &wallet,
 {
     if (launchCommand == "create")
     {
-        return generateWallet(wallet, config);
+        return generateWallet(wallet);
     }
     else if (launchCommand == "open")
     {
@@ -140,15 +142,15 @@ std::shared_ptr<WalletInfo> handleLaunchCommand(CryptoNote::WalletGreen &wallet,
     }
     else if (launchCommand == "seed_restore")
     {
-        return mnemonicImportWallet(wallet, config);
+        return mnemonicImportWallet(wallet);
     }
     else if (launchCommand == "key_restore")
     {
-        return importWallet(wallet, config);
+        return importWallet(wallet);
     }
     else if (launchCommand == "view_wallet")
     {
-        return createViewWallet(wallet, config);
+        return createViewWallet(wallet);
     }
     /* This should never happen */
     else

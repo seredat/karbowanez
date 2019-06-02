@@ -67,3 +67,13 @@ namespace WalletConfig
        zero is allowed */
     const uint32_t mixinZeroDisabledHeight = 0;
 }
+
+namespace WalletEnv {
+
+    /* Run in system directory */
+    extern bool is_sys_dir;
+
+    /* Default folder */
+    extern std::string default_data_dir;
+
+}

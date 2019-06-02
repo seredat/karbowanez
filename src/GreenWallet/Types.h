@@ -95,12 +95,6 @@ struct Config
 
     /* The wallet password */
     std::string walletPass = "";
-
-    /* Run in system directory */
-    bool is_sys_dir = false;
-
-    /* Default folder */
-    std::string default_data_dir = "";
 };
 
 struct AddressBookEntry

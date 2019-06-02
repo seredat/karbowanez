@@ -28,6 +28,9 @@
 #include <GreenWallet/Tools.h>
 #include <GreenWallet/WalletConfig.h>
 
+bool WalletEnv::is_sys_dir = false;
+std::string WalletEnv::default_data_dir = "";
+
 int main(int argc, char **argv)
 {
 	/* Fix wallet not responding when enter cyrillic (non-latin) characters 
@@ -55,12 +58,13 @@ int main(int argc, char **argv)
     }
 
 	std::string exe_path;
-	config.is_sys_dir = false;
+	WalletEnv::is_sys_dir = false;
+    WalletEnv::default_data_dir = "";
 	if (Common::GetExePath(exe_path)) {
 		if (Common::IsSysDir(exe_path)) {
-			config.is_sys_dir = true;
-			config.default_data_dir = Common::NativePathToGeneric(Tools::getDefaultDataDirectory());
-			boost::filesystem::path path_data_dir(config.default_data_dir);
+			WalletEnv::is_sys_dir = true;
+			WalletEnv::default_data_dir = Common::NativePathToGeneric(Tools::getDefaultDataDirectory());
+			boost::filesystem::path path_data_dir(WalletEnv::default_data_dir);
 			if (!boost::filesystem::exists(path_data_dir)) {
 				boost::filesystem::create_directory(path_data_dir);
 			}

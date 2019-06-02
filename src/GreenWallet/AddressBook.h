@@ -22,8 +22,11 @@ const Maybe<const AddressBookEntry> getAddressBookEntry(AddressBook addressBook)
 
 const std::string getAddressBookName(AddressBook addressBook);
 
-AddressBook getAddressBook();
+AddressBook getAddressBook(const bool &is_sys_dir,
+                           const std::string &default_data_dir);
 
-bool saveAddressBook(AddressBook addressBook);
+bool saveAddressBook(AddressBook addressBook,
+                     const bool &is_sys_dir,
+                     const std::string &default_data_dir);
 
 bool isAddressBookEmpty(AddressBook addressBook);
