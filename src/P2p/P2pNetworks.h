@@ -30,6 +30,7 @@ namespace CryptoNote
 		boost::uuids::name_generator gen(name);
 		boost::uuids::uuid u = gen(GENESIS_COINBASE_TX_HEX);
 	}
-	const static boost::uuids::uuid BYTECOIN_NETWORK = u;
+	//const static boost::uuids::uuid BYTECOIN_NETWORK = u;
+  const static boost::uuids::uuid BYTECOIN_NETWORK = { {  0x33, 0x33, 0x55, 0x55, 0x54, 0x4f, 0x4e, 0x4f, 0x54, 0x45, 0x00, 0x12, 0x10, 0x11, 0x01, 0x10  } };
 }
 
