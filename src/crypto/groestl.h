@@ -1,5 +1,10 @@
 #ifndef __hash_h
 #define __hash_h
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 #include "crypto_uint8.h"
 #include "crypto_uint32.h"
@@ -45,9 +50,10 @@ typedef struct {
 			       data buffer */
 } hashState;
 
-/*void Init(hashState*);
+void Init(hashState*);
 void Update(hashState*, const BitSequence*, DataLength);
-void Final(hashState*, BitSequence*); */
+void Final(hashState*, BitSequence*);
+
 void groestl(const BitSequence*, DataLength, BitSequence*);
 /* NIST API end   */
 
@@ -56,5 +62,9 @@ int crypto_hash(unsigned char *out,
 		const unsigned char *in,
 		unsigned long long len);
 */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __hash_h */

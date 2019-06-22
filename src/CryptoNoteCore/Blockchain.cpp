@@ -1281,7 +1281,8 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   uint32_t t_cost = 2;
 
   // stir the pot - hashing the 1 + 32 blocks as one continuous data, salt is hash_1
-  Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
+  //Crypto::argon2d_hash(pot.data(), pot.size(), hash_1.data, sizeof(hash_1), m_cost, lanes, t_cost, hash_2);
+  Crypto::balloon_hash(pot.data(), hash_2, pot.size(), hash_1.data, sizeof(hash_1));
 
   res = hash_2;
 
