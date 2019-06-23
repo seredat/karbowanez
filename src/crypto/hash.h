@@ -65,9 +65,10 @@ namespace Crypto {
     cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  inline void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t t_cost, Hash &hash) {
-    argon2d_hash_raw(t_cost, m_cost, lanes, in, inlen, salt, saltlen, reinterpret_cast<char *>(&hash), 64);
-  }
+  void(*const extra_hashes[4])(const void *, size_t, char *) =
+  {
+    hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+  };
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {
     tree_hash(reinterpret_cast<const char (*)[HASH_SIZE]>(hashes), count, reinterpret_cast<char *>(&root_hash));
