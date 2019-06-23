@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 
-#include <argon2.h>
 #include <CryptoTypes.h>
 #include "generic-ops.h"
 #include "balloon.h"
@@ -64,10 +63,6 @@ namespace Crypto {
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
     cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
-  }
-
-  inline void argon2d_hash(const void *in, const size_t inlen, const void *salt, const size_t saltlen, uint32_t m_cost, uint32_t lanes, uint32_t t_cost, Hash &hash) {
-    argon2d_hash_raw(t_cost, m_cost, lanes, in, inlen, salt, saltlen, reinterpret_cast<char *>(&hash), 64);
   }
 
   inline void balloon_hash(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
