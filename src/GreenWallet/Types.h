@@ -5,10 +5,9 @@
 
 #pragma once
 
+#include <stdint.h>
 #include "CryptoNoteConfig.h"
-
 #include <Serialization/ISerializer.h>
-
 #include <Wallet/WalletGreen.h>
 
 struct CLICommand
@@ -83,7 +82,13 @@ struct Config
     std::string host = "127.0.0.1";
     
     /* The daemon port */
-    int port = CryptoNote::RPC_DEFAULT_PORT;
+    uint16_t port = CryptoNote::RPC_DEFAULT_PORT;
+
+    /* The url path */
+    std::string path = "/";
+
+    /* Enable SSL mode */
+    bool ssl = false;
 
     /* The wallet file path */
     std::string walletFile = "";

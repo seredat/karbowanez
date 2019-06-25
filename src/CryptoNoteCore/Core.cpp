@@ -74,7 +74,8 @@ logger(logger, "core"),
 m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
 m_miner(new miner(currency, *this, logger)),
-m_starter_message_showed(false) {
+m_starter_message_showed(false),
+m_checkpoints(logger) {
     set_cryptonote_protocol(pprotocol);
     m_blockchain.addObserver(this);
     m_mempool.addObserver(this);
@@ -93,6 +94,7 @@ void core::set_cryptonote_protocol(i_cryptonote_protocol* pprotocol) {
 //-----------------------------------------------------------------------------------
 void core::set_checkpoints(Checkpoints&& chk_pts) {
   m_blockchain.setCheckpoints(std::move(chk_pts));
+  m_checkpoints = std::move(chk_pts);
 }
 //-----------------------------------------------------------------------------------
 void core::init_options(boost::program_options::options_description& /*desc*/) {
@@ -279,37 +281,48 @@ bool core::check_tx_mixin(const Transaction& tx, uint32_t height) {
 }
 
 bool core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) {
-	uint64_t inputs_amount = 0;
-	if (!get_inputs_money_amount(tx, inputs_amount)) {
-		tvc.m_verification_failed = true;
-		return false;
-	}
+  uint64_t inputs_amount = 0;
+  if (!get_inputs_money_amount(tx, inputs_amount)) {
+    tvc.m_verification_failed = true;
+    return false;
+  }
 
-	uint64_t outputs_amount = get_outs_money_amount(tx);
+  uint64_t outputs_amount = get_outs_money_amount(tx);
 
-	if (outputs_amount > inputs_amount) {
-		logger(DEBUGGING) << "transaction use more money then it has: use " << m_currency.formatAmount(outputs_amount) <<
-			", have " << m_currency.formatAmount(inputs_amount);
-		tvc.m_verification_failed = true;
-		return false;
-	}
+  if (outputs_amount > inputs_amount) {
+    logger(DEBUGGING) << "transaction use more money then it has: use " << m_currency.formatAmount(outputs_amount) <<
+      ", have " << m_currency.formatAmount(inputs_amount);
+    tvc.m_verification_failed = true;
+    return false;
+  }
 
-	Crypto::Hash h = NULL_HASH;
-	getObjectHash(tx, h, blobSize);
-	const uint64_t fee = inputs_amount - outputs_amount;
-	bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, height);
-  
-  if (!isFusionTransaction && (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() :
-      fee < (getMinimalFeeForHeight(height) - (getMinimalFeeForHeight(height) * 20 / 100)))) {
-      logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " <<
-			m_currency.formatAmount(getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : 
-        getMinimalFeeForHeight(height) - (getMinimalFeeForHeight(height) * 20 / 100));
-		tvc.m_verification_failed = true;
-		tvc.m_tx_fee_too_small = true;
-		return false;
-	}
+  Crypto::Hash h = NULL_HASH;
+  getObjectHash(tx, h, blobSize);
+  const uint64_t fee = inputs_amount - outputs_amount;
+  bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, height);
+  bool enough = true;
+  if (!isFusionTransaction && !m_checkpoints.is_in_checkpoint_zone(get_current_blockchain_height())) {
+    if (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4) {
+      if (fee < m_currency.minimumFee()) {
+        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << m_currency.minimumFee();
+        enough = false;
+      }
+    } else {
+      uint64_t min = getMinimalFeeForHeight(height);
+      if (fee < (min - min * 20 / 100)) {
+        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << min;
+        enough = false;
+      }
+    }
 
-	return true;
+    if (!enough) {
+      tvc.m_verification_failed = true;
+      tvc.m_tx_fee_too_small = true;
+      return false;
+    }
+  }
+
+  return true;
 }
 
 bool core::check_tx_unmixable(const Transaction& tx, uint32_t height) {

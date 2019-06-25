@@ -31,7 +31,7 @@
 #include "ICore.h"
 #include "ICoreObserver.h"
 #include "Common/ObserverManager.h"
-
+#include "CryptoNoteCore/Checkpoints.h"
 #include "System/Dispatcher.h"
 #include "CryptoNoteCore/MessageQueue.h"
 #include "CryptoNoteCore/BlockchainMessages.h"
@@ -202,6 +202,7 @@ namespace CryptoNote {
      std::vector<Crypto::Hash> findIdsForShortBlocks(uint32_t startOffset, uint32_t startFullOffset);
 
      const Currency& m_currency;
+     Checkpoints m_checkpoints;
      Logging::LoggerRef logger;
      CryptoNote::RealTimeProvider m_timeProvider;
      tx_memory_pool m_mempool;
