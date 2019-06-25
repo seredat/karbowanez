@@ -729,7 +729,7 @@ namespace CryptoNote {
     if (height >= upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + N + 1) { return difficulty_guess; }
 
     // Genesis should be the only time sizes are < N+1.
-    assert(timestamps.size() == cumulativeDifficulties.size());// && timestamps.size() == N + 1);
+    assert(timestamps.size() == cumulativeDifficulties.size() && timestamps.size() == N + 1);
 
 		uint64_t L(0), next_D, i, this_timestamp(0), previous_timestamp(0), avg_D;
 
@@ -758,9 +758,9 @@ namespace CryptoNote {
 		}
 
 		// minimum limit
-		if (!isTestnet() && next_D < 1000000) {
+		//if (!isTestnet() && next_D < 1000000) {
 		//	next_D = 1000000;
-		}
+		//}
 
 		return next_D;
 	}
