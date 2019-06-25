@@ -727,13 +727,21 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
 
 difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, uint32_t window) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  height = std::min<uint32_t>(height, m_blocks.size() - 1);
+  if (height <= 1)
+    return 1;
+
+  if (window == height) {
+    return m_blocks[height].cumulative_difficulty / height;
+  }
+
   size_t offset;
-  offset = height - std::min(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), window));
+  offset = height - std::min<uint32_t>(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), window));
   if (offset == 0) {
     ++offset;
   }
   difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
-  return cumulDiffForPeriod / std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), window);
+  return cumulDiffForPeriod / std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), window);
 }
 
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
@@ -781,6 +789,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
 	}
 	uint64_t avgRewardCurrent = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
+	rewards.clear();
 	rewards.shrink_to_fit();
 
 	// historical reference moving average reward
