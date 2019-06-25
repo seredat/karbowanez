@@ -92,7 +92,7 @@ public:
     if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
       return difficultyBlocksCount4() + 1;
     }
-	else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3 || blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
+    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3 || blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
       return difficultyBlocksCount3() + 1;
     }
     else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
