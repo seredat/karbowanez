@@ -1255,7 +1255,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   // Phase 3
 
   // stir the pot - hashing the 1 + 8 blocks as one continuous data, salt is hash_1
-  Crypto::balloon_hash(pot.data(), hash_2, pot.size(), hash_1.data, sizeof(hash_1));
+  Crypto::balloon_hash_blake(pot.data(), hash_2, pot.size(), hash_1.data, sizeof(hash_1));
 
   res = hash_2;
 
