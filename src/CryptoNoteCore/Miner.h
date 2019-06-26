@@ -50,7 +50,7 @@ namespace CryptoNote {
     bool on_idle();
     void on_synchronized();
     //synchronous analog (for fast calls)
-    static bool find_nonce_for_given_block(Crypto::cn_context &context, Block& bl, const difficulty_type& diffic);
+    bool find_nonce_for_given_block(Crypto::cn_context &context, Block& bl, const difficulty_type& diffic);
     void pause();
     void resume();
     void do_print_hashrate(bool do_hr);
@@ -58,7 +58,7 @@ namespace CryptoNote {
   private:
     bool worker_thread(uint32_t th_local_index);
     bool request_block_template();
-    void  merge_hr();
+    void merge_hr();
 
     struct miner_config
     {

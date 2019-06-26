@@ -1,4 +1,6 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016, Dan Boneh, Henry Corrigan-Gibbs, Stuart Schechter
+// Copyright (c) 2019, itwysgsl
+// Copyright (c) 2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -15,18 +17,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
-#pragma once
+// https://github.com/itwysgsl/balloon/
 
-#include "CryptoNoteCore/CryptoNoteBasic.h"
-#include "CryptoNoteCore/Difficulty.h"
+#ifndef BALLOON_B_H
+#define BALLOON_B_H
 
-namespace CryptoNote {
-  struct IMinerHandler {
-    virtual bool handle_block_found(Block& b) = 0;
-    virtual bool get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) = 0;
-    virtual bool getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) = 0;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  protected:
-    ~IMinerHandler(){};
-  };
+void balloon_b(const unsigned char* input, char* output, int length, const unsigned char* salt, int salt_length);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif

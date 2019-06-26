@@ -34,6 +34,8 @@
 
 #include "CryptoNoteConfig.h"
 
+#include "../crypto/hash.h"
+
 using namespace Logging;
 using namespace Crypto;
 using namespace Common;
@@ -529,7 +531,18 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   } else {
     return false;
   }
-  cn_slow_hash(context, bd.data(), bd.size(), res);
+  
+  if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    Crypto::Hash hash_1, hash_2;
+    cn_fast_hash(bd.data(), bd.size(), hash_1);
+    Crypto::pump[hash_1.data[0] & 3](bd.data(), hash_2, bd.size(), hash_1.data, sizeof(hash_1));
+
+    res = hash_2;
+  }
+  else {
+    cn_slow_hash(context, bd.data(), bd.size(), res);
+  }
+
   return true;
 }
 

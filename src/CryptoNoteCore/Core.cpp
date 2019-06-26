@@ -618,8 +618,14 @@ void core::pause_mining() {
 }
 
 void core::update_block_template_and_resume_mining() {
-  update_miner_block_template();
-  m_miner->resume();
+  if (update_miner_block_template()) {
+    m_miner->resume();
+    logger(DEBUGGING) << "updated block template and resumed mining";
+  } 
+  else {
+    logger(ERROR) << "updating block template failed, mining not resumed";
+    m_miner->stop();
+  }
 }
 
 bool core::handle_block_found(Block& b) {
@@ -797,6 +803,10 @@ bool core::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockHeight(blockId, blockHeight);
 }
 
+bool core::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  return m_blockchain.getBlockLongHash(context, b, res);
+}
+
 //void core::get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid) {
 //  m_blockchain.get_all_known_block_ids(main, alt, invalid);
 //}
@@ -806,8 +816,7 @@ std::string core::print_pool(bool short_format) {
 }
 
 bool core::update_miner_block_template() {
-  m_miner->on_block_chain_update();
-  return true;
+  return m_miner->on_block_chain_update();
 }
 
 bool core::on_idle() {
@@ -1141,6 +1150,14 @@ std::vector<Crypto::Hash> core::getTransactionHashesByPaymentId(const Crypto::Ha
   std::move(poolTransactionHashes.begin(), poolTransactionHashes.end(), std::back_inserter(blockchainTransactionHashes));
 
   return blockchainTransactionHashes;
+}
+
+difficulty_type core::getAvgDifficulty(uint32_t height, size_t window) {
+  return m_blockchain.getAvgDifficulty(height, window);
+}
+
+difficulty_type core::getAvgCumulativeDifficulty(uint32_t height) {
+  return m_blockchain.getAvgCumulativeDifficulty(height);
 }
 
 uint64_t core::getMinimalFee() {

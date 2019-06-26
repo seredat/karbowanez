@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -21,6 +22,10 @@
 
 #include <CryptoTypes.h>
 #include "generic-ops.h"
+#include "balloon_b.h"
+#include "balloon_g.h"
+#include "balloon_j.h"
+#include "balloon_s.h"
 
 namespace Crypto {
 
@@ -59,8 +64,29 @@ namespace Crypto {
   };
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
-	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+    cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
+
+  inline void balloon_hash_blake(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
+    balloon_b(input, reinterpret_cast<char *>(&output), length, salt, salt_length);
+  }
+  
+  inline void balloon_hash_groestl(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
+    balloon_g(input, reinterpret_cast<char *>(&output), length, salt, salt_length);
+  }
+  
+  inline void balloon_hash_jh(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
+    balloon_j(input, reinterpret_cast<char *>(&output), length, salt, salt_length);
+  }
+  
+  inline void balloon_hash_skein(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
+    balloon_s(input, reinterpret_cast<char *>(&output), length, salt, salt_length);
+  }
+
+  void (*const pump[4])(const unsigned char *, Hash &, int, const unsigned char *, int) =
+  {
+    balloon_hash_blake, balloon_hash_groestl, balloon_hash_jh, balloon_hash_skein
+  };
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {
     tree_hash(reinterpret_cast<const char (*)[HASH_SIZE]>(hashes), count, reinterpret_cast<char *>(&root_hash));
