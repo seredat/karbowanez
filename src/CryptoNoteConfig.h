@@ -105,7 +105,7 @@ const uint32_t UPGRADE_HEIGHT_V2                             = 60000;
 const uint32_t UPGRADE_HEIGHT_V3                             = 216000;
 const uint32_t UPGRADE_HEIGHT_V4                             = 266000;
 const uint32_t UPGRADE_HEIGHT_LWMA3                          = 300000;
-const uint32_t UPGRADE_HEIGHT_V5                             = 373272;
+const uint32_t UPGRADE_HEIGHT_V5                             = 359802;
 const unsigned UPGRADE_VOTING_THRESHOLD                      = 90; // percent
 const uint32_t UPGRADE_VOTING_WINDOW                         = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
 const uint32_t UPGRADE_WINDOW                                = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;  // blocks
@@ -141,8 +141,8 @@ const size_t   BLOCKS_IDS_SYNCHRONIZING_DEFAULT_COUNT        =  10000;  //by def
 const size_t   BLOCKS_SYNCHRONIZING_DEFAULT_COUNT            =  128;    //by default, blocks count in blocks downloading
 const size_t   COMMAND_RPC_GET_BLOCKS_FAST_MAX_COUNT         =  1000;
 
-const int      P2P_DEFAULT_PORT                              =  12347;
-const int      RPC_DEFAULT_PORT                              =  12348;
+const int      P2P_DEFAULT_PORT                              =  22347;
+const int      RPC_DEFAULT_PORT                              =  22348;
 
 const size_t   P2P_LOCAL_WHITE_PEERLIST_LIMIT                =  1000;
 const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
@@ -173,7 +173,7 @@ const char* const SEED_NODES[] = {
   "95.46.98.64:32347",
   "108.61.198.115:32347",
   "45.32.232.11:32347",*/
-  "46.149.182.151:12347"
+  "46.149.182.151:22347"
 };
 
 } // CryptoNote
