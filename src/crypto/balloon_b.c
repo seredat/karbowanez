@@ -37,7 +37,7 @@ inline uint64_t u8tou64(uint8_t const* u8){
 
 void balloon_b(const unsigned char* input, char* output, int length, const unsigned char* salt, int salt_length)
 { 
-  hmac_state ctx;
+  state ctx;
   uint8_t blocks[S_COST][64];
   
   // Step 1: Expand input into buffer
