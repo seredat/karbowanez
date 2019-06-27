@@ -23,6 +23,7 @@
 #include <CryptoTypes.h>
 #include "generic-ops.h"
 #include "balloon_b.h"
+#include "balloon_c.h"
 #include "balloon_g.h"
 #include "balloon_j.h"
 #include "balloon_s.h"
@@ -65,6 +66,10 @@ namespace Crypto {
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
     cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+  }
+
+  inline void balloon_hash(uint8_t* input, Hash &output) {
+    balloon(input, reinterpret_cast<uint8_t *>(&output));
   }
 
   inline void balloon_hash_blake(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {
