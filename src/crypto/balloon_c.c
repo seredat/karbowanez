@@ -10,9 +10,6 @@
 #define INPUT_SIZE  4 // In  8-byte blocks, maximum is 16
 #define OUTPUT_SIZE 2 // In 16-byte blocks, maximum  is 4
 
-#if _MSC_VER
-#define __attribute__(X)
-#endif
 
 uint32_t crc32c_table[256] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
@@ -218,7 +215,7 @@ static inline uint32_t sbox(uint32_t in, uint8_t n) {
 }
 
 void aes(uint8_t* state, uint8_t* key) {
-	uint32_t key_schedule[12] __attribute__((aligned(16)));
+	uint32_t key_schedule[12];
 	uint32_t t;
 
 	key_schedule[0] = ((uint32_t *)key)[0];
