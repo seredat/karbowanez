@@ -165,15 +165,15 @@ const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "8f80f9a5a434a9f1510d13336228debfee9c918ce505efe225d8c94d045fa115";
 
 const char* const SEED_NODES[] = { 
-  "seed1.karbowanec.com:32347",
+  /*"seed1.karbowanec.com:32347",
   "seed2.karbowanec.com:32347",
   "seed.karbo.cloud:32347",
   "seed.karbo.org:32347",
   "seed.karbo.io:32347",
   "95.46.98.64:32347",
   "108.61.198.115:32347",
-  "45.32.232.11:32347",
-  "46.149.182.151:32347"
+  "45.32.232.11:32347",*/
+  "46.149.182.151:12347"
 };
 
 } // CryptoNote
