@@ -533,12 +533,9 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
   }
   
   if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    Crypto::Hash hash_1, hash_2, hash_3;
+    Crypto::Hash hash_1;
     cn_fast_hash(bd.data(), bd.size(), hash_1);
-    Crypto::balloon_hash(hash_1.data, hash_2);
-    Crypto::pump[hash_2.data[0] & 3](bd.data(), hash_3, bd.size(), hash_2.data, sizeof(hash_2));
-
-    res = hash_3;
+    Crypto::balloon_hash(hash_1.data, res);
   }
   else {
     cn_slow_hash(context, bd.data(), bd.size(), res);

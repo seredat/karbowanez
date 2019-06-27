@@ -5,13 +5,13 @@
 
 #include <stdint.h>
 
-#define SIZE (1<<21) // Bytes, stored in cache
-#define ITER (1<<20) // Iterations to move over the cache
+#define SIZE (1<<21)  // Bytes, stored in cache
+#define ITER (1<<16)  // Iterations to move over the cache
 #define INPUT_SIZE  4 // In  8-byte blocks, maximum is 16
 #define OUTPUT_SIZE 2 // In 16-byte blocks, maximum  is 4
 
-#if _MSC_VER
-#define __attribute__(X)
+#ifdef _MSC_VER 
+#define RF_ALIGN(x) __declspec(align(x))
 #endif
 
 uint32_t crc32c_table[256] = {
@@ -218,7 +218,7 @@ static inline uint32_t sbox(uint32_t in, uint8_t n) {
 }
 
 void aes(uint8_t* state, uint8_t* key) {
-	uint32_t key_schedule[12] __attribute__((aligned(16)));
+	uint32_t RF_ALIGN(16) key_schedule[12];
 	uint32_t t;
 
 	key_schedule[0] = ((uint32_t *)key)[0];
@@ -278,7 +278,6 @@ void aes(uint8_t* state, uint8_t* key) {
 	sub_bytes(state);
 	shift_rows(state);
 	add_round_key(state, (uint8_t*)&key_schedule[8]);
-
 #endif
 }
 
