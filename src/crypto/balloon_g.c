@@ -21,7 +21,6 @@
 
 
 #include "groestl.h"
-#include "groestl.c"
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -31,64 +30,64 @@
 #define T_COST 2
 #define DELTA  3
 
-inline uint64_t u8tou64(uint8_t const* u8){
-	uint64_t u64;
-	memcpy(&u64, u8, sizeof(u64));
-	return u64;
+inline uint64_t u8tou64(uint8_t const* u8) {
+  uint64_t u64;
+  memcpy(&u64, u8, sizeof(u64));
+  return u64;
 }
 
 void balloon_g(const unsigned char* input, char* output, int length, const unsigned char* salt, int salt_length)
 {
-	hashState ctx_groestl;
-	uint8_t blocks[S_COST][64];
-	
-	// Step 1: Expand input into buffer
-	uint64_t cnt = 0;
-	Init(&ctx_groestl);
-  Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-  Update(&ctx_groestl, input, length);
-  Update(&ctx_groestl, salt, salt_length);
-  Final(&ctx_groestl, blocks[0]);
-	cnt++;
+  hashState ctx_groestl;
+  uint8_t blocks[S_COST][64];
 
-	for (int m = 1; m < S_COST; m++) {
-    Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-    Update(&ctx_groestl, blocks[m - 1], 64);
-		Final(&ctx_groestl, blocks[m]);
-		cnt++;
-	}
+  // Step 1: Expand input into buffer
+  uint64_t cnt = 0;
+  G_Init(&ctx_groestl);
+  G_Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+  G_Update(&ctx_groestl, input, length);
+  G_Update(&ctx_groestl, salt, salt_length);
+  G_Final(&ctx_groestl, blocks[0]);
+  cnt++;
 
-	// Step 2: Mix buffer contents
-	for (uint64_t t = 0; t < T_COST; t++) {
-		for (uint64_t m = 0; m < S_COST; m++) {
-			// Step 2a: Hash last and current blocks
-      Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-      Update(&ctx_groestl, blocks[(m - 1) % S_COST], 64);
-      Update(&ctx_groestl, blocks[m], 64);
-			Final(&ctx_groestl, blocks[m]);
-			cnt++;
+  for (int m = 1; m < S_COST; m++) {
+    G_Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+    G_Update(&ctx_groestl, blocks[m - 1], 64);
+    G_Final(&ctx_groestl, blocks[m]);
+    cnt++;
+  }
 
-			for (uint64_t i = 0; i < DELTA; i++) {
-				uint8_t index[64];
-        Update(&ctx_groestl, (uint8_t *)&t, sizeof((uint8_t *)&t));
-        Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-        Update(&ctx_groestl, (uint8_t *)&m, sizeof((uint8_t *)&m));
-        Update(&ctx_groestl, salt, salt_length);
-        Update(&ctx_groestl, (uint8_t *)&i, sizeof((uint8_t *)&i));
-				Final(&ctx_groestl, index);
-				cnt++;
+  // Step 2: Mix buffer contents
+  for (uint64_t t = 0; t < T_COST; t++) {
+    for (uint64_t m = 0; m < S_COST; m++) {
+      // Step 2a: Hash last and current blocks
+      G_Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+      G_Update(&ctx_groestl, blocks[(m - 1) % S_COST], 64);
+      G_Update(&ctx_groestl, blocks[m], 64);
+      G_Final(&ctx_groestl, blocks[m]);
+      cnt++;
 
-				uint64_t other = u8tou64(index) % S_COST;
-				cnt++;
+      for (uint64_t i = 0; i < DELTA; i++) {
+        uint8_t index[64];
+        G_Update(&ctx_groestl, (uint8_t *)&t, sizeof((uint8_t *)&t));
+        G_Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+        G_Update(&ctx_groestl, (uint8_t *)&m, sizeof((uint8_t *)&m));
+        G_Update(&ctx_groestl, salt, salt_length);
+        G_Update(&ctx_groestl, (uint8_t *)&i, sizeof((uint8_t *)&i));
+        G_Final(&ctx_groestl, index);
+        cnt++;
 
-        Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-        Update(&ctx_groestl, blocks[m], 64);
-        Update(&ctx_groestl, blocks[other], 64);
-				Final(&ctx_groestl, blocks[m]);
-				cnt++;
-			}
-		}
-	}
-	
-	memcpy(output, blocks[S_COST - 1], 32);
+        uint64_t other = u8tou64(index) % S_COST;
+        cnt++;
+
+        G_Update(&ctx_groestl, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+        G_Update(&ctx_groestl, blocks[m], 64);
+        G_Update(&ctx_groestl, blocks[other], 64);
+        G_Final(&ctx_groestl, blocks[m]);
+        cnt++;
+      }
+    }
+  }
+
+  memcpy(output, blocks[S_COST - 1], 32);
 }

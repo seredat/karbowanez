@@ -203,7 +203,7 @@ static void OutputTransformation(hashState *ctx) {
 }
 
 /* initialise context */
-static void Init(hashState* ctx) {
+void G_Init(hashState* ctx) {
   unsigned int i = 0;
   /* allocate memory for state and data buffer */
 
@@ -223,7 +223,7 @@ static void Init(hashState* ctx) {
 }
 
 /* update state with databitlen bits of input */
-static void Update(hashState* ctx,
+void G_Update(hashState* ctx,
 		  const BitSequence* input,
 		  DataLength databitlen) {
   int index = 0;
@@ -272,7 +272,7 @@ static void Update(hashState* ctx,
 
 /* finalise: process remaining data (including padding), perform
    output transformation, and write hash result to 'output' */
-static void Final(hashState* ctx,
+void G_Final(hashState* ctx,
 		 BitSequence* output) {
   int i, j = 0, hashbytelen = HASH_BIT_LEN/8;
   uint8_t *s = (BitSequence*)ctx->chaining;
@@ -339,14 +339,14 @@ void groestl(const BitSequence* data,
   hashState context;
 
   /* initialise */
-    Init(&context);
+  G_Init(&context);
 
 
   /* process message */
-  Update(&context, data, databitlen);
+  G_Update(&context, data, databitlen);
 
   /* finalise */
-  Final(&context, hashval);
+  G_Final(&context, hashval);
 }
 /*
 static int crypto_hash(unsigned char *out,

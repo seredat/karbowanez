@@ -19,75 +19,74 @@
 
 // https://github.com/itwysgsl/balloon/
 
-#include "jh.h"
-#include "jh.c"
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+#include "jh.h"
 
 #define S_COST 64
 #define T_COST 2
 #define DELTA  3
 
-inline uint64_t u8tou64(uint8_t const* u8){
-	uint64_t u64;
-	memcpy(&u64, u8, sizeof(u64));
-	return u64;
+inline uint64_t u8tou64(uint8_t const* u8) {
+  uint64_t u64;
+  memcpy(&u64, u8, sizeof(u64));
+  return u64;
 }
 
 void balloon_j(const unsigned char* input, char* output, int length, const unsigned char* salt, int salt_length)
 {
-	hashState ctx;
-	uint8_t blocks[S_COST][64];
-	
-	// Step 1: Expand input into buffer
-	uint64_t cnt = 0;
-	Init(&ctx, length);
-  Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-  Update(&ctx, input, length);
-  Update(&ctx, salt, salt_length);
-  Final(&ctx, blocks[0]);
-	cnt++;
+  hashState ctx;
+  uint8_t blocks[S_COST][64];
 
-	for (int m = 1; m < S_COST; m++) {
-    Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-    Update(&ctx, blocks[m - 1], 64);
-		Final(&ctx, blocks[m]);
-		cnt++;
-	}
+  // Step 1: Expand input into buffer
+  uint64_t cnt = 0;
+  J_Init(&ctx, length);
+  J_Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+  J_Update(&ctx, input, length);
+  J_Update(&ctx, salt, salt_length);
+  J_Final(&ctx, blocks[0]);
+  cnt++;
 
-	// Step 2: Mix buffer contents
-	for (uint64_t t = 0; t < T_COST; t++) {
-		for (uint64_t m = 0; m < S_COST; m++) {
-			// Step 2a: Hash last and current blocks
-      Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-      Update(&ctx, blocks[(m - 1) % S_COST], 64);
-      Update(&ctx, blocks[m], 64);
-			Final(&ctx, blocks[m]);
-			cnt++;
+  for (int m = 1; m < S_COST; m++) {
+    J_Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+    J_Update(&ctx, blocks[m - 1], 64);
+    J_Final(&ctx, blocks[m]);
+    cnt++;
+  }
 
-			for (uint64_t i = 0; i < DELTA; i++) {
-				uint8_t index[64];
-        Update(&ctx, (uint8_t *)&t, sizeof((uint8_t *)&t));
-        Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-        Update(&ctx, (uint8_t *)&m, sizeof((uint8_t *)&m));
-        Update(&ctx, salt, salt_length);
-        Update(&ctx, (uint8_t *)&i, sizeof((uint8_t *)&i));
-				Final(&ctx, index);
-				cnt++;
+  // Step 2: Mix buffer contents
+  for (uint64_t t = 0; t < T_COST; t++) {
+    for (uint64_t m = 0; m < S_COST; m++) {
+      // Step 2a: Hash last and current blocks
+      J_Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+      J_Update(&ctx, blocks[(m - 1) % S_COST], 64);
+      J_Update(&ctx, blocks[m], 64);
+      J_Final(&ctx, blocks[m]);
+      cnt++;
 
-				uint64_t other = u8tou64(index) % S_COST;
-				cnt++;
+      for (uint64_t i = 0; i < DELTA; i++) {
+        uint8_t index[64];
+        J_Update(&ctx, (uint8_t *)&t, sizeof((uint8_t *)&t));
+        J_Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+        J_Update(&ctx, (uint8_t *)&m, sizeof((uint8_t *)&m));
+        J_Update(&ctx, salt, salt_length);
+        J_Update(&ctx, (uint8_t *)&i, sizeof((uint8_t *)&i));
+        J_Final(&ctx, index);
+        cnt++;
 
-        Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
-        Update(&ctx, blocks[m], 64);
-        Update(&ctx, blocks[other], 64);
-				Final(&ctx, blocks[m]);
-				cnt++;
-			}
-		}
-	}
-	
-	memcpy(output, blocks[S_COST - 1], 32);
+        uint64_t other = u8tou64(index) % S_COST;
+        cnt++;
+
+        J_Update(&ctx, (uint8_t *)&cnt, sizeof((uint8_t *)&cnt));
+        J_Update(&ctx, blocks[m], 64);
+        J_Update(&ctx, blocks[other], 64);
+        J_Final(&ctx, blocks[m]);
+        cnt++;
+      }
+    }
+  }
+
+  memcpy(output, blocks[S_COST - 1], 32);
 }

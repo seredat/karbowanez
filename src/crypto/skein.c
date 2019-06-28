@@ -14,68 +14,6 @@
 #include <string.h>      /* get the memcpy/memset functions */
 #include "skein.h"       /* get the Skein API definitions   */
 
-#define DISABLE_UNUSED 0
-
-#ifndef SKEIN_256_NIST_MAX_HASHBITS
-#define SKEIN_256_NIST_MAX_HASHBITS (0)
-#endif
-
-#ifndef SKEIN_512_NIST_MAX_HASHBITS
-#define SKEIN_512_NIST_MAX_HASHBITS (512)
-#endif
-
-#define  SKEIN_MODIFIER_WORDS  ( 2)          /* number of modifier (tweak) words */
-
-#define  SKEIN_256_STATE_WORDS ( 4)
-#define  SKEIN_512_STATE_WORDS ( 8)
-#define  SKEIN1024_STATE_WORDS (16)
-#define  SKEIN_MAX_STATE_WORDS (16)
-
-#define  SKEIN_256_STATE_BYTES ( 8*SKEIN_256_STATE_WORDS)
-#define  SKEIN_512_STATE_BYTES ( 8*SKEIN_512_STATE_WORDS)
-#define  SKEIN1024_STATE_BYTES ( 8*SKEIN1024_STATE_WORDS)
-
-#define  SKEIN_256_STATE_BITS  (64*SKEIN_256_STATE_WORDS)
-#define  SKEIN_512_STATE_BITS  (64*SKEIN_512_STATE_WORDS)
-#define  SKEIN1024_STATE_BITS  (64*SKEIN1024_STATE_WORDS)
-
-#define  SKEIN_256_BLOCK_BYTES ( 8*SKEIN_256_STATE_WORDS)
-#define  SKEIN_512_BLOCK_BYTES ( 8*SKEIN_512_STATE_WORDS)
-#define  SKEIN1024_BLOCK_BYTES ( 8*SKEIN1024_STATE_WORDS)
-
-#define SKEIN_RND_SPECIAL       (1000u)
-#define SKEIN_RND_KEY_INITIAL   (SKEIN_RND_SPECIAL+0u)
-#define SKEIN_RND_KEY_INJECT    (SKEIN_RND_SPECIAL+1u)
-#define SKEIN_RND_FEED_FWD      (SKEIN_RND_SPECIAL+2u)
-
-typedef struct
-{
-  size_t  hashBitLen;                      /* size of hash result, in bits */
-  size_t  bCnt;                            /* current byte count in buffer b[] */
-  u64b_t  T[SKEIN_MODIFIER_WORDS];         /* tweak words: T[0]=byte cnt, T[1]=flags */
-} Skein_Ctxt_Hdr_t;
-
-typedef struct                               /*  256-bit Skein hash context structure */
-{
-  Skein_Ctxt_Hdr_t h;                      /* common header context variables */
-  u64b_t  X[SKEIN_256_STATE_WORDS];        /* chaining variables */
-  u08b_t  b[SKEIN_256_BLOCK_BYTES];        /* partial block buffer (8-byte aligned) */
-} Skein_256_Ctxt_t;
-
-typedef struct                               /*  512-bit Skein hash context structure */
-{
-  Skein_Ctxt_Hdr_t h;                      /* common header context variables */
-  u64b_t  X[SKEIN_512_STATE_WORDS];        /* chaining variables */
-  u08b_t  b[SKEIN_512_BLOCK_BYTES];        /* partial block buffer (8-byte aligned) */
-} Skein_512_Ctxt_t;
-
-typedef struct                               /* 1024-bit Skein hash context structure */
-{
-  Skein_Ctxt_Hdr_t h;                      /* common header context variables */
-  u64b_t  X[SKEIN1024_STATE_WORDS];        /* chaining variables */
-  u08b_t  b[SKEIN1024_BLOCK_BYTES];        /* partial block buffer (8-byte aligned) */
-} Skein1024_Ctxt_t;
-
 /*   Skein APIs for (incremental) "straight hashing" */
 #if SKEIN_256_NIST_MAX_HASHBITS
 static int  Skein_256_Init  (Skein_256_Ctxt_t *ctx, size_t hashBitLen);
@@ -1919,27 +1857,12 @@ static int Skein1024_Output(Skein1024_Ctxt_t *ctx, u08b_t *hashVal)
 #endif
 #endif
 
-typedef struct
-{
-  uint_t  statebits;                      /* 256, 512, or 1024 */
-  union
-  {
-    Skein_Ctxt_Hdr_t h;                 /* common header "overlay" */
-    Skein_256_Ctxt_t ctx_256;
-    Skein_512_Ctxt_t ctx_512;
-    Skein1024_Ctxt_t ctx1024;
-  } u;
-}
-hashState;
 
-/* "incremental" hashing API */
-static HashReturn Init  (hashState *state, int hashbitlen);
-static HashReturn Update(hashState *state, const BitSequence *data, DataLength databitlen);
-static HashReturn Final (hashState *state,       BitSequence *hashval);
+
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /* select the context size and init the context */
-static HashReturn Init(hashState *state, int hashbitlen)
+HashReturn S_Init(hashState *state, int hashbitlen)
 {
 #if SKEIN_256_NIST_MAX_HASHBITS
   if (hashbitlen <= SKEIN_256_NIST_MAX_HASHBITS)
@@ -1963,7 +1886,7 @@ static HashReturn Init(hashState *state, int hashbitlen)
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /* process data to be hashed */
-static HashReturn Update(hashState *state, const BitSequence *data, DataLength databitlen)
+HashReturn S_Update(hashState *state, const BitSequence *data, DataLength databitlen)
 {
   /* only the final Update() call is allowed do partial bytes, else assert an error */
   Skein_Assert((state->u.h.T[1] & SKEIN_T1_FLAG_BIT_PAD) == 0 || databitlen == 0, SKEIN_FAIL);
@@ -2008,7 +1931,7 @@ static HashReturn Update(hashState *state, const BitSequence *data, DataLength d
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 /* finalize hash computation and output the result (hashbitlen bits) */
-static HashReturn Final(hashState *state, BitSequence *hashval)
+HashReturn S_Final(hashState *state, BitSequence *hashval)
 {
   Skein_Assert(state->statebits % 256 == 0 && (state->statebits-256) < 1024,FAIL);
   switch ((state->statebits >> 8) & 3)
@@ -2026,11 +1949,11 @@ HashReturn skein_hash(int hashbitlen, const BitSequence *data, /* all-in-one cal
                 DataLength databitlen,BitSequence *hashval)
 {
   hashState  state;
-  HashReturn r = Init(&state,hashbitlen);
+  HashReturn r = S_Init(&state,hashbitlen);
   if (r == SKEIN_SUCCESS)
   { /* these calls do not fail when called properly */
-    r = Update(&state,data,databitlen);
-    Final(&state,hashval);
+    r = S_Update(&state,data,databitlen);
+    S_Final(&state,hashval);
   }
   return r;
 }
