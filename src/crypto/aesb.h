@@ -120,11 +120,11 @@ extern "C"
 #define f2(x)   ((x<<1) ^ (((x>>7) & 1) * WPOLY))
 #define f4(x)   ((x<<2) ^ (((x>>6) & 1) * WPOLY) ^ (((x>>6) & 2) * WPOLY))
 #define f8(x)   ((x<<3) ^ (((x>>5) & 1) * WPOLY) ^ (((x>>5) & 2) * WPOLY) ^ (((x>>5) & 4) * WPOLY))
-#define f3(x)   (f2(x) ^ x)
-#define f9(x)   (f8(x) ^ x)
-#define fb(x)   (f8(x) ^ f2(x) ^ x)
-#define fd(x)   (f8(x) ^ f4(x) ^ x)
-#define fe(x)   (f8(x) ^ f4(x) ^ f2(x))
+#define f3(x)   (f2(x)  ^ x)
+#define f9(x)   (f8(x)  ^ x)
+#define fb(x)   (f8(x)  ^ f2(x) ^ x)
+#define fd(x)   (f8(x)  ^ f4(x) ^ x)
+#define fe(x)   (f8(x)  ^ f4(x) ^ f2(x))
 
 #define t_dec(m,n) t_##m##n
 #define t_set(m,n) t_##m##n
@@ -134,21 +134,13 @@ extern "C"
 
 #define four_tables(x,tab,vf,rf,c) \
   (tab[0][bval(vf(x,0,c),rf(0,c))] \
-   ^ tab[1][bval(vf(x,1,c),rf(1,c))] \
-   ^ tab[2][bval(vf(x,2,c),rf(2,c))] \
-   ^ tab[3][bval(vf(x,3,c),rf(3,c))])
+ ^ tab[1][bval(vf(x,1,c),rf(1,c))] \
+ ^ tab[2][bval(vf(x,2,c),rf(2,c))] \
+ ^ tab[3][bval(vf(x,3,c),rf(3,c))])
 
 d_4(uint32_t, t_dec(f,n), sb_data, u0, u1, u2, u3);
-
-#if !defined(STATIC)
-#define STATIC
-#endif
-
-#if !defined(INLINE)
-#define INLINE __inline
-#endif
-
-STATIC INLINE void aesb_single_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
+  
+void aesb_single_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
 {
   uint32_t b0[4], b1[4];
   const uint32_t  *kp = (uint32_t *) expandedKey;
@@ -159,7 +151,7 @@ STATIC INLINE void aesb_single_round(const uint8_t *in, uint8_t *out, uint8_t *e
   state_out(out, b1);
 }
 
-STATIC INLINE void aesb_pseudo_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
+void aesb_pseudo_round(const uint8_t *in, uint8_t *out, uint8_t *expandedKey)
 {
   uint32_t b0[4], b1[4];
   const uint32_t  *kp = (uint32_t *) expandedKey;
