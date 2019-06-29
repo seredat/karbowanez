@@ -281,7 +281,7 @@ void aes(uint8_t* state, uint8_t* key) {
 
 
 // Input will always be 64 byte, output will be 32 byte
-void balloon(uint8_t* data, uint8_t* out){
+void balloon_c(uint8_t* data, uint8_t* out){
 	uint64_t  cache_64[SIZE/8] = {0};
 	uint64_t* out_64       = (uint64_t*)out;
 	uint32_t* data_32      = (uint32_t*)data;

@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void balloon(uint8_t* data, uint8_t* out);
+void balloon_c(uint8_t* data, uint8_t* out);
 
 #ifdef __cplusplus
 }

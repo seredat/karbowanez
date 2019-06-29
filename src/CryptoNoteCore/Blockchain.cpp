@@ -1256,7 +1256,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   // Phase 3
   // Hash with CPU intensive balloon with aes and crc
 
-  Crypto::balloon_hash(hash_1.data, hash_2);
+  Crypto::balloon_slow_hash(hash_1.data, hash_2);
 
   // Phase 4
 

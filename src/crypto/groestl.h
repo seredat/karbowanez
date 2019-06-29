@@ -45,9 +45,9 @@ typedef struct {
 			       data buffer */
 } hashState;
 
-/*void Init(hashState*);
-void Update(hashState*, const BitSequence*, DataLength);
-void Final(hashState*, BitSequence*); */
+void G_Init(hashState*);
+void G_Update(hashState*, const BitSequence*, DataLength);
+void G_Final(hashState*, BitSequence*);
 void groestl(const BitSequence*, DataLength, BitSequence*);
 /* NIST API end   */
 

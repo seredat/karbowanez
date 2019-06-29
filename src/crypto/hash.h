@@ -68,8 +68,8 @@ namespace Crypto {
     cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
   }
 
-  inline void balloon_hash(uint8_t* input, Hash &output) {
-    balloon(input, reinterpret_cast<uint8_t *>(&output));
+  inline void balloon_slow_hash(uint8_t* input, Hash &output) {
+    balloon_c(input, reinterpret_cast<uint8_t *>(&output));
   }
 
   inline void balloon_hash_blake(const unsigned char* input, Hash &output, int length, const unsigned char* salt, int salt_length) {

@@ -25,21 +25,21 @@
 #include <stdint.h>
 #include <string.h>
 
-#define S_COST 128
+#define S_COST 64
 #define T_COST 2
 #define DELTA  3
 
-inline uint64_t u8tou64(uint8_t const* u8){
+inline uint64_t u8tou64(uint8_t const* u8) {
   uint64_t u64;
   memcpy(&u64, u8, sizeof(u64));
   return u64;
 }
 
 void balloon_b(const unsigned char* input, char* output, int length, const unsigned char* salt, int salt_length)
-{ 
+{
   state ctx;
   uint8_t blocks[S_COST][64];
-  
+
   // Step 1: Expand input into buffer
   uint64_t cnt = 0;
   blake256_init(&ctx);
@@ -87,6 +87,6 @@ void balloon_b(const unsigned char* input, char* output, int length, const unsig
       }
     }
   }
-  
+
   memcpy(output, blocks[S_COST - 1], 32);
 }
