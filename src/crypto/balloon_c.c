@@ -10,6 +10,13 @@
 #define INPUT_SIZE  4 // In  8-byte blocks, maximum is 16
 #define OUTPUT_SIZE 2 // In 16-byte blocks, maximum  is 4
 
+#if defined(_MSC_VER)
+#define _ALIGN(x) __declspec(align(x))
+#elif defined(__GNUC__)
+#define _ALIGN(x) __attribute__ ((aligned(x)))
+#else
+#define ALIGN
+#endif
 
 uint32_t crc32c_table[256] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
@@ -215,7 +222,7 @@ static inline uint32_t sbox(uint32_t in, uint8_t n) {
 }
 
 void aes(uint8_t* state, uint8_t* key) {
-	uint32_t key_schedule[12];
+	uint32_t _ALIGN(16) key_schedule[12];
 	uint32_t t;
 
 	key_schedule[0] = ((uint32_t *)key)[0];
@@ -290,37 +297,38 @@ void balloon_c(uint8_t* data, uint8_t* out){
 	uint32_t  mask         = (SIZE/4)-1;
 	uint32_t  prevItem[16] = {0};
 	uint32_t  j_2          = 0;
-	crc32p(data_32,       cache_32    ); crc32p(&data_32[ 1], &cache_32[ 1]);
+	uint32_t  j_4          = 0;
+	crc32p(data_32,       cache_32    ); crc32p(&data_32[ 1], &cache_32[ 2]);
 #if INPUT_SIZE > 1
-	crc32p(&data_32[ 2], &cache_32[ 2]); crc32p(&data_32[ 3], &cache_32[ 3]);
+	crc32p(&data_32[ 2], &cache_32[ 4]); crc32p(&data_32[ 3], &cache_32[ 6]);
 #if INPUT_SIZE > 2
-	crc32p(&data_32[ 4], &cache_32[ 4]); crc32p(&data_32[ 5], &cache_32[ 5]);
+	crc32p(&data_32[ 4], &cache_32[ 8]); crc32p(&data_32[ 5], &cache_32[10]);
 #if INPUT_SIZE > 3
-	crc32p(&data_32[ 6], &cache_32[ 6]); crc32p(&data_32[ 7], &cache_32[ 7]);
+	crc32p(&data_32[ 6], &cache_32[12]); crc32p(&data_32[ 7], &cache_32[14]);
 #if INPUT_SIZE > 4
-	crc32p(&data_32[ 8], &cache_32[ 8]); crc32p(&data_32[ 9], &cache_32[ 9]);
+	crc32p(&data_32[ 8], &cache_32[16]); crc32p(&data_32[ 9], &cache_32[18]);
 #if INPUT_SIZE > 5
-	crc32p(&data_32[10], &cache_32[10]); crc32p(&data_32[11], &cache_32[11]);
+	crc32p(&data_32[10], &cache_32[20]); crc32p(&data_32[11], &cache_32[22]);
 #if INPUT_SIZE > 6
-	crc32p(&data_32[12], &cache_32[12]); crc32p(&data_32[13], &cache_32[13]);
+	crc32p(&data_32[12], &cache_32[24]); crc32p(&data_32[13], &cache_32[26]);
 #if INPUT_SIZE > 7
-	crc32p(&data_32[14], &cache_32[14]); crc32p(&data_32[15], &cache_32[15]);
+	crc32p(&data_32[14], &cache_32[28]); crc32p(&data_32[15], &cache_32[30]);
 #if INPUT_SIZE > 8
-	crc32p(&data_32[16], &cache_32[16]); crc32p(&data_32[17], &cache_32[17]);
+	crc32p(&data_32[16], &cache_32[32]); crc32p(&data_32[17], &cache_32[34]);
 #if INPUT_SIZE > 9
-	crc32p(&data_32[18], &cache_32[18]); crc32p(&data_32[19], &cache_32[19]);
+	crc32p(&data_32[18], &cache_32[36]); crc32p(&data_32[19], &cache_32[38]);
 #if INPUT_SIZE > 10
-	crc32p(&data_32[20], &cache_32[20]); crc32p(&data_32[21], &cache_32[21]);
+	crc32p(&data_32[20], &cache_32[40]); crc32p(&data_32[21], &cache_32[42]);
 #if INPUT_SIZE > 11
-	crc32p(&data_32[22], &cache_32[22]); crc32p(&data_32[23], &cache_32[23]);
+	crc32p(&data_32[22], &cache_32[44]); crc32p(&data_32[23], &cache_32[46]);
 #if INPUT_SIZE > 12
-	crc32p(&data_32[24], &cache_32[24]); crc32p(&data_32[25], &cache_32[25]);
+	crc32p(&data_32[24], &cache_32[48]); crc32p(&data_32[25], &cache_32[50]);
 #if INPUT_SIZE > 13
-	crc32p(&data_32[26], &cache_32[26]); crc32p(&data_32[27], &cache_32[27]);
+	crc32p(&data_32[26], &cache_32[52]); crc32p(&data_32[27], &cache_32[54]);
 #if INPUT_SIZE > 14
-	crc32p(&data_32[28], &cache_32[28]); crc32p(&data_32[29], &cache_32[29]);
+	crc32p(&data_32[28], &cache_32[56]); crc32p(&data_32[29], &cache_32[58]);
 #if INPUT_SIZE > 15
-	crc32p(&data_32[30], &cache_32[30]); crc32p(&data_32[31], &cache_32[31]);
+	crc32p(&data_32[30], &cache_32[60]); crc32p(&data_32[31], &cache_32[62]);
 #endif
 #endif
 #endif
@@ -336,9 +344,14 @@ void balloon_c(uint8_t* data, uint8_t* out){
 #endif
 #endif
 #endif
-	aes(&cache[128], cache);
+	aes(&cache[ 16],  cache     ); aes(&cache[ 32], &cache[ 16]); aes(&cache[ 48], &cache[ 32]); aes(&cache[ 64], &cache[ 48]);
+	aes(&cache[ 80], &cache[ 48]); aes(&cache[ 96], &cache[ 80]); aes(&cache[112], &cache[ 96]); aes(&cache[128], &cache[112]);
+	aes(&cache[144], &cache[128]); aes(&cache[160], &cache[144]); aes(&cache[176], &cache[160]); aes(&cache[192], &cache[176]);
+	aes(&cache[208], &cache[192]); aes(&cache[224], &cache[208]); aes(&cache[240], &cache[224]);
+	
 	for(uint32_t j=1; j<SIZE/4; j+=64){
 		j_2 = j>>1;
+		j_4 = j<<2;
 		crc32p(&cache_32[j   ], &cache_32[j+16]); crc32p(&cache_32[j+ 1], &cache_32[j+17]);
 		crc32p(&cache_32[j+ 2], &cache_32[j+18]); crc32p(&cache_32[j+ 3], &cache_32[j+19]);
 		crc32p(&cache_32[j+ 4], &cache_32[j+20]); crc32p(&cache_32[j+ 5], &cache_32[j+21]);
@@ -363,7 +376,14 @@ void balloon_c(uint8_t* data, uint8_t* out){
 		crc32p(&cache_32[j+42], &cache_32[j+58]); crc32p(&cache_32[j+43], &cache_32[j+59]);
 		crc32p(&cache_32[j+44], &cache_32[j+60]); crc32p(&cache_32[j+45], &cache_32[j+61]);
 		crc32p(&cache_32[j+46], &cache_32[j+62]); crc32p(&cache_32[j+47], &cache_32[j+63]);
-		aes(&cache[j*4], &cache[128+j*4]);
+		aes(&cache[j_4+ 16], &cache[j_4    ]); aes(&cache[j_4+ 32], &cache[j_4+ 16]);
+		aes(&cache[j_4+ 48], &cache[j_4+ 32]); aes(&cache[j_4+ 64], &cache[j_4+ 48]);
+		aes(&cache[j_4+ 80], &cache[j_4+ 48]); aes(&cache[j_4+ 96], &cache[j_4+ 80]);
+		aes(&cache[j_4+112], &cache[j_4+ 96]); aes(&cache[j_4+128], &cache[j_4+112]);
+		aes(&cache[j_4+144], &cache[j_4+128]); aes(&cache[j_4+160], &cache[j_4+144]);
+		aes(&cache[j_4+176], &cache[j_4+160]); aes(&cache[j_4+192], &cache[j_4+176]);
+		aes(&cache[j_4+208], &cache[j_4+192]); aes(&cache[j_4+224], &cache[j_4+208]);
+		aes(&cache[j_4+240], &cache[j_4+224]); aes(&cache[j_4    ], &cache[j_4+240]); 
 		cache_64[j_2+16] += cache_64[j_2   ]; cache_64[j_2+17] += cache_64[j_2+ 1];
 		cache_64[j_2+18] += cache_64[j_2+ 2]; cache_64[j_2+19] += cache_64[j_2+ 3];
 		cache_64[j_2+20] += cache_64[j_2+ 4]; cache_64[j_2+21] += cache_64[j_2+ 5];
@@ -408,4 +428,3 @@ void balloon_c(uint8_t* data, uint8_t* out){
 #endif
 	}
 }
-
