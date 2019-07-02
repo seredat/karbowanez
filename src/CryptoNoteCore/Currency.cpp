@@ -162,7 +162,7 @@ namespace CryptoNote {
 
 			// inflation 2% of total coins in circulation
 			const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
-			uint64_t twoPercentOfEmission = static_cast<double>(alreadyGeneratedCoins) / 100 * 2;
+			uint64_t twoPercentOfEmission = static_cast<uint64_t>(static_cast<double>(alreadyGeneratedCoins) / 100.0 * 2.0);
 			baseReward = twoPercentOfEmission / blocksInOneYear;
 		}
 
@@ -719,7 +719,7 @@ namespace CryptoNote {
 		// https://github.com/zawy12/difficulty-algorithms/issues/3
 
 		const int64_t T = static_cast<int64_t>(m_difficultyTarget);
-		int64_t N = difficultyBlocksCount4();
+		uint64_t N = difficultyBlocksCount4();
 		
 		// Hard code D if there are not at least N+1 BLOCKS after fork (or genesis)
 		// This helps a lot in preventing a very common problem in CN forks from conflicting difficulties.
