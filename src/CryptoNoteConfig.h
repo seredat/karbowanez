@@ -123,8 +123,6 @@ const char     MINER_CONFIG_FILE_NAME[]                      = "miner_conf.json"
 
 const char     CRYPTONOTE_NAME[]                             = "krbcoin";
 const char     GENESIS_COINBASE_TX_HEX[]                     = "010a01ff0001fac484c69cd608029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101f904925cc23f86f9f3565188862275dc556a9bdfb6aec22c5aca7f0177c45ba8";
-//const char     GENESIS_COINBASE_TX_HEX[]                     = "010a01ff0001fac484c69cd608029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd0880712101c6e7cecaf3c8e8b8578c4d00ad48adec7a76fe834eede9468e3adfadd7c6d488";
-//const char     GENESIS_COINBASE_TX_HEX[]                     = "010a01ff0001fac484c69cd608029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd088071210133a0bcb45b87cd99f730d2375fb01100d22193fb963f4a711aab89dd46333528";
 
 const uint8_t  CURRENT_TRANSACTION_VERSION                   =  1;
 const uint8_t  BLOCK_MAJOR_VERSION_1                         =  1;
@@ -163,6 +161,14 @@ const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "8f80f9a5a434a9f1510d13336228debfee9c918ce505efe225d8c94d045fa115";
 
 const char* const SEED_NODES[] = { 
+  /*"seed1.karbowanec.com:32347",
+  "seed2.karbowanec.com:32347",
+  "seed.karbo.cloud:32347",
+  "seed.karbo.org:32347",
+  "seed.karbo.io:32347",
+  "95.46.98.64:32347",
+  "108.61.198.115:32347",
+  "45.32.232.11:32347",*/
   "46.149.182.151:22347"
 };
 
