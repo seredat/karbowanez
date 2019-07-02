@@ -21,7 +21,6 @@
 
 #include <stddef.h>
 
-#include <argon2.h>
 #include <CryptoTypes.h>
 #include "generic-ops.h"
 
