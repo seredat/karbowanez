@@ -90,7 +90,6 @@ std::vector<Crypto::Hash> PaymentIdIndex::find(const Crypto::Hash& paymentId) {
 		throw std::runtime_error("Payment id index disabled.");
 	}
 	std::vector<Crypto::Hash> transactionHashes;
-	bool found = false;
 	auto range = index.equal_range(paymentId);
 	for (auto iter = range.first; iter != range.second; ++iter) {
 		transactionHashes.emplace_back(iter->second);

@@ -713,7 +713,7 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   std::vector<difficulty_type> cumulative_difficulties;
   uint8_t BlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(m_blocks.size()));
   size_t offset;
-  offset = m_blocks.size() - std::min(m_blocks.size(), static_cast<uint64_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
+  offset = m_blocks.size() - std::min<size_t>(m_blocks.size(), static_cast<size_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
 
   if (offset == 0) {
     ++offset;
@@ -725,15 +725,23 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
-difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, size_t window) {
+difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, uint32_t window) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  height = std::min<uint32_t>(height, m_blocks.size() - 1);
+  if (height <= 1)
+    return 1;
+
+  if (window == height) {
+    return m_blocks[height].cumulative_difficulty / height;
+  }
+
   size_t offset;
-  offset = height - std::min(height, std::min<uint32_t>(m_blocks.size(), window));
+  offset = height - std::min<uint32_t>(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), window));
   if (offset == 0) {
     ++offset;
   }
   difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
-  return cumulDiffForPeriod / std::min<uint32_t>(m_blocks.size(), window);
+  return cumulDiffForPeriod / std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), window);
 }
 
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
@@ -748,13 +756,13 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 	    return 0;
 	}
 
-	if (height > m_blocks.size() - 1) {
-		height = m_blocks.size() - 1;
+	if (height > static_cast<uint32_t>(m_blocks.size()) - 1) {
+		height = static_cast<uint32_t>(m_blocks.size()) - 1;
 	}
 	if (height < 3) {
 		height = 3;
 	}
-	size_t window = std::min(height, std::min<uint32_t>(m_blocks.size(), m_currency.expectedNumberOfBlocksPerDay()));
+  uint32_t window = std::min(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size()), static_cast<uint32_t>(m_currency.expectedNumberOfBlocksPerDay())));
 	if (window == 0) {
 		++window;
 	}
@@ -781,6 +789,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
 		rewards.push_back(get_outs_money_amount(m_blocks[offset].bl.baseTransaction));
 	}
 	uint64_t avgRewardCurrent = std::accumulate(rewards.begin(), rewards.end(), 0ULL) / rewards.size();
+	rewards.clear();
 	rewards.shrink_to_fit();
 
 	// historical reference moving average reward
@@ -1082,11 +1091,11 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
     return false;
   }
 
-  if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
+  if (!(b.baseTransaction.unlockTime == height + (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1()))) {
     logger(ERROR, BRIGHT_RED)
       << "coinbase transaction transaction have wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
-      << height + m_currency.minedMoneyUnlockWindow();
+      << height + (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1());
     return false;
   }
 
@@ -1469,7 +1478,7 @@ size_t Blockchain::find_end_of_allowed_index(const std::vector<std::pair<Transac
   size_t i = amount_outs.size();
   do {
     --i;
-    if (amount_outs[i].first.block + m_currency.minedMoneyUnlockWindow() <= getCurrentBlockchainHeight()) {
+    if (amount_outs[i].first.block + (amount_outs[i].first.block < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1()) <= getCurrentBlockchainHeight()) {
       return i + 1;
     }
   } while (i != 0);

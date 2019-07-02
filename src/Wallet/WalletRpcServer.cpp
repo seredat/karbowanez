@@ -624,8 +624,7 @@ bool wallet_rpc_server::on_verify_message(const wallet_rpc::COMMAND_RPC_VERIFY_M
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature header check error"));
 	}
 	std::string decoded;
-	Crypto::Signature s;
-	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(s) != decoded.size()) {
+	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(Crypto::Signature) != decoded.size()) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature decoding error"));
 		return false;
 	}

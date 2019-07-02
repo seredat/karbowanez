@@ -157,7 +157,13 @@ namespace CryptoNote {
 		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
 		{
-			baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+			// flat rate tail emission reward
+			//baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+
+			// inflation 2% of total coins in circulation
+			const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
+			uint64_t twoPercentOfEmission = static_cast<double>(alreadyGeneratedCoins) / 100 * 2;
+			baseReward = twoPercentOfEmission / blocksInOneYear;
 		}
 
 		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
@@ -263,7 +269,7 @@ namespace CryptoNote {
 
 		tx.version = CURRENT_TRANSACTION_VERSION;
 		//lock
-		tx.unlockTime = height + m_minedMoneyUnlockWindow;
+		tx.unlockTime = height + (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_minedMoneyUnlockWindow : m_minedMoneyUnlockWindow_v1);
 		tx.inputs.push_back(in);
 		return true;
 	}
@@ -602,7 +608,7 @@ namespace CryptoNote {
 		// To get an average solvetime to within +/- ~0.1%, use an adjustment factor.
 		const double adjust = 0.998;
 		// The divisor k normalizes LWMA.
-		const double k = N * (N + 1) / 2;
+		const double k = N * (N + 1) / 2.0f;
 
 		double LWMA(0), sum_inverse_D(0), harmonic_mean_D(0), nextDifficulty(0);
 		int64_t solveTime(0);
@@ -795,6 +801,7 @@ namespace CryptoNote {
 		maxTxSize(parameters::CRYPTONOTE_MAX_TX_SIZE);
 		publicAddressBase58Prefix(parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX);
 		minedMoneyUnlockWindow(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+		minedMoneyUnlockWindow_v1(parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1);
 		transactionSpendableAge(parameters::CRYPTONOTE_TX_SPENDABLE_AGE);
 		expectedNumberOfBlocksPerDay(parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY);
 

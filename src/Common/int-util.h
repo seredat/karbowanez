@@ -207,7 +207,7 @@ static inline double calc_poisson_ln(double lam, uint64_t k)
   double logx = -lam + k * log(lam);
   do
   {
-    logx -= log(k); // This can be tabulated
+    logx -= log((double) k); // This can be tabulated
   } while (--k > 0);
   return logx;
 }
