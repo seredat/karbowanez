@@ -58,7 +58,9 @@
 #include <intrin.h>
 #include <windows.h>
 #define STATIC
+#if !defined(INLINE)
 #define INLINE __inline
+#endif
 #if !defined(RDATA_ALIGN16)
 #define RDATA_ALIGN16 __declspec(align(16))
 #endif
