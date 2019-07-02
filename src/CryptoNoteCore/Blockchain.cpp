@@ -1254,7 +1254,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
 
   // Phase 3
 
-  // stir the pot - hashing the 1 + 8 blocks as one continuous data, salt is hash_1
+  // stir the pot - hashing the 1 + 8 blocks as one continuous data
   Crypto::extra_hashes[hash_1.data[0] & 3](pot.data(), pot.size(), reinterpret_cast<char *>(&res));
 
   return true;
