@@ -15,6 +15,7 @@
 
 #include "version.h"
 
+#include <Common/UrlTools.h>
 #include <GreenWallet/WalletConfig.h>
 
 /* Thanks to https://stackoverflow.com/users/85381/iain for this small command
@@ -110,37 +111,13 @@ Config parseArguments(int argc, char **argv)
         {
             std::string urlString(url);
 
-            /* Get the index of the ":" */
-            size_t splitter = urlString.find_last_of(":");
+            if (!Common::parseUrlAddress(urlString, config.host, config.port,
+                                         config.path, config.ssl)) {
 
-            /* Host is everything before ":" */
-            config.host = urlString.substr(0, splitter);
-
-            /* No ":" present, or user specifies http:// without port at end */
-            if (splitter == std::string::npos || config.host == "http"
-             || config.host == "https")
-            {
-                config.host = urlString;
+                std::cout << "Failed to parse daemon address!" << std::endl;
+                config.exit = true;
             }
-            else
-            {
-                /* Host is everything before ":" */
-                config.host = urlString.substr(0, splitter);
 
-                /* Port is everything after ":" */
-                std::string port = urlString.substr(splitter + 1,   
-                                                    std::string::npos);
-
-                try
-                {
-                    config.port = std::stoi(port);
-                }
-                catch (const std::invalid_argument &)
-                {
-                    std::cout << "Failed to parse daemon port!" << std::endl;
-                    config.exit = true;
-                }
-            }
         }
     }
 

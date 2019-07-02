@@ -715,7 +715,7 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   std::vector<difficulty_type> cumulative_difficulties;
   uint8_t BlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(m_blocks.size()));
   size_t offset;
-  offset = m_blocks.size() - std::min(m_blocks.size(), static_cast<size_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
+  offset = m_blocks.size() - std::min<size_t>(m_blocks.size(), static_cast<size_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
 
   if (offset == 0) {
     ++offset;
