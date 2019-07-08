@@ -88,7 +88,7 @@ target_link_libraries(PaymentGateService ${KarboPaymentGate} ${KarboWallet} ${Ka
 target_link_libraries(Miner ${KarboCore} ${KarboCommon} ${Boost_LIBRARIES})
 
 if (MSVC)
-  target_link_libraries(KarboCore ws2_32)
+  target_link_libraries(System ws2_32)
   target_link_libraries(Daemon Rpcrt4)
   target_link_libraries(SimpleWallet Rpcrt4)
   target_link_libraries(PaymentGateService Rpcrt4)
