@@ -1235,17 +1235,13 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
                  (chunk[3]);
 
     uint32_t height_i = n % maxHeight;
-    Crypto::Hash hash_i = getBlockIdByHeight(static_cast<uint32_t>(height_i));
-    Block bi;
 
-    if (!getBlockByHash(hash_i, bi)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to getBlockByHash " << Common::podToHex(hash_i) << " at height " << height_i;
-      return false;
-    }
-
+    std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+    Block bi = m_blocks[height_i].bl;
+    
     BinaryArray ba;
     if (!get_block_hashing_blob(bi, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " << i << " in getBlockLongHash";
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block at height" << height_i << " in getBlockLongHash";
       return false;
     }
 
