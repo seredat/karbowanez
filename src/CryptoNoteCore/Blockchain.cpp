@@ -1197,7 +1197,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     return get_block_longhash(context, b, res);
   }
 
-  BinaryArray bd, pot;
+  BinaryArray bd;
   if (!get_block_hashing_blob(b, bd)) {
     logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
     return false;
@@ -1211,9 +1211,6 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   cn_fast_hash(bd.data(), bd.size(), hash_1);
   
   // Phase 2
-
-  // throw our block into common pot
-  pot.insert(std::end(pot), std::begin(bd), std::end(bd));
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
@@ -1246,13 +1243,13 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
       return false;
     }
 
-    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+    bd.insert(std::end(bd), std::begin(ba), std::end(ba));
   }
 
   // Phase 3
 
   // stir the pot - hashing the 1 + 8 blocks as one continuous data
-  Crypto::extra_hashes[hash_1.data[0] & 3](pot.data(), pot.size(), reinterpret_cast<char *>(&res));
+  Crypto::extra_hashes[hash_1.data[0] & 3](bd.data(), bd.size(), reinterpret_cast<char *>(&res));
 
   return true;
 }
