@@ -1222,7 +1222,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   uint32_t maxHeight = std::min<uint32_t>(m_blocks.size(), currentHeight - 1 - m_currency.minedMoneyUnlockWindow_v1());
 
   for (uint8_t i = 1; i <= 8; i++) {
-    uint8_t chunk[4] = { 
+    uint8_t chunk[4] = {
       hash_1.data[i * 4 - 4], 
       hash_1.data[i * 4 - 3], 
       hash_1.data[i * 4 - 2], 
@@ -1241,7 +1241,8 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     
     BinaryArray ba;
     if (!get_block_hashing_blob(bi, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block at height" << height_i << " in getBlockLongHash";
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " 
+                                << i << " at height " << height_i;
       return false;
     }
 
