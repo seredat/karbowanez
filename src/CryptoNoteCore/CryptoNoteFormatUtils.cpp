@@ -47,8 +47,7 @@ bool parseAndValidateTransactionFromBinaryArray(const BinaryArray& tx_blob, Tran
 
   //TODO: validate tx
   cn_fast_hash(tx_blob.data(), tx_blob.size(), tx_hash);
-  getObjectHash(*static_cast<TransactionPrefix*>(&tx), tx_prefix_hash);
-  return true;
+  return getObjectHash(*static_cast<TransactionPrefix*>(&tx), tx_prefix_hash);
 }
 
 bool generate_key_image_helper(const AccountKeys& ack, const PublicKey& tx_public_key, size_t real_output_index, KeyPair& in_ephemeral, KeyImage& ki) {
@@ -566,7 +565,10 @@ Hash get_tx_tree_hash(const std::vector<Hash>& tx_hashes) {
 Hash get_tx_tree_hash(const Block& b) {
   std::vector<Hash> txs_ids;
   Hash h = NULL_HASH;
-  getObjectHash(b.baseTransaction, h);
+  bool r = getObjectHash(b.baseTransaction, h);
+
+  assert(r && "failed to get object hash in get_tx_tree_hash");
+
   txs_ids.push_back(h);
   for (auto& th : b.transactionHashes) {
     txs_ids.push_back(th);
