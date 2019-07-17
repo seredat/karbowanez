@@ -1,7 +1,8 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
-// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2017-2019, The Iridium developers
+// Copyright (c) 2016-2019, The Karbowanec developers
 //
 // This file is part of Karbo.
 //
@@ -345,9 +346,9 @@ namespace CryptoNote
   }
 
   //----------------------------------------------------------------------------------- 
-  void NodeServer::externalRelayNotifyToAll(int command, const BinaryArray& data_buff) {
-    m_dispatcher.remoteSpawn([this, command, data_buff] {
-      relay_notify_to_all(command, data_buff, nullptr);
+  void NodeServer::externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) {
+    m_dispatcher.remoteSpawn([this, command, data_buff, excludeConnection] {
+      relay_notify_to_all(command, data_buff, excludeConnection);
     });
   }
 
@@ -675,20 +676,20 @@ namespace CryptoNote
     m_payload_handler.get_payload_sync_data(arg.payload_data);
 
     if (!proto.invoke(COMMAND_HANDSHAKE::ID, arg, rsp)) {
-      logger(Logging::ERROR) << context << "Failed to invoke COMMAND_HANDSHAKE, closing connection.";
+      logger(Logging::DEBUGGING) << context << "Failed to invoke COMMAND_HANDSHAKE, closing connection.";
       return false;
     }
 
     context.version = rsp.node_data.version;
 
     if (rsp.node_data.network_id != m_network_id) {
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE Failed, wrong network!  (" << rsp.node_data.network_id << "), closing connection.";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE Failed, wrong network!  (" << rsp.node_data.network_id << "), closing connection.";
       return false;
     }
 
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.node_data.local_time, context)) {
       add_host_fail(context.m_remote_ip);
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE: failed to handle_remote_peerlist(...), closing connection.";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE: failed to handle_remote_peerlist(...), closing connection.";
       return false;
     }
 
@@ -697,7 +698,7 @@ namespace CryptoNote
     }
 
     if (!m_payload_handler.process_payload_sync_data(rsp.payload_data, context, true)) {
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE invoked, but process_payload_sync_data returned false, dropping connection.";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE invoked, but process_payload_sync_data returned false, dropping connection.";
       return false;
     }
 
@@ -737,7 +738,7 @@ namespace CryptoNote
     }
 
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.local_time, context)) {
-      logger(Logging::ERROR) << context << "COMMAND_TIMED_SYNC: failed to handle_remote_peerlist(...), closing connection.";
+      logger(Logging::DEBUGGING) << context << "COMMAND_TIMED_SYNC: failed to handle_remote_peerlist(...), closing connection.";
       return false;
     }
 
@@ -1228,7 +1229,7 @@ namespace CryptoNote
   int NodeServer::handle_timed_sync(int command, COMMAND_TIMED_SYNC::request& arg, COMMAND_TIMED_SYNC::response& rsp, P2pConnectionContext& context)
   {
     if(!m_payload_handler.process_payload_sync_data(arg.payload_data, context, false)) {
-      logger(Logging::ERROR) << context << "Failed to process_payload_sync_data(), dropping connection";
+      logger(Logging::DEBUGGING) << context << "Failed to process_payload_sync_data(), dropping connection";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
@@ -1261,19 +1262,19 @@ namespace CryptoNote
 
     if(!context.m_is_income) {
       add_host_fail(context.m_remote_ip);
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE came not from incoming connection";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE came not from incoming connection";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
 
     if(context.peerId) {
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE came, but seems that connection already have associated peer_id (double COMMAND_HANDSHAKE?)";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE came, but seems that connection already have associated peer_id (double COMMAND_HANDSHAKE?)";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
 
     if(!m_payload_handler.process_payload_sync_data(arg.payload_data, context, true))  {
-      logger(Logging::ERROR) << context << "COMMAND_HANDSHAKE came, but process_payload_sync_data returned false, dropping connection.";
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE came, but process_payload_sync_data returned false, dropping connection.";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
