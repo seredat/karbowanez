@@ -74,7 +74,7 @@ bool validAddress(po::variables_map& vm, const std::string& address) {
 
   try {
     HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
-    invokeJsonRpcCommand(httpClient, "getBalance", req, res);
+    JsonRpc::invokeJsonRpcCommand(httpClient, "getBalance", req, res);
   }
   catch (const std::exception& e) {
     logger(ERROR, RED) << "Failed to connect to walletd: " << e.what() << ENDL;
@@ -97,7 +97,7 @@ std::vector<std::string> getWalletsAddresses(po::variables_map& vm) {
 
     try {
       HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
-      invokeJsonRpcCommand(httpClient, "getAddresses", req, res);
+      JsonRpc::invokeJsonRpcCommand(httpClient, "getAddresses", req, res);
     }
     catch (const std::exception& e) {
       logger(ERROR, RED) << "Failed to connect to walletd: " << e.what() << ENDL;
@@ -123,7 +123,7 @@ bool isWalletEligible(po::variables_map& vm, std::string address) {
 
   try {
     HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
-    invokeJsonRpcCommand(httpClient, "estimateFusion", req, res);
+    JsonRpc::invokeJsonRpcCommand(httpClient, "estimateFusion", req, res);
   }
   catch (const std::exception& e) {
     logger(ERROR, RED) << "Failed to connect to walletd: " << e.what() << ENDL;
@@ -160,7 +160,7 @@ bool optimizeWallet(po::variables_map& vm, std::string address) {
   try {
     logger(INFO, GREEN) << "Optimizing wallet  : " << address;
     HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
-    invokeJsonRpcCommand(httpClient, "sendFusionTransaction", req, res);
+    JsonRpc::invokeJsonRpcCommand(httpClient, "sendFusionTransaction", req, res);
   }
   catch (const std::exception& e) {
     logger(ERROR, RED) << "Failed in wallet: " << address << " due to: " << e.what() << ENDL;
@@ -236,7 +236,7 @@ bool canConnect(po::variables_map& vm) {
 
   try {
     HttpClient httpClient(dispatcher, command_line::get_arg(vm, arg_ip), command_line::get_arg(vm, arg_rpc_port));
-    invokeJsonRpcCommand(httpClient, "getStatus", req, res);
+    JsonRpc::invokeJsonRpcCommand(httpClient, "getStatus", req, res);
   }
   catch (const std::exception& e) {
     logger(ERROR, RED) << "Failed to connect to walletd: " << e.what();
