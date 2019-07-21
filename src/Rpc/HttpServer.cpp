@@ -20,6 +20,7 @@
 #include "HttpServer.h"
 #include <boost/scope_exit.hpp>
 
+#include <Common/Base64.h>
 #include <HTTP/HttpParser.h>
 #include <System/InterruptedException.h>
 #include <System/TcpStream.h>
@@ -28,41 +29,12 @@
 using namespace Logging;
 
 namespace {
-	std::string base64Encode(const std::string& data) {
-		static const char* encodingTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-		const size_t resultSize = 4 * ((data.size() + 2) / 3);
-		std::string result;
-		result.reserve(resultSize);
-
-		for (size_t i = 0; i < data.size(); i += 3) {
-			size_t a = static_cast<size_t>(data[i]);
-			size_t b = i + 1 < data.size() ? static_cast<size_t>(data[i + 1]) : 0;
-			size_t c = i + 2 < data.size() ? static_cast<size_t>(data[i + 2]) : 0;
-
-			result.push_back(encodingTable[a >> 2]);
-			result.push_back(encodingTable[((a & 0x3) << 4) | (b >> 4)]);
-			if (i + 1 < data.size()) {
-				result.push_back(encodingTable[((b & 0xF) << 2) | (c >> 6)]);
-				if (i + 2 < data.size()) {
-					result.push_back(encodingTable[c & 0x3F]);
-				}
-			}
-		}
-
-		while (result.size() != resultSize) {
-			result.push_back('=');
-		}
-
-		return result;
-	}
-
 	void fillUnauthorizedResponse(CryptoNote::HttpResponse& response) {
 		response.setStatus(CryptoNote::HttpResponse::STATUS_401);
 		response.addHeader("WWW-Authenticate", "Basic realm=\"RPC\"");
 		response.addHeader("Content-Type", "text/plain");
 		response.setBody("Authorization required");
 	}
-
 }
 
 namespace CryptoNote {
@@ -77,7 +49,7 @@ void HttpServer::start(const std::string& address, uint16_t port, const std::str
   workingContextGroup.spawn(std::bind(&HttpServer::acceptLoop, this));
   
   		if (!user.empty() || !password.empty()) {
-			m_credentials = base64Encode(user + ":" + password);
+			m_credentials = Tools::Base64::encode(user + ":" + password);
 		}
 }
 

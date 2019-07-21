@@ -7,6 +7,7 @@
 
 #include "JsonValue.h"
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 namespace Common {
@@ -565,6 +566,17 @@ JsonValue JsonValue::fromString(const std::string& source) {
   JsonValue jsonValue;
   std::istringstream stream(source);
   stream >> jsonValue;
+  if (stream.fail()) {
+    throw std::runtime_error("Unable to parse JsonValue");
+  }
+
+  return jsonValue;
+}
+
+JsonValue JsonValue::fromStringWithWhiteSpaces(const std::string& source) {
+  JsonValue jsonValue;
+  std::istringstream stream(source);
+  stream >> std::noskipws >> jsonValue;
   if (stream.fail()) {
     throw std::runtime_error("Unable to parse JsonValue");
   }

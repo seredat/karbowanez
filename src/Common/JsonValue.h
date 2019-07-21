@@ -122,6 +122,7 @@ public:
   size_t erase(const Key& key);
 
   static JsonValue fromString(const std::string& source);
+  static JsonValue fromStringWithWhiteSpaces(const std::string& source);
   std::string toString() const;
 
   friend std::ostream& operator<<(std::ostream& out, const JsonValue& jsonValue);
