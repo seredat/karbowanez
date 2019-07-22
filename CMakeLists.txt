@@ -259,12 +259,10 @@ else()
     set(WARNINGS_AS_ERRORS_FLAG "-Werror")
   endif()
   if(CMAKE_C_COMPILER_ID STREQUAL "Clang")
-    # maybe remove
     set(WARNINGS "${WARNINGS} -Wno-error=mismatched-tags -Wno-error=null-conversion -Wno-overloaded-shift-op-parentheses -Wno-error=shift-count-overflow -Wno-error=tautological-constant-out-of-range-compare -Wno-error=unused-private-field -Wno-error=unneeded-internal-declaration -Wno-error=unused-function")
       if(ANDROID)
         set(WARNINGS "${WARNINGS} -Wno-unused-lambda-capture")
       endif()
-      # this ^
       if(ARM)
       set(WARNINGS "${WARNINGS} -Wno-error=inline-asm")
     endif()
