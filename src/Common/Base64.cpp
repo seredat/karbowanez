@@ -21,7 +21,7 @@ namespace Tools
 {
   namespace Base64
   {
-    std::string Base64::encode(const std::string& data) {
+    std::string encode(const std::string& data) {
       static const char* encodingTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
       const size_t resultSize = 4 * ((data.size() + 2) / 3);
       std::string result;
