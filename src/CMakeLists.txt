@@ -86,7 +86,7 @@ endif()
 target_link_libraries(Daemon ${KarboCore} ${KarboLink} ${KarboCommon} upnpc-static ${Boost_LIBRARIES})
 target_link_libraries(SimpleWallet ${KarboWallet} ${KarboCore} Mnemonics ${KarboCommon} ${Boost_LIBRARIES})
 target_link_libraries(GreenWallet ${KarboWallet} ${KarboCore} Mnemonics ${KarboCommon} ${Boost_LIBRARIES})
-target_link_libraries(Optimizer ${PaymentGate} ${KarboCore} ${KarboCommon} ${Boost_LIBRARIES})
+target_link_libraries(Optimizer PaymentGate ${KarboCore} ${KarboCommon} ${Boost_LIBRARIES})
 target_link_libraries(PaymentGateService ${KarboPaymentGate} ${KarboWallet} ${KarboCore}
                       ${KarboLink} ${KarboCommon} upnpc-static ${Boost_LIBRARIES})
 target_link_libraries(Miner ${KarboCore} ${KarboCommon} ${Boost_LIBRARIES})
