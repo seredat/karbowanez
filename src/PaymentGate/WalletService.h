@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Cash2 developers
 // Copyright (c) 2016-2019 The Karbo developers
 //
 // This file is part of Karbo.
@@ -96,6 +97,7 @@ public:
   std::error_code getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code getTransactionProof(const std::string& transactionHash, const std::string& destinationAddress, const std::string& transactionSecretKey, std::string& transactionProof);
   std::error_code getAddresses(std::vector<std::string>& addresses);
+  std::error_code getAddressesCount(size_t& addressesCount);
   std::error_code sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code createDelayedTransaction(const CreateDelayedTransaction::Request& request, std::string& transactionHash);
   std::error_code getDelayedTransactionHashes(std::vector<std::string>& transactionHashes);
