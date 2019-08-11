@@ -22,6 +22,7 @@
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "BlockchainExplorer/BlockchainExplorerDataBuilder.h"
 #include "CryptoNoteBasicImpl.h"
+#include "../CryptoNoteConfig.h"
 
 namespace CryptoNote {
 
@@ -248,7 +249,7 @@ bool GeneratedTransactionsIndex::add(const Block& block) {
     return false;
   }
 
-  uint32_t blockHeight = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  uint32_t blockHeight = (block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex);
 
   if (index.size() != blockHeight) {
     return false;
@@ -266,7 +267,7 @@ bool GeneratedTransactionsIndex::remove(const Block& block) {
     return false;
   }
 
-  uint32_t blockHeight = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  uint32_t blockHeight = (block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex);
 
   if (blockHeight != index.size() - 1) {
     return false;
@@ -327,7 +328,7 @@ bool OrphanBlocksIndex::add(const Block& block) {
   }
 
   Crypto::Hash blockHash = get_block_hash(block);
-  uint32_t blockHeight = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  uint32_t blockHeight = (block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex);
   index.emplace(blockHeight, blockHash);
   return true;
 }
@@ -338,7 +339,7 @@ bool OrphanBlocksIndex::remove(const Block& block) {
   }
 
   Crypto::Hash blockHash = get_block_hash(block);
-  uint32_t blockHeight = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  uint32_t blockHeight = (block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex);
   auto range = index.equal_range(blockHeight);
   for (auto iter = range.first; iter != range.second; ++iter) {
     if (iter->second == blockHash) {

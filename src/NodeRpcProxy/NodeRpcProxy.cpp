@@ -70,8 +70,9 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort)
     m_peerCount(0),
     m_networkHeight(0),
     m_nodeHeight(0),
-    m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE) {
-    resetInternalState();
+    m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE),
+    m_nextDifficulty(0) {
+  resetInternalState();
 }
 
 NodeRpcProxy::~NodeRpcProxy() {
@@ -274,6 +275,7 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
 	m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
 	m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
+	m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
   }
 
   if (m_connected != m_httpClient->isConnected()) {
@@ -367,6 +369,10 @@ uint64_t NodeRpcProxy::getLastLocalBlockTimestamp() const {
 
 uint64_t NodeRpcProxy::getMinimalFee() const {
   return m_minimalFee.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getNextDifficulty() const {
+  return m_nextDifficulty.load(std::memory_order_relaxed);
 }
 
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {
@@ -622,7 +628,7 @@ std::error_code NodeRpcProxy::doQueryBlocksLite(const std::vector<Crypto::Hash>&
 
     bse.blockHash = std::move(item.blockId);
     if (!item.block.empty()) {
-      if (!fromBinaryArray(bse.block, asBinaryArray(item.block))) {
+      if (!fromBinaryArray(bse.block, asBinaryArray(item.block))) { //TODO fix wallet sync
         return std::make_error_code(std::errc::invalid_argument);
       }
 

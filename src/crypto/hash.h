@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -21,6 +22,7 @@
 
 #include <CryptoTypes.h>
 #include "generic-ops.h"
+#include "balloon.h"
 
 namespace Crypto {
 
@@ -59,7 +61,16 @@ namespace Crypto {
   };
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
-	cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+    cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+  }
+
+  void(*const extra_hashes[4])(const void *, size_t, char *) =
+  {
+    hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
+  };
+
+  inline void blimp_hash(const unsigned char* input, Hash &output, uint64_t length, const unsigned char* salt, uint64_t salt_length) {
+    balloon_blake(input, reinterpret_cast<char *>(&output), length, salt, salt_length);
   }
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {

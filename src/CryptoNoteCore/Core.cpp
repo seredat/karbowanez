@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbowanec developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -33,9 +34,15 @@
 #include "CryptoNoteFormatUtils.h"
 #include "CryptoNoteTools.h"
 #include "CryptoNoteStatInfo.h"
+#include "CryptoNote.h"
+#include "CryptoTypes.h"
 #include "Miner.h"
 #include "TransactionExtra.h"
 #include "IBlock.h"
+#include "Serialization/SerializationTools.h"
+#include "Wallet/WalletRpcServerCommandsDefinitions.h"
+#include "Rpc/HttpClient.h"
+#include "Rpc/JsonRpc.h"
 
 #undef ERROR
 
@@ -68,17 +75,18 @@ private:
   friend class core;
 };
 
-core::core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled) :
+core::core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, System::Dispatcher& dispatcher, bool blockchainIndexesEnabled) :
+m_dispatcher(dispatcher),
 m_currency(currency),
 logger(logger, "core"),
 m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
 m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
-m_miner(new miner(currency, *this, logger)),
+m_miner(new miner(currency, *this, logger, dispatcher)),
 m_starter_message_showed(false),
 m_checkpoints(logger) {
   set_cryptonote_protocol(pprotocol);
   m_blockchain.addObserver(this);
-    m_mempool.addObserver(this);
+  m_mempool.addObserver(this);
   }
   //-----------------------------------------------------------------------------------------------
   core::~core() {
@@ -150,6 +158,27 @@ std::time_t core::getStartTime() const {
   //-----------------------------------------------------------------------------------------------
 bool core::init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing) {
   m_config_folder = config.configFolder;
+
+  if (!config.walletHost.empty()) {
+    m_wallet_host = config.walletHost;
+  }
+
+  if (config.walletPort != 0) {
+    m_wallet_port = config.walletPort;
+  }
+
+  if (!config.walletRpcUser.empty()) {
+    m_wallet_rpc_user = config.walletRpcUser;
+  }
+
+  if (!config.walletRpcPassword.empty()) {
+    m_wallet_rpc_password = config.walletRpcPassword;
+  }
+
+  if (config.stakeMixin != 0) {
+    m_mixin = config.stakeMixin;
+  }
+
   bool r = m_mempool.init(m_config_folder);
   if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to initialize memory pool"; return false; }
 
@@ -213,7 +242,7 @@ size_t core::addChain(const std::vector<const IBlock*>& chain) {
     }
 
     ++blocksCounter;
-    // TODO m_dispatcher.yield()?
+    m_dispatcher.yield();
   }
 
   return blocksCounter;
@@ -462,7 +491,105 @@ bool core::add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t
   return m_mempool.add_tx(tx, tx_hash, blob_size, tvc, keeped_by_block);
 }
 
-bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce) {
+bool core::requestStakeTransaction(uint8_t blockMajorVersion,
+                                   uint64_t& fee,
+                                   uint32_t& height,
+                                   difficulty_type& next_diff,
+                                   size_t medianSize,
+                                   uint64_t alreadyGeneratedCoins, 
+                                   size_t currentBlockSize,
+                                   const AccountPublicAddress& minerAddress,
+                                   const CryptoNote::BinaryArray& extra_nonce,
+                                   bool local_dispatcher,
+                                   Transaction& transaction) {
+  logger(INFO) << "[core] Requesting stake deposit transaction at height " << height << " and difficulty " << next_diff;
+
+  Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::request req;
+  Tools::wallet_rpc::COMMAND_RPC_CONSTRUCT_STAKE_TX::response res;
+
+  // Calculate stake
+  uint64_t emission = getTotalGeneratedAmount();
+  uint64_t blockReward;
+  int64_t emissionChange;
+  if (!getBlockReward(blockMajorVersion, medianSize, currentBlockSize, alreadyGeneratedCoins, fee, blockReward, emissionChange)) {
+    logger(INFO) << "Block is too big";
+    return false;
+  }
+  uint64_t cumulDiffTotal = m_blockchain.blockCumulativeDifficulty(height - 1);
+  uint64_t cumulDiffBeforeStake = m_blockchain.blockCumulativeDifficulty(CryptoNote::parameters::UPGRADE_HEIGHT_V5);
+  uint64_t emissionBeforeStake = m_blockchain.getCoinsInCirculation(CryptoNote::parameters::UPGRADE_HEIGHT_V5);
+  req.stake = m_currency.nextStake(height, blockReward, fee, emission, emissionBeforeStake, cumulDiffTotal, cumulDiffBeforeStake, next_diff);
+
+  req.address = m_currency.accountAddressAsString(minerAddress);
+  req.mixin = m_mixin;
+  req.unlock_time = m_currency.isTestnet() ? height + CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW : height + CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
+  req.reward = blockReward;
+  req.extra_nonce = Common::toHex(extra_nonce);
+
+  try {
+    if (local_dispatcher) {
+      System::Dispatcher localDispatcher;
+      HttpClient httpClient(localDispatcher, m_wallet_host, m_wallet_port);
+      if (!m_wallet_rpc_user.empty() && !m_wallet_rpc_password.empty()) {
+        invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res, m_wallet_rpc_user, m_wallet_rpc_password);
+      }
+      else {
+        invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res);
+      }
+    }
+    else {
+      HttpClient httpClient(m_dispatcher, m_wallet_host, m_wallet_port);
+      if (!m_wallet_rpc_user.empty() && !m_wallet_rpc_password.empty()) {
+        invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res, m_wallet_rpc_user, m_wallet_rpc_password);
+      }
+      else {
+        invokeJsonRpcCommand(httpClient, "construct_stake_tx", req, res);
+      }
+    }
+
+    // if wallet balance is insufficient return false
+    if (res.balance < req.stake) {
+      logger(ERROR) << "Insufficient wallet balance: "
+                    << m_currency.formatAmount(res.balance)
+                    << ", of required "
+                    << m_currency.formatAmount(req.stake);
+      return false;
+    }
+
+    // convenience log balance and stake
+    logger(INFO) << "Wallet balance: " << m_currency.formatAmount(res.balance);
+    logger(INFO) << "Current stake: " << m_currency.formatAmount(req.stake);
+
+    BinaryArray tx_blob;
+    if (!Common::fromHex(res.tx_as_hex, tx_blob))
+    {
+      logger(ERROR) << "Failed to parse tx from hexbuff";
+      return false;
+    }
+    Crypto::Hash tx_hash = CryptoNote::NULL_HASH;
+    Crypto::Hash tx_prefixt_hash = CryptoNote::NULL_HASH;
+    if (!parseAndValidateTransactionFromBinaryArray(tx_blob, transaction, tx_hash, tx_prefixt_hash)) {
+      logger(ERROR) << "Could not parse tx from blob";
+      return false;
+    }
+  }
+  catch (const ConnectException& e) {
+    logger(ERROR) << "Failed to connect to wallet: " << e.what();
+    return false;
+  }
+  catch (const std::runtime_error& e) {
+    logger(ERROR) << "Runtime error in requestStakeTransaction(): " << e.what();
+    return false;
+  }
+  catch (const std::exception& e) {
+    logger(ERROR) << "Exception in requestStakeTransaction(): " << e.what();
+    return false;
+  }
+
+  return true;
+}
+
+bool core::get_block_template(Block& b, uint64_t& fee, const AccountPublicAddress& adr, difficulty_type& diffic, uint32_t& height, const BinaryArray& ex_nonce, bool local_dispatcher) {
   size_t median_size;
   uint64_t already_generated_coins;
 
@@ -505,6 +632,10 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
     b.previousBlockHash = get_tail_id();
     b.timestamp = time(NULL);
 
+    if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      b.blockIndex = height;
+    }
+
     // Don't generate a block template with invalid timestamp
     // Fix by Jagerman
     // https://github.com/graft-project/GraftNetwork/pull/118/commits
@@ -525,9 +656,20 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   }
 
   size_t txs_size;
-  uint64_t fee;
   if (!m_mempool.fill_block_template(b, median_size, m_currency.maxBlockCumulativeSize(height), already_generated_coins, txs_size, fee)) {
     return false;
+  }
+
+  // After block v 5 don't penalize reward and simplify miner tx generation
+  if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    //bool r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, txs_size, fee, adr, b.baseTransaction, ex_nonce, 14);
+    bool r = requestStakeTransaction(b.majorVersion, fee, height, diffic, median_size, already_generated_coins, txs_size, adr, ex_nonce, local_dispatcher, b.baseTransaction);
+    if (!r) {
+      logger(ERROR, BRIGHT_RED) << "Failed to construct miner's stake deposit tx";
+      return false;
+    }
+
+    return true;
   }
 
   /*
@@ -544,7 +686,6 @@ bool core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   size_t cumulative_size = txs_size + getObjectBinarySize(b.baseTransaction);
   for (size_t try_count = 0; try_count != 10; ++try_count) {
     r = m_currency.constructMinerTx(b.majorVersion, height, median_size, already_generated_coins, cumulative_size, fee, adr, b.baseTransaction, ex_nonce, 14);
-
     if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to construct miner tx, second chance"; return false; }
     size_t coinbase_blob_size = getObjectBinarySize(b.baseTransaction);
     if (coinbase_blob_size > cumulative_size - txs_size) {
@@ -618,8 +759,14 @@ void core::pause_mining() {
 }
 
 void core::update_block_template_and_resume_mining() {
-  update_miner_block_template();
-  m_miner->resume();
+  if (update_miner_block_template()) {
+    m_miner->resume();
+    logger(DEBUGGING) << "updated block template and resumed mining";
+  } 
+  else {
+    logger(ERROR) << "updating block template failed, mining not resumed";
+    m_miner->stop();
+  }
 }
 
 bool core::handle_block_found(Block& b) {
@@ -797,6 +944,10 @@ bool core::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) {
   return m_blockchain.getBlockHeight(blockId, blockHeight);
 }
 
+bool core::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  return m_blockchain.getBlockLongHash(context, b, res);
+}
+
 //void core::get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid) {
 //  m_blockchain.get_all_known_block_ids(main, alt, invalid);
 //}
@@ -806,8 +957,7 @@ std::string core::print_pool(bool short_format) {
 }
 
 bool core::update_miner_block_template() {
-  m_miner->on_block_chain_update();
-  return true;
+  return m_miner->on_block_chain_update();
 }
 
 bool core::on_idle() {
@@ -1141,6 +1291,14 @@ std::vector<Crypto::Hash> core::getTransactionHashesByPaymentId(const Crypto::Ha
   std::move(poolTransactionHashes.begin(), poolTransactionHashes.end(), std::back_inserter(blockchainTransactionHashes));
 
   return blockchainTransactionHashes;
+}
+
+difficulty_type core::getAvgDifficulty(uint32_t height, size_t window) {
+  return m_blockchain.getAvgDifficulty(height, window);
+}
+
+difficulty_type core::getAvgDifficulty(uint32_t height) {
+  return m_blockchain.getAvgDifficulty(height);
 }
 
 uint64_t core::getMinimalFee() {

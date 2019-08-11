@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -184,11 +185,6 @@ namespace CryptoNote {
 
 void serialize(TransactionPrefix& txP, ISerializer& serializer) {
   serializer(txP.version, "version");
-
-  if (CURRENT_TRANSACTION_VERSION < txP.version) {
-    throw std::runtime_error("Wrong transaction version");
-  }
-
   serializer(txP.unlockTime, "unlock_time");
   serializer(txP.inputs, "vin");
   serializer(txP.outputs, "vout");
@@ -198,11 +194,14 @@ void serialize(TransactionPrefix& txP, ISerializer& serializer) {
 void serialize(Transaction& tx, ISerializer& serializer) {
   serialize(static_cast<TransactionPrefix&>(tx), serializer);
 
+  if (TRANSACTION_VERSION_2 < tx.version) {
+    throw std::runtime_error("Wrong transaction version");
+  }
+
   size_t sigSize = tx.inputs.size();
   //TODO: make arrays without sizes
 //  serializer.beginArray(sigSize, "signatures");
   
-  //if (serializer.type() == ISerializer::INPUT) {
   // ignore base transaction
   if (serializer.type() == ISerializer::INPUT && !(sigSize == 1 && tx.inputs[0].type() == typeid(BaseInput))) {
     tx.signatures.resize(sigSize);
@@ -385,7 +384,7 @@ void serializeBlockHeader(BlockHeader& header, ISerializer& serializer) {
   }
 
   serializer(header.minorVersion, "minor_version");
-  
+
   if (header.majorVersion == BLOCK_MAJOR_VERSION_2 || header.majorVersion == BLOCK_MAJOR_VERSION_3) {
     serializer(header.previousBlockHash, "prev_id");
   } else if (header.majorVersion == BLOCK_MAJOR_VERSION_1 || header.majorVersion >= BLOCK_MAJOR_VERSION_4) {
@@ -404,6 +403,10 @@ void serialize(BlockHeader& header, ISerializer& serializer) {
 
 void serialize(Block& block, ISerializer& serializer) {
   serializeBlockHeader(block, serializer);
+
+  if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    serializer(block.blockIndex, "block_index");
+  }
 
   if (block.majorVersion == BLOCK_MAJOR_VERSION_2 || block.majorVersion == BLOCK_MAJOR_VERSION_3) {
     auto parentBlockSerializer = makeParentBlockSerializer(block, false, false);

@@ -27,10 +27,10 @@ namespace System {
 struct NativeContextGroup;
 
 struct NativeContext {
-  void* fiber{nullptr};
+  void* fiber;
   bool interrupted;
   bool inExecutionQueue;
-  NativeContext* next{nullptr};
+  NativeContext* next;
   NativeContextGroup* group;
   NativeContext* groupPrev;
   NativeContext* groupNext;

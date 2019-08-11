@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -29,21 +30,28 @@
 #include <boost/limits.hpp>
 #include <boost/utility/value_init.hpp>
 
+#include "../CryptoNoteConfig.h"
+
 #include "crypto/crypto.h"
 #include "Common/CommandLine.h"
+#include "Common/Math.h"
 #include "Common/StringTools.h"
 #include "Serialization/SerializationTools.h"
 
+#include "CryptoNoteTools.h"
 #include "CryptoNoteFormatUtils.h"
 #include "TransactionExtra.h"
+
+#include "Wallet/WalletRpcServerCommandsDefinitions.h"
 
 using namespace Logging;
 
 namespace CryptoNote
 {
 
-  miner::miner(const Currency& currency, IMinerHandler& handler, Logging::ILogger& log) :
+  miner::miner(const Currency& currency, IMinerHandler& handler, Logging::ILogger& log, System::Dispatcher& dispatcher) :
     m_currency(currency),
+    m_dispatcher(dispatcher),
     logger(log, "miner"),
     m_stop(true),
     m_template(boost::value_initialized<Block>()),
@@ -55,10 +63,10 @@ namespace CryptoNote
     m_starter_nonce(0),
     m_last_hr_merge_time(0),
     m_hashes(0),
-    m_do_print_hashrate(false),
+    m_do_print_hashrate(true),
     m_do_mining(false),
     m_current_hash_rate(0),
-    m_update_block_template_interval(5),
+    m_update_block_template_interval(15),
     m_update_merge_hr_interval(2)
   {
   }
@@ -96,10 +104,15 @@ namespace CryptoNote
       return true;
     }
 
-    return request_block_template();
+    return request_block_template(true, true);
   }
-  //-----------------------------------------------------------------------------------------------------
-  bool miner::request_block_template() {
+   //-----------------------------------------------------------------------------------------------------
+  bool miner::request_block_template(bool wait_wallet_refresh, bool local_dispatcher) {
+    if (wait_wallet_refresh) {
+      logger(INFO) << "Give wallet some time to refresh...";
+      std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    }
+
     Block bl = boost::value_initialized<Block>();
     difficulty_type di = 0;
     uint32_t height;
@@ -109,7 +122,8 @@ namespace CryptoNote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
-    if(!m_handler.get_block_template(bl, m_mine_address, di, height, extra_nonce)) {
+    uint64_t fee;
+    if (!m_handler.get_block_template(bl, fee, m_mine_address, di, height, extra_nonce, local_dispatcher)) {
       logger(ERROR) << "Failed to get_block_template(), stopping mining";
       return false;
     }
@@ -121,8 +135,8 @@ namespace CryptoNote
   bool miner::on_idle()
   {
     m_update_block_template_interval.call([&](){
-      if(is_mining()) 
-        request_block_template();
+      if (is_mining())
+        request_block_template(false, false);
       return true;
     });
 
@@ -156,8 +170,8 @@ namespace CryptoNote
 
       if(m_do_print_hashrate) {
         uint64_t total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), static_cast<uint64_t>(0));
-        float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size());
-        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << ENDL;
+        float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size())/static_cast<float>(1000);
+        logger(INFO) << "Hashrate: " << std::setprecision(2) << std::fixed << hr << " kH/s";
       }
     }
     
@@ -232,11 +246,14 @@ namespace CryptoNote
     m_threads_total = static_cast<uint32_t>(threads_count);
     m_starter_nonce = Crypto::rand<uint32_t>();
 
-    if (!m_template_no) {
-      request_block_template(); //lets update block template
+    // always request block template on start
+    if (!request_block_template(false, true)) {
+      logger(ERROR) << "Unable to start miner because block template request was unsuccessful";
+      return false;
     }
 
     m_stop = false;
+    m_pausers_count = 0; // in case mining wasn't resumed after pause
 
     for (uint32_t i = 0; i != threads_count; i++) {
       m_threads.push_back(std::thread(std::bind(&miner::worker_thread, this, i)));
@@ -265,10 +282,11 @@ namespace CryptoNote
   bool miner::stop()
   {
     send_stop_signal();
+
     std::lock_guard<std::mutex> lk(m_threads_lock);
 
     for (auto& th : m_threads) {
-      th.join();
+      th.detach();
     }
 
     m_threads.clear();
@@ -408,7 +426,13 @@ namespace CryptoNote
         //we lucky!
         ++m_config.current_extra_message_index;
 
-        logger(INFO, GREEN) << "Found block for difficulty: " << local_diff;
+        logger(INFO, GREEN) << "Found block for difficulty: " 
+                            << local_diff << std::endl 
+                            << " pow: " << Common::podToHex(h);
+
+        Crypto::Hash id;
+        if (get_block_hash(b, id))
+          logger(INFO, GREEN) << "hash: " << Common::podToHex(id);
 
         if(!m_handler.handle_block_found(b)) {
           --m_config.current_extra_message_index;

@@ -101,13 +101,20 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   blockDetails.hash = hash;
 
   blockDetails.reward = 0;
+  blockDetails.stake = 0;
   for (const TransactionOutput& out : block.baseTransaction.outputs) {
     blockDetails.reward += out.amount;
   }
+  if (blockDetails.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (!get_inputs_money_amount(block.baseTransaction, blockDetails.stake)) {
+      return false;
+    }
 
+    blockDetails.reward -= blockDetails.stake;
+  }
   if (block.baseTransaction.inputs.front().type() != typeid(BaseInput))
     return false;
-  blockDetails.height = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
+  blockDetails.height = block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? block.blockIndex : boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
 
   Crypto::Hash tmpHash = core.getBlockIdByHeight(blockDetails.height);
   blockDetails.isOrphaned = hash != tmpHash;
@@ -199,7 +206,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
 bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& transaction, TransactionDetails& transactionDetails, uint64_t timestamp) {
   Crypto::Hash hash = getObjectHash(transaction);
   transactionDetails.hash = hash;
-
+  transactionDetails.version = transaction.version;
   transactionDetails.timestamp = timestamp;
 
   Crypto::Hash blockHash;
@@ -234,6 +241,14 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
     //It's gen transaction
     transactionDetails.fee = 0;
     transactionDetails.mixin = 0;
+  } else if (transaction.inputs.size() > 0 && blockHeight > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+    //It's gen transaction with stake
+    transactionDetails.fee = 0;
+    uint64_t mixin;
+    if (!getMixin(transaction, mixin)) {
+  	  return false;
+    }
+    transactionDetails.mixin = mixin;
   } else {
     uint64_t fee;
     if (!get_tx_fee(transaction, fee)) {

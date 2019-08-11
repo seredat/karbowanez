@@ -40,6 +40,7 @@ public:
   virtual uint64_t getLastLocalBlockTimestamp() const override { return 0; }
   virtual uint32_t getNodeHeight() const override { return 0; }
   virtual uint64_t getMinimalFee() const override{ return 0; }
+  virtual uint64_t getNextDifficulty() const override{ return 0; }
 
   virtual void getFeeAddress() override { }
 

@@ -89,6 +89,7 @@ struct BlockHeader {
 };
 
 struct Block : public BlockHeader {
+  uint32_t blockIndex;
   ParentBlock parentBlock;
   Transaction baseTransaction;
   std::vector<Crypto::Hash> transactionHashes;
