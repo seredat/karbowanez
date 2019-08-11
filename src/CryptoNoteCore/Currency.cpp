@@ -511,6 +511,8 @@ namespace CryptoNote {
     // interest after stake is modified by the average reward or calculate 
     // the average reward only starting from the Epoch beginning.
     uint64_t epochAvgReward = (alreadyGeneratedCoins - alreadyGeneratedCoinsBeforeStake) / epochDuration;
+         if (epochAvgReward == 0)
+             epochAvgReward = baseReward;
 
     // Calculate reward/profitability-adjusted stake
     // using doubles and first divide then multiply to avoid overflow.
@@ -529,7 +531,6 @@ namespace CryptoNote {
     uint64_t adjustedStake = static_cast<uint64_t>(static_cast<double>(rewardStake) * (static_cast<double>(nextDifficulty) / static_cast<double>(epochAvgDifficulty)));
 
     // Output info for debugging and checkout
-    // TODO: change logging level in production
     logger(TRACE) << "Base Stake: "  << formatAmount(baseStake) << ENDL
                   << "Rew. Stake: "  << formatAmount(rewardStake) << ENDL
                   << "Adj. Stake: "  << formatAmount(adjustedStake) << ENDL;
