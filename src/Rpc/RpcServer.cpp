@@ -2030,7 +2030,7 @@ bool RpcServer::on_get_stake_info(const COMMAND_RPC_GET_STAKE_INFO::request& req
       CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get already generated coins for prev. block." };
   }
 
-  res.next_stake = m_core.currency().nextStake(height, nextReward, fee, alreadyGeneratedCoins, emissionBeforeStake, cumulDifficulty, cumulDiffBeforeStake, nextDfficulty);
+  res.next_stake = m_core.currency().nextStake(height + 1, nextReward, fee, alreadyGeneratedCoins, emissionBeforeStake, cumulDifficulty, cumulDiffBeforeStake, nextDfficulty);
 
   // calculate stake stats
   uint64_t totalStake = 0;
