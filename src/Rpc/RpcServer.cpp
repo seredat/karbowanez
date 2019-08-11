@@ -975,7 +975,7 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
         return false;
       }
       uint64_t prevBlockGeneratedCoins = 0;
-      if (req.height > 0) {
+      if (block_short.height > 0) {
         if (!m_core.getAlreadyGeneratedCoins(blk.previousBlockHash, prevBlockGeneratedCoins)) {
           return false;
         }
@@ -989,18 +989,29 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
         actualReward += out.amount;
       }
       std::vector<size_t> blocksSizes;
-      if (!m_core.getBackwardBlocksSizes(req.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+      if (!m_core.getBackwardBlocksSizes(block_short.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
         return false;
       }
       uint64_t sizeMedian = Common::medianValue(blocksSizes);
-      if (!m_core.getBlockReward(blk.majorVersion, sizeMedian, block_short.cumul_size, prevBlockGeneratedCoins, 0, blockReward, emissionChange)) {
+      uint64_t blockFees = 0;
+      std::list<Crypto::Hash> missed_txs;
+      std::list<Transaction> txs;
+      m_core.getTransactions(blk.transactionHashes, txs, missed_txs);
+      for (const Transaction& tx : txs) {
+        f_transaction_short_response transaction_short;
+        uint64_t amount_in = 0;
+        get_inputs_money_amount(tx, amount_in);
+        uint64_t amount_out = get_outs_money_amount(tx);
+        uint64_t tx_fee = amount_in - amount_out;
+        blockFees += tx_fee;
+      }
+
+      if (!m_core.getBlockReward(blk.majorVersion, sizeMedian, block_short.cumul_size, prevBlockGeneratedCoins, blockFees, blockReward, emissionChange)) {
         return false;
       }
 
-      uint64_t blockFees = actualReward - blockReward - block_short.actual_stake;
-
       uint64_t cumulDiffTotal;
-      m_core.getBlockCumulativeDifficulty(req.height, cumulDiffTotal);
+      m_core.getBlockCumulativeDifficulty(block_short.height, cumulDiffTotal);
       uint64_t cumulDiffBeforeStake;
       m_core.getBlockCumulativeDifficulty(CryptoNote::parameters::UPGRADE_HEIGHT_V5, cumulDiffBeforeStake);
        uint64_t emission;
@@ -1008,7 +1019,7 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
       uint64_t emissionBeforeStake;
       m_core.getAlreadyGeneratedCoins(m_core.getBlockIdByHeight(CryptoNote::parameters::UPGRADE_HEIGHT_V5), emissionBeforeStake);
 
-      block_short.minimal_stake = m_core.currency().nextStake(req.height, blockReward, blockFees, emission, emissionBeforeStake, cumulDiffTotal, cumulDiffBeforeStake, blockDiff);
+      block_short.minimal_stake = m_core.currency().nextStake(block_short.height, blockReward, blockFees, emission, emissionBeforeStake, cumulDiffTotal, cumulDiffBeforeStake, blockDiff);
     }
 
     res.blocks.push_back(block_short);
@@ -2012,7 +2023,7 @@ bool RpcServer::on_get_stake_info(const COMMAND_RPC_GET_STAKE_INFO::request& req
   }
   uint64_t sizeMedian = Common::medianValue(blocksSizes);
   uint64_t nextReward = 0;
-  uint64_t fee = 0;
+  uint64_t fee = 0; // zero because here reward is without fees already
   int64_t emissionChange = 0;
   uint64_t prevBlockGeneratedCoins = 0;
   Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(height);
