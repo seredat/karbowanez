@@ -1210,4 +1210,21 @@ struct COMMAND_RPC_GET_AVG_STAT_BY_HEIGHTS {
   };
 };
 
+//-----------------------------------------------
+struct COMMAND_RPC_GET_STAKE_INFO {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::string status;
+    uint64_t next_stake;
+    uint64_t total_coins_locked;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status)
+      KV_MEMBER(next_stake)
+      KV_MEMBER(total_coins_locked)
+    }
+  };
+};
+
 }
