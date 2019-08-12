@@ -651,9 +651,11 @@ struct COMMAND_RPC_GET_BLOCK_HEADER_BY_HEIGHT {
 struct F_COMMAND_RPC_GET_BLOCKS_LIST {
   struct request {
     uint32_t height;
+    uint32_t count = 10;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(height)
+      KV_MEMBER(count)
     }
   };
 

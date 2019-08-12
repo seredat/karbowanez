@@ -868,7 +868,10 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
       std::string("To big height: ") + std::to_string(req.height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height()) };
   }
 
-  uint32_t print_blocks_count = 30;
+  uint32_t print_blocks_count = 10;
+  if(req.count <= 1000)
+    print_blocks_count = req.count;
+  
   uint32_t last_height = req.height - print_blocks_count;
   if (req.height <= print_blocks_count)  {
     last_height = 0;
