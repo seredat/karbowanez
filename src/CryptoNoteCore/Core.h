@@ -168,6 +168,7 @@ namespace CryptoNote {
      virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
      bool is_key_image_spent(const Crypto::KeyImage& key_im);
+     bool is_key_image_spent(const Crypto::KeyImage& key_im, uint32_t height);
 
    private:
      bool add_new_tx(const Transaction& tx, const Crypto::Hash& tx_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);

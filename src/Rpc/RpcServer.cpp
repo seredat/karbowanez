@@ -1805,8 +1805,14 @@ bool RpcServer::k_on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF
 				uint64_t amount = tx.outputs[proof.index_in_tx].amount;
 				res.total += amount;
 
-				if (m_core.is_key_image_spent(proof.key_image)) {
-					res.spent += amount;
+        if (req.height != 0) {
+          if (m_core.is_key_image_spent(proof.key_image, req.height)) {
+            res.spent += amount;
+          }
+        } else {
+          if (m_core.is_key_image_spent(proof.key_image)) {
+            res.spent += amount;
+          }
 				}
 			}
 		}
