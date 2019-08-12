@@ -129,6 +129,11 @@ void serialize(Blockchain::TransactionIndex& value, ISerializer& s) {
   s(value.transaction, "tx");
 }
 
+void serialize(Blockchain::SpentKeyImage& value, ISerializer& s) {
+  s(value.blockIndex, "block_index");
+  s(value.keyImage, "key_image");
+}
+
 class BlockCacheSerializer {
 
 public:
@@ -201,6 +206,12 @@ public:
 
     logger(INFO) << operation << "spent keys...";
     s(m_bs.m_spent_keys, "spent_keys");
+    //s(m_bs.spentKeyImages, "spent_key_images");
+    if (s.type() == ISerializer::OUTPUT) {
+      writeSequence<Blockchain::SpentKeyImage>(m_bs.spentKeyImages.begin(), m_bs.spentKeyImages.end(), "spent_key_images", s);
+    } else {
+      readSequence<Blockchain::SpentKeyImage>(std::inserter(m_bs.spentKeyImages, m_bs.spentKeyImages.end()), "spent_key_images", s);
+    }
 
     logger(INFO) << operation << "outputs...";
     s(m_bs.m_outputs, "outputs");
@@ -418,6 +429,20 @@ bool Blockchain::have_tx_keyimg_as_spent(const Crypto::KeyImage &key_im) {
   return  m_spent_keys.find(key_im) != m_spent_keys.end();
 }
 
+bool Blockchain::checkIfSpent(const Crypto::KeyImage& keyImage, uint32_t blockIndex) {
+  auto it = spentKeyImages.get<KeyImageTag>().find(keyImage);
+
+  return it->blockIndex <= blockIndex;
+}
+
+bool Blockchain::checkIfSpent(const Crypto::KeyImage& keyImage) {
+  if (spentKeyImages.get<KeyImageTag>().count(keyImage) != 0) {
+    return true;
+  }
+
+  return have_tx_keyimg_as_spent(keyImage);
+}
+
 uint32_t Blockchain::getCurrentBlockchainHeight() {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   return static_cast<uint32_t>(m_blocks.size());
@@ -536,6 +561,7 @@ void Blockchain::rebuildCache() {
   m_blockIndex.clear();
   m_transactionMap.clear();
   m_spent_keys.clear();
+  spentKeyImages.clear();
   m_outputs.clear();
   m_multisignatureOutputs.clear();
   for (uint32_t b = 0; b < m_blocks.size(); ++b) {
@@ -555,6 +581,7 @@ void Blockchain::rebuildCache() {
       for (auto& i : transaction.tx.inputs) {
         if (i.type() == typeid(KeyInput)) {
           m_spent_keys.insert(::boost::get<KeyInput>(i).keyImage);
+          spentKeyImages.get<BlockIndexTag>().insert(SpentKeyImage{ b, ::boost::get<KeyInput>(i).keyImage });
         } else if (i.type() == typeid(MultisignatureInput)) {
           auto out = ::boost::get<MultisignatureInput>(i);
           m_multisignatureOutputs[out.amount][out.outputIndex].isUsed = true;
@@ -607,6 +634,7 @@ bool Blockchain::resetAndSetGenesisBlock(const Block& b) {
   m_transactionMap.clear();
 
   m_spent_keys.clear();
+  spentKeyImages.clear();
   m_alternative_chains.clear();
   m_outputs.clear();
 
@@ -2262,13 +2290,18 @@ bool Blockchain::pushTransaction(BlockEntry& block, const Crypto::Hash& transact
   for (size_t i = 0; i < transaction.tx.inputs.size(); ++i) {
     if (transaction.tx.inputs[i].type() == typeid(KeyInput)) {
       auto result = m_spent_keys.insert(::boost::get<KeyInput>(transaction.tx.inputs[i]).keyImage);
+
+      spentKeyImages.get<BlockIndexTag>().insert(SpentKeyImage{ block.height, ::boost::get<KeyInput>(transaction.tx.inputs[i]).keyImage });
+
       if (!result.second) {
         logger(ERROR, BRIGHT_RED) <<
           "Double spending transaction was pushed to blockchain.";
         for (size_t j = 0; j < i; ++j) {
           m_spent_keys.erase(::boost::get<KeyInput>(transaction.tx.inputs[i - 1 - j]).keyImage);
-        }
 
+          //spentKeyImages.get<BlockIndexTag>().erase( SpentKeyImage{ block.height, ::boost::get<KeyInput>(transaction.tx.inputs[i - 1 - j]).keyImage });
+        }
+        
         m_transactionMap.erase(transactionHash);
         return false;
       }
