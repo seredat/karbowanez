@@ -668,8 +668,8 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_initResultPromise(nullptr),
   m_walletSynchronized(false),
   m_trackingWallet(false){
-  m_consoleHandler.setHandler("start_mining", boost::bind(&simple_wallet::start_mining, this, _1), "start_mining [<number_of_threads>] - Start mining in daemon");
-  m_consoleHandler.setHandler("stop_mining", boost::bind(&simple_wallet::stop_mining, this, _1), "Stop mining in daemon");
+  //m_consoleHandler.setHandler("start_mining", boost::bind(&simple_wallet::start_mining, this, _1), "start_mining [<number_of_threads>] - Start mining in daemon");
+  //m_consoleHandler.setHandler("stop_mining", boost::bind(&simple_wallet::stop_mining, this, _1), "Stop mining in daemon");
   //m_consoleHandler.setHandler("refresh", boost::bind(&simple_wallet::refresh, this, _1), "Resynchronize transactions and balance");
   m_consoleHandler.setHandler("export_keys", boost::bind(&simple_wallet::export_keys, this, _1), "Show the secret keys of the opened wallet");
   m_consoleHandler.setHandler("tracking_key", boost::bind(&simple_wallet::export_tracking_key, this, _1), "Show the tracking key of the opened wallet");
@@ -2575,7 +2575,7 @@ int main(int argc, char* argv[]) {
 
   if (command_line::has_arg(vm, Tools::wallet_rpc_server::arg_rpc_bind_port)) {
     //runs wallet with rpc interface
-	
+
     std::string wallet_file = command_line::get_arg(vm, arg_wallet_file);
     if (wallet_file.empty()) {
       logger(ERROR, BRIGHT_RED) << "Wallet file not set.";
@@ -2584,15 +2584,13 @@ int main(int argc, char* argv[]) {
 
     std::string wallet_password;
     if (!command_line::has_arg(vm, arg_password)) {
-      //logger(ERROR, BRIGHT_RED) << "Wallet password not set.";
-      //return 1;
       if (pwd_container.read_password()) {
-		  wallet_password = pwd_container.password();
+        wallet_password = pwd_container.password();
       }
-	}
-	else {
-		wallet_password = command_line::get_arg(vm, arg_password);
-	}
+    }
+    else {
+      wallet_password = command_line::get_arg(vm, arg_password);
+    }
 
     std::string daemon_address = command_line::get_arg(vm, arg_daemon_address);
     std::string daemon_host = command_line::get_arg(vm, arg_daemon_host);

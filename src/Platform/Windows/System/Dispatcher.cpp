@@ -82,7 +82,7 @@ Dispatcher::Dispatcher() {
     }
 
     BOOL result2 = ConvertFiberToThread();
-    assert(result == TRUE);
+    assert(result2 == TRUE);
   }
   
   DeleteCriticalSection(reinterpret_cast<LPCRITICAL_SECTION>(criticalSection));

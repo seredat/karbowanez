@@ -47,9 +47,11 @@
 #include "WalletLegacy/WalletLegacySerialization.h"
 #include "WalletLegacy/WalletLegacySerializer.h"
 #include "WalletLegacy/WalletUtils.h"
+#include "WalletLegacy/WalletRequest.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "Mnemonics/electrum-words.h"
+#include "Serialization/SerializationTools.h"
 
 extern "C"
 {
@@ -757,6 +759,84 @@ TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOut
 	return txId;
 }
 
+bool WalletLegacy::constructStakeTx(const std::string& address, const uint64_t& stake, const uint64_t& reward, const uint64_t& mixin, uint64_t unlockTimestamp, const std::string& extra, Transaction& stakeTransaction, SecretKey& stakeKey) {
+  TransactionId txId = 0;
+  std::deque<std::shared_ptr<WalletLegacyEvent>> events;
+  std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
+  throwIfNotInitialised();
+
+  // select inputs
+  std::vector<TransactionOutputInformation> allOutputs;
+  m_transferDetails->getOutputs(allOutputs, ITransfersContainer::IncludeKeyUnlocked);
+  context->foundMoney = m_sender->selectTransfersToSend(stake, false, m_currency.defaultDustThreshold(), context->selectedTransfers);
+  throwIf(context->foundMoney < stake, error::WRONG_AMOUNT);
+
+  // prepare transfers
+  std::vector<WalletLegacyTransfer> transfers;
+  WalletLegacyTransfer destination;
+  destination.amount = 0;
+  for (auto& out : context->selectedTransfers) {
+    destination.amount += out.amount;
+  }
+  destination.address = address;
+  transfers.push_back(destination);
+
+  //prepare transaction
+  txId = m_transactionsCache.addNewTransaction(context->foundMoney, 0, extra, transfers, unlockTimestamp);
+  context->transactionId = txId;
+  context->mixIn = mixin;
+
+  // prepare outputs
+  if (mixin != 0) {
+    uint64_t outsCount = mixin + 1;// add one to make possible (if need) to skip real output key
+    std::vector<uint64_t> amounts;
+
+    for (const auto& td : context->selectedTransfers) {
+      amounts.push_back(td.amount);
+    }
+
+    auto queryAmountsCompleted = std::promise<std::error_code>();
+    auto queryAmountsWaitFuture = queryAmountsCompleted.get_future();
+
+    m_node.getRandomOutsByAmounts(std::move(amounts),
+                                  outsCount,
+                                  std::ref(context->outs),
+                                  [&queryAmountsCompleted](std::error_code ec) {
+                                    auto detachedPromise = std::move(queryAmountsCompleted);
+                                    detachedPromise.set_value(ec);
+                                  });
+
+    queryAmountsWaitFuture.get();
+
+    auto scanty_it = std::find_if(context->outs.begin(), context->outs.end(),
+      [&](COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& out) {
+        return out.outs.size() < mixin;
+    });
+
+    if (scanty_it != context->outs.end()) {
+      throw std::system_error(make_error_code(error::MIXIN_COUNT_TOO_BIG));
+      return false;
+    }
+
+  }
+
+  AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
+  bool r = m_currency.parseAccountAddressString(address, acc);
+
+  if (!m_sender->makeStakeTransaction(context, events, acc, stakeTransaction, stakeKey, reward, 0, extra, mixin, unlockTimestamp)) {
+    return false;
+  }
+
+  // delete this transaction from cache not to deplete wallet
+  // the one that makes into the block will be added via synchronization
+  Crypto::Hash stakeTxHash = getObjectHash(stakeTransaction);
+  std::lock_guard<std::mutex> lock(m_cacheMutex);
+  if (!m_transactionsCache.deleteUnconfirmedTransaction(stakeTxHash)) {
+    return false;
+  }
+
+  return true;
+}
 
 void WalletLegacy::sendTransactionCallback(WalletRequest::Callback callback, std::error_code ec) {
   ContextCounterHolder counterHolder(m_asyncContextCounter);

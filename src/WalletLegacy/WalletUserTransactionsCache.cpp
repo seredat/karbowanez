@@ -42,7 +42,7 @@ bool WalletUserTransactionsCache::serialize(CryptoNote::ISerializer& s) {
 
     updateUnconfirmedTransactions();
     deleteOutdatedTransactions();
-	rebuildPaymentsIndex();
+    rebuildPaymentsIndex();
   } else {
     UserTransactions txsToSave;
     UserTransfers transfersToSave;
@@ -386,6 +386,15 @@ std::vector<TransactionId> WalletUserTransactionsCache::deleteOutdatedTransactio
   }
 
   return deletedTransactions;
+}
+
+bool WalletUserTransactionsCache::deleteUnconfirmedTransaction(const Crypto::Hash& transactionHash) {
+  TransactionId id = CryptoNote::WALLET_LEGACY_INVALID_TRANSACTION_ID;
+  if (!m_unconfirmedTransactions.findTransactionId(transactionHash, id))
+    return false;
+
+  m_unconfirmedTransactions.erase(transactionHash);
+  return true;
 }
 
 } //namespace CryptoNote

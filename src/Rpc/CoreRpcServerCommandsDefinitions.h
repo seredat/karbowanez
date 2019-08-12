@@ -250,10 +250,16 @@ struct COMMAND_RPC_START_MINING {
   struct request {
     std::string miner_address;
     uint64_t threads_count;
+	std::string wallet_host;
+	uint16_t wallet_port;
+	size_t mixin;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(miner_address)
       KV_MEMBER(threads_count)
+      KV_MEMBER(wallet_host)
+      KV_MEMBER(wallet_port)
+      KV_MEMBER(mixin)
     }
   };
 
@@ -295,21 +301,23 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t last_block_reward;
     uint64_t last_block_timestamp;
     uint64_t last_block_difficulty;
+    uint64_t avg_historic_difficulty;
+    uint64_t cumulative_difficulty;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
       KV_MEMBER(version)
       KV_MEMBER(height)
-	  KV_MEMBER(top_block_hash)
+      KV_MEMBER(top_block_hash)
       KV_MEMBER(difficulty)
-	  KV_MEMBER(min_tx_fee)
+      KV_MEMBER(min_tx_fee)
       KV_MEMBER(readable_tx_fee)
       KV_MEMBER(tx_count)
       KV_MEMBER(tx_pool_size)
       KV_MEMBER(alt_blocks_count)
       KV_MEMBER(outgoing_connections_count)
       KV_MEMBER(incoming_connections_count)
-	  KV_MEMBER(rpc_connections_count)
+      KV_MEMBER(rpc_connections_count)
       KV_MEMBER(white_peerlist_size)
       KV_MEMBER(grey_peerlist_size)
       KV_MEMBER(last_known_block_index)
@@ -322,6 +330,8 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(last_block_reward)
       KV_MEMBER(last_block_timestamp)
       KV_MEMBER(last_block_difficulty)
+      KV_MEMBER(avg_historic_difficulty)
+      KV_MEMBER(cumulative_difficulty)
     }
   };
 };
@@ -557,6 +567,8 @@ struct f_block_short_response {
   uint64_t cumul_size;
   difficulty_type difficulty;
   uint64_t min_tx_fee;
+  uint64_t actual_stake;
+  uint64_t minimal_stake;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(timestamp)
@@ -565,7 +577,9 @@ struct f_block_short_response {
     KV_MEMBER(cumul_size)
     KV_MEMBER(tx_count)
     KV_MEMBER(difficulty)
-	KV_MEMBER(min_tx_fee)
+    KV_MEMBER(min_tx_fee)
+    KV_MEMBER(actual_stake)
+    KV_MEMBER(minimal_stake)
   }
 };
 
@@ -582,8 +596,9 @@ struct f_block_details_response {
   difficulty_type difficulty;
   difficulty_type cumulativeDifficulty;
   uint64_t reward;
+  uint64_t stake;
   uint64_t blockSize;
-  size_t sizeMedian;
+  uint64_t sizeMedian;
   uint64_t effectiveSizeMedian;
   uint64_t transactionsCumulativeSize;
   std::string alreadyGeneratedCoins;
@@ -606,6 +621,7 @@ struct f_block_details_response {
     KV_MEMBER(difficulty)
     KV_MEMBER(cumulativeDifficulty)
     KV_MEMBER(reward)
+    KV_MEMBER(stake)
     KV_MEMBER(blockSize)
     KV_MEMBER(sizeMedian)
     KV_MEMBER(effectiveSizeMedian)
@@ -1166,6 +1182,49 @@ struct K_COMMAND_RPC_CHECK_RESERVE_PROOF {
 			KV_MEMBER(spent)
 		}
 	};
+};
+
+struct COMMAND_RPC_GET_AVG_STAT_BY_HEIGHTS {
+  struct request {
+    std::vector<uint32_t> heights;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(heights);
+    }
+  };
+
+  struct response {
+    std::vector<uint64_t> rewards;
+    std::vector<uint64_t> difficulties;
+    std::vector<uint64_t> avgDifficulties;
+    std::vector<uint64_t> minFees;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(rewards)
+      KV_MEMBER(difficulties)
+      KV_MEMBER(avgDifficulties)
+      KV_MEMBER(minFees)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+//-----------------------------------------------
+struct COMMAND_RPC_GET_STAKE_INFO {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::string status;
+    uint64_t next_stake;
+    uint64_t total_coins_locked;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status)
+      KV_MEMBER(next_stake)
+      KV_MEMBER(total_coins_locked)
+    }
+  };
 };
 
 }

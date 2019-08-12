@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -31,6 +32,11 @@ public:
   void init(const boost::program_options::variables_map& options);
 
   std::string configFolder;
+  std::string walletHost;
+  std::string walletRpcUser;
+  std::string walletRpcPassword;
+  uint16_t walletPort = 0;
+  size_t stakeMixin = 0;
   bool configFolderDefaulted = true;
 };
 

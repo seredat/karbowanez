@@ -128,6 +128,7 @@ struct TransactionDetails {
   uint64_t mixin = 0;
   uint64_t unlockTime = 0;
   uint64_t timestamp = 0;
+  uint64_t version = 1;
   Crypto::Hash paymentId;
   bool hasPaymentId = false;
   bool inBlockchain = false;
@@ -150,6 +151,7 @@ struct BlockDetails {
   Crypto::Hash hash;
   uint64_t difficulty = 0;
   uint64_t reward = 0;
+  uint64_t stake = 0;
   uint64_t baseReward = 0;
   uint64_t blockSize = 0;
   uint64_t transactionsCumulativeSize = 0;

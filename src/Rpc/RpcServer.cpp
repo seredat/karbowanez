@@ -88,6 +88,22 @@ RpcServer::HandlerFunction jsonMethod(bool (RpcServer::*handler)(typename Comman
   };
 }
 
+  uint64_t get_block_reward(const Block& blk) {
+    uint64_t reward = 0;
+    for (const TransactionOutput& out : blk.baseTransaction.outputs) {
+      reward += out.amount;
+    }
+
+    if (blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      uint64_t stake;
+      if (!get_inputs_money_amount(blk.baseTransaction, stake)) {
+        return reward;
+      }
+      reward -= stake;
+    }
+    return reward;
+  }
+
 }
 
 std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction>> RpcServer::s_handlers = {
@@ -103,6 +119,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
 
   // json handlers
   { "/getinfo", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
+  { "/stakeinfo", { jsonMethod<COMMAND_RPC_GET_STAKE_INFO>(&RpcServer::on_get_stake_info), true } },
   { "/getheight", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
   { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), false } },
   { "/sendrawtransaction", { jsonMethod<COMMAND_RPC_SEND_RAW_TX>(&RpcServer::on_send_raw_tx), false } },
@@ -204,7 +221,8 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "check_tx_proof", { makeMemberMethod(&RpcServer::k_on_check_tx_proof), false } },
       { "check_reserve_proof", { makeMemberMethod(&RpcServer::k_on_check_reserve_proof), false } },
       { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } },
-      { "verifymessage", { makeMemberMethod(&RpcServer::on_verify_message), false } }
+      { "verifymessage", { makeMemberMethod(&RpcServer::on_verify_message), false } },
+      { "get_avg_stats_by_heights", { makeMemberMethod(&RpcServer::onGetAvgStatsByHeights), false } }
 
     };
 
@@ -475,6 +493,53 @@ bool RpcServer::onGetBlocksDetailsByHeights(const COMMAND_RPC_GET_BLOCKS_DETAILS
   return true;
 }
 
+bool RpcServer::onGetAvgStatsByHeights(const COMMAND_RPC_GET_AVG_STAT_BY_HEIGHTS::request& req, COMMAND_RPC_GET_AVG_STAT_BY_HEIGHTS::response& rsp) {
+  if (m_restricted_rpc) {
+    rsp.status = "Failed, restricted handle";
+    return false;
+  }
+	try {
+		std::vector<uint64_t> avgDiffs;
+		std::vector<uint64_t> rewards;
+		std::vector<uint64_t> diffs;
+		std::vector<uint64_t> fees;
+		for (const uint32_t& height : req.heights) {
+			if (m_core.get_current_blockchain_height() <= height) {
+				throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+				  std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height() - 1) };
+			}
+      Hash h = m_core.getBlockIdByHeight(height);
+      Block b;
+      if (!m_core.getBlockByHash(h, b)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,  std::string("Couldn't get block by height ") + std::to_string(height) };
+      }
+      uint64_t reward = get_block_reward(b);
+      rewards.push_back(reward);
+			uint64_t avgDiff = m_core.getAvgDifficulty(height);
+			avgDiffs.push_back(avgDiff);
+			uint64_t diff;
+			m_core.getBlockDifficulty(height, diff);
+			diffs.push_back(diff);
+			uint64_t fee = m_core.getMinimalFeeForHeight(height);
+			fees.push_back(fee);
+		}
+		rsp.avgDifficulties = std::move(avgDiffs);
+		rsp.difficulties = std::move(diffs);
+		rsp.rewards = std::move(rewards);
+		rsp.minFees = std::move(fees);
+	}
+	catch (std::system_error& e) {
+		rsp.status = e.what();
+		return false;
+	}
+	catch (std::exception& e) {
+		rsp.status = "Error: " + std::string(e.what());
+		return false;
+	}
+	rsp.status = CORE_RPC_STATUS_OK;
+	return true;
+}
+
 bool RpcServer::onGetBlocksDetailsByHashes(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
   try {
     std::vector<BlockDetails> blockDetails;
@@ -662,22 +727,22 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.start_time = (uint64_t)m_core.getStartTime();
   // that large uint64_t number is unsafe in JavaScript environment and therefore as a JSON value so we display it as a formatted string
   res.already_generated_coins = m_core.currency().formatAmount(m_core.getTotalGeneratedAmount());
+  m_core.getBlockCumulativeDifficulty(m_core.get_current_blockchain_height() - 1, res.cumulative_difficulty);
   
   Block blk;
   if (!m_core.getBlockByHash(last_block_hash, blk)) {
-	  throw JsonRpc::JsonRpcError{
-		CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-		"Internal error: can't get last block by hash." };
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last block by hash." };
   }
-
-  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
-	  throw JsonRpc::JsonRpcError{
-		CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-		"Internal error: coinbase transaction in the block has the wrong type" };
+  
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+      "Internal error: coinbase transaction in the block has the wrong type" };
   }
 
   block_header_response block_header;
-  uint32_t last_block_height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  uint32_t last_block_height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
 
   Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(last_block_height);
   bool is_orphaned = last_block_hash != tmp_hash;
@@ -688,6 +753,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.last_block_timestamp = block_header.timestamp;
   res.last_block_reward = block_header.reward;
   m_core.getBlockDifficulty(static_cast<uint32_t>(last_block_height), res.last_block_difficulty);
+  res.avg_historic_difficulty = m_core.getAvgDifficulty(last_block_height);
 
   res.status = CORE_RPC_STATUS_OK;
   return true;
@@ -897,6 +963,64 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
     block_short.tx_count = blk.transactionHashes.size() + 1;
     block_short.difficulty = blockDiff;
     block_short.min_tx_fee = m_core.getMinimalFeeForHeight(i);
+    block_short.actual_stake = 0;
+    block_short.minimal_stake = 0;
+
+    if (blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      if (!get_inputs_money_amount(blk.baseTransaction, block_short.actual_stake))
+        return false;
+
+      uint64_t alreadyGeneratedCoins = 0;
+      if (!m_core.getAlreadyGeneratedCoins(block_hash, alreadyGeneratedCoins)) {
+        return false;
+      }
+      uint64_t prevBlockGeneratedCoins = 0;
+      if (block_short.height > 0) {
+        if (!m_core.getAlreadyGeneratedCoins(blk.previousBlockHash, prevBlockGeneratedCoins)) {
+          return false;
+        }
+      }
+
+      uint64_t blockReward = 0;
+      uint64_t actualReward = 0;
+      int64_t emissionChange = 0;
+      size_t blockGrantedFullRewardZone = CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
+      for (const TransactionOutput& out : blk.baseTransaction.outputs) {
+        actualReward += out.amount;
+      }
+      std::vector<size_t> blocksSizes;
+      if (!m_core.getBackwardBlocksSizes(block_short.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+        return false;
+      }
+      uint64_t sizeMedian = Common::medianValue(blocksSizes);
+      uint64_t blockFees = 0;
+      std::list<Crypto::Hash> missed_txs;
+      std::list<Transaction> txs;
+      m_core.getTransactions(blk.transactionHashes, txs, missed_txs);
+      for (const Transaction& tx : txs) {
+        f_transaction_short_response transaction_short;
+        uint64_t amount_in = 0;
+        get_inputs_money_amount(tx, amount_in);
+        uint64_t amount_out = get_outs_money_amount(tx);
+        uint64_t tx_fee = amount_in - amount_out;
+        blockFees += tx_fee;
+      }
+
+      if (!m_core.getBlockReward(blk.majorVersion, sizeMedian, block_short.cumul_size, prevBlockGeneratedCoins, blockFees, blockReward, emissionChange)) {
+        return false;
+      }
+
+      uint64_t cumulDiffTotal;
+      m_core.getBlockCumulativeDifficulty(block_short.height, cumulDiffTotal);
+      uint64_t cumulDiffBeforeStake;
+      m_core.getBlockCumulativeDifficulty(CryptoNote::parameters::UPGRADE_HEIGHT_V5, cumulDiffBeforeStake);
+       uint64_t emission;
+      m_core.getAlreadyGeneratedCoins(block_hash, emission);
+      uint64_t emissionBeforeStake;
+      m_core.getAlreadyGeneratedCoins(m_core.getBlockIdByHeight(CryptoNote::parameters::UPGRADE_HEIGHT_V5), emissionBeforeStake);
+
+      block_short.minimal_stake = m_core.currency().nextStake(block_short.height, blockReward, blockFees, emission, emissionBeforeStake, cumulDiffTotal, cumulDiffBeforeStake, blockDiff);
+    }
 
     res.blocks.push_back(block_short);
 
@@ -929,17 +1053,21 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
       "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
   }
 
-  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
     throw JsonRpc::JsonRpcError{
       CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
       "Internal error: coinbase transaction in the block has the wrong type" };
   }
 
   block_header_response block_header;
-  res.block.height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  res.block.height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
 
   Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(res.block.height);
   bool is_orphaned = hash != tmp_hash;
+  uint32_t block_height;
+  m_core.getBlockHeight(hash, block_height);
+  res.block.height = block_height;
+
   fill_block_header_response(blk, is_orphaned, res.block.height, hash, block_header);
 
   res.block.major_version = block_header.major_version;
@@ -990,27 +1118,39 @@ bool RpcServer::f_on_block_json(const F_COMMAND_RPC_GET_BLOCK_DETAILS::request& 
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
+  uint64_t stake = 0;
   size_t blockGrantedFullRewardZone =  CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
   res.block.effectiveSizeMedian = std::max(res.block.sizeMedian, blockGrantedFullRewardZone);
 
   if (!m_core.getBlockReward(res.block.major_version, res.block.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
     return false;
   }
-  if (!m_core.getBlockReward(res.block.major_version, res.block.sizeMedian, res.block.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
-    return false;
+  if (blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (!m_core.getBlockReward(res.block.major_version, res.block.sizeMedian, res.block.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
+      return false;
+    }
   }
 
   res.block.baseReward = maxReward;
-  if (maxReward == 0 && currentReward == 0) {
-    res.block.penalty = static_cast<double>(0);
-  } else {
-    if (maxReward < currentReward) {
+  if (blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    if (maxReward == 0 && currentReward == 0) {
+      res.block.penalty = static_cast<double>(0);
+    }
+    else {
+      if (maxReward < currentReward) {
+        return false;
+      }
+      res.block.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+    }
+  }
+  else {
+    if (!get_inputs_money_amount(blk.baseTransaction, stake)) {
       return false;
     }
-    res.block.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
+	res.block.stake = stake;
+	res.block.penalty = static_cast<double>(0);
   }
 
-  // Base transaction adding
   f_transaction_short_response transaction_short;
   transaction_short.hash = Common::podToHex(getObjectHash(blk.baseTransaction));
   transaction_short.fee = 0;
@@ -1094,7 +1234,7 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
   uint64_t amount_out = get_outs_money_amount(res.tx);
 
   res.txDetails.hash = Common::podToHex(getObjectHash(res.tx));
-  res.txDetails.fee = amount_in - amount_out;
+  res.txDetails.fee = amount_in - amount_out; //todo fix
   if (amount_in == 0)
     res.txDetails.fee = 0;
   res.txDetails.amount_out = amount_out;
@@ -1285,7 +1425,8 @@ bool RpcServer::on_getblocktemplate(const COMMAND_RPC_GETBLOCKTEMPLATE::request&
   Block b = boost::value_initialized<Block>();
   CryptoNote::BinaryArray blob_reserve;
   blob_reserve.resize(req.reserve_size, 0);
-  if (!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve)) {
+  uint64_t fee;
+  if (!m_core.get_block_template(b, fee, acc, res.difficulty, res.height, blob_reserve, false)) {
     logger(ERROR) << "Failed to create block template";
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: failed to create block template" };
   }
@@ -1353,17 +1494,6 @@ bool RpcServer::on_submitblock(const COMMAND_RPC_SUBMITBLOCK::request& req, COMM
   return true;
 }
 
-
-namespace {
-  uint64_t get_block_reward(const Block& blk) {
-    uint64_t reward = 0;
-    for (const TransactionOutput& out : blk.baseTransaction.outputs) {
-      reward += out.amount;
-    }
-    return reward;
-  }
-}
-
 void RpcServer::fill_block_header_response(const Block& blk, bool orphan_status, uint32_t height, const Hash& hash, block_header_response& responce) {
   responce.major_version = blk.majorVersion;
   responce.minor_version = blk.minorVersion;
@@ -1379,15 +1509,14 @@ void RpcServer::fill_block_header_response(const Block& blk, bool orphan_status,
 }
 
 bool RpcServer::on_get_last_block_header(const COMMAND_RPC_GET_LAST_BLOCK_HEADER::request& req, COMMAND_RPC_GET_LAST_BLOCK_HEADER::response& res) {
-  uint32_t last_block_height;
-  Hash last_block_hash;
-  
-  m_core.get_blockchain_top(last_block_height, last_block_hash);
-
+  Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(m_core.get_current_blockchain_height() - 1);
   Block last_block;
   if (!m_core.getBlockByHash(last_block_hash, last_block)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last block hash." };
   }
+
+  uint32_t last_block_height = last_block.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? last_block.blockIndex : boost::get<BaseInput>(last_block.baseTransaction.inputs.front()).blockIndex;
+
   Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(last_block_height);
   bool is_orphaned = last_block_hash != tmp_hash;
   fill_block_header_response(last_block, is_orphaned, last_block_height, last_block_hash, res.block_header);
@@ -1411,15 +1540,18 @@ bool RpcServer::on_get_block_header_by_hash(const COMMAND_RPC_GET_BLOCK_HEADER_B
       "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
   }
 
-  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput)) {
+  if (blk.baseTransaction.inputs.front().type() != typeid(BaseInput) && blk.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
     throw JsonRpc::JsonRpcError{
       CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
       "Internal error: coinbase transaction in the block has the wrong type" };
   }
 
-  uint32_t block_height = boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
-  Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(block_height);
+  uint32_t tmp_height = blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 ? blk.blockIndex : boost::get<BaseInput>(blk.baseTransaction.inputs.front()).blockIndex;
+  Crypto::Hash tmp_hash = m_core.getBlockIdByHeight(tmp_height);
   bool is_orphaned = block_hash != tmp_hash;
+  uint32_t block_height;
+  m_core.getBlockHeight(block_hash, block_height);
+
   fill_block_header_response(blk, is_orphaned, block_height, block_hash, res.block_header);
   res.status = CORE_RPC_STATUS_OK;
   return true;
@@ -1863,6 +1995,80 @@ bool RpcServer::on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req
 	res.sig_valid = Crypto::check_signature(hash, acc.spendPublicKey, s);
 	res.status = CORE_RPC_STATUS_OK;
 	return true;
+}
+
+bool RpcServer::on_get_stake_info(const COMMAND_RPC_GET_STAKE_INFO::request& req, COMMAND_RPC_GET_STAKE_INFO::response& res) {
+  // calculate next stake
+  uint64_t height = m_core.get_current_blockchain_height() - 1;
+  uint64_t nextDfficulty = m_core.getNextBlockDifficulty();
+  uint64_t cumulDifficulty = 0;
+  if (!m_core.getBlockCumulativeDifficulty(height, cumulDifficulty)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last cumulative difficulty." };
+  }
+  uint64_t cumulDiffBeforeStake = 0;
+  if (!m_core.getBlockCumulativeDifficulty(CryptoNote::parameters::UPGRADE_HEIGHT_V5, cumulDiffBeforeStake)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get cumulative difficulty for POWS hardfork height." };
+  }
+  uint64_t alreadyGeneratedCoins = m_core.getTotalGeneratedAmount();
+  uint64_t emissionBeforeStake;
+  if (!m_core.getAlreadyGeneratedCoins(m_core.getBlockIdByHeight(CryptoNote::parameters::UPGRADE_HEIGHT_V5), emissionBeforeStake)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get already generated coins." };
+  }
+  std::vector<size_t> blocksSizes;
+  if (!m_core.getBackwardBlocksSizes(height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+    return false;
+  }
+  uint64_t sizeMedian = Common::medianValue(blocksSizes);
+  uint64_t nextReward = 0;
+  uint64_t fee = 0; // zero because here reward is without fees already
+  int64_t emissionChange = 0;
+  uint64_t prevBlockGeneratedCoins = 0;
+  Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(height);
+  Block blk;
+  if (!m_core.getBlockByHash(last_block_hash, blk)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get last block by hash." };
+  }
+  if (!m_core.getAlreadyGeneratedCoins(blk.previousBlockHash, prevBlockGeneratedCoins)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get already generated coins for prev. block." };
+  }
+  if (!m_core.getBlockReward(CryptoNote::BLOCK_MAJOR_VERSION_5, sizeMedian, 0, prevBlockGeneratedCoins, 0, nextReward, emissionChange)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get already generated coins for prev. block." };
+  }
+
+  res.next_stake = m_core.currency().nextStake(height + 1, nextReward, fee, alreadyGeneratedCoins, emissionBeforeStake, cumulDifficulty, cumulDiffBeforeStake, nextDfficulty);
+
+  // calculate stake stats
+  uint64_t totalStake = 0;
+  uint32_t blocks_count = parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
+  uint32_t last_height = height - blocks_count;
+  if (height <= blocks_count) {
+    last_height = 0;
+  }
+  for (uint32_t i = height; i >= last_height; i--) {
+    Hash block_hash = m_core.getBlockIdByHeight(i);
+    Block blk;
+    if (!m_core.getBlockByHash(block_hash, blk)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't get block by height. Height = " + std::to_string(i) + '.' };
+    }
+    uint64_t stake = 0;
+    if (blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      if (!get_inputs_money_amount(blk.baseTransaction, stake)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+          "Internal error: can't get stake for block at height " + std::to_string(i) + '.' };
+      }
+    }
+    totalStake += stake;
+  }
+  res.total_coins_locked = totalStake;
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
 }
 
 }
