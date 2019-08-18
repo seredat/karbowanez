@@ -46,7 +46,7 @@ const command_line::arg_descriptor<uint16_t>    wallet_rpc_server::arg_rpc_bind_
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_bind_ip = 
 	{ "rpc-bind-ip"  , "Specify IP to bind RPC server to.", "127.0.0.1" };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_user = 
-	{ "rpc-user"     , "Username to use with the RPC server. If empty, no server authorization will be done.", "" };
+	{ "rpc-user"     , "Username to use with the RPC server. If empty, no server authorization will be done.", "", true };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_password = 
 	{ "rpc-password" , "Password to use with the RPC server. If empty, no server authorization will be done.", "" };
 
