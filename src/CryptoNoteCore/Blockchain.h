@@ -268,11 +268,7 @@ namespace CryptoNote {
     };
 
     struct BlockIndexTag {};
-    struct BlockHashTag {};
-    struct TransactionHashTag {};
     struct KeyImageTag {};
-    struct TimestampTag {};
-    struct PaymentIdTag {};
 
     typedef boost::multi_index_container<
       SpentKeyImage,
@@ -288,7 +284,6 @@ namespace CryptoNote {
       >
     > SpentKeyImagesContainer;
     typedef std::unordered_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
-    typedef google::sparse_hash_set<Crypto::KeyImage> key_images_container;
     typedef google::sparse_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
     typedef google::sparse_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
 
@@ -298,7 +293,6 @@ namespace CryptoNote {
     Crypto::cn_context m_cn_context;
     Tools::ObserverManager<IBlockchainStorageObserver> m_observerManager;
 
-    key_images_container m_spent_keys;
     SpentKeyImagesContainer spentKeyImages;
     size_t m_current_block_cumul_sz_limit;
     blocks_ext_by_hash m_alternative_chains; // Crypto::Hash -> block_extended_info
