@@ -219,14 +219,14 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "check_tx_key", { makeMemberMethod(&RpcServer::on_check_tx_key), false } },
       { "check_tx_with_view_key", { makeMemberMethod(&RpcServer::on_check_tx_with_view_key), false } },
       { "check_tx_proof", { makeMemberMethod(&RpcServer::on_check_tx_proof), false } },
-      { "check_reserve_proof", { makeMemberMethod(&RpcServer::on_check_reserve_proof), false } }
+      { "check_reserve_proof", { makeMemberMethod(&RpcServer::on_check_reserve_proof), false } },
 
       /* Deprecated (remove handlers - use BlockchainExplorer instead of Forknote) */
       { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
       { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
       { "f_on_transactions_pool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
       { "f_pool_json", { makeMemberMethod(&RpcServer::f_on_pool_json), false } },
-      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_mempool_json), false } },
+      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_mempool_json), false } }
 
     };
 

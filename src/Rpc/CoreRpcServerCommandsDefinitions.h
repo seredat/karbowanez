@@ -512,7 +512,6 @@ struct block_short_response {
   uint64_t tx_count;
   uint64_t cumul_size;
   difficulty_type difficulty;
-  algo_difficulties algo_difficulties;
   uint64_t min_tx_fee;
   int algo;
 
@@ -523,7 +522,6 @@ struct block_short_response {
     KV_MEMBER(cumul_size)
     KV_MEMBER(tx_count)
     KV_MEMBER(difficulty)
-    KV_MEMBER(algo_difficulties)
     KV_MEMBER(min_tx_fee)
     KV_MEMBER(algo)
   }
@@ -602,6 +600,7 @@ struct f_block_details_response {
   uint32_t depth;
   std::string hash;
   difficulty_type difficulty;
+  difficulty_type cumulativeDifficulty;
   uint64_t reward;
   uint64_t blockSize;
   size_t sizeMedian;
@@ -625,6 +624,7 @@ struct f_block_details_response {
     KV_MEMBER(depth)
     KV_MEMBER(hash)
     KV_MEMBER(difficulty)
+    KV_MEMBER(cumulativeDifficulty)
     KV_MEMBER(reward)
     KV_MEMBER(blockSize)
     KV_MEMBER(sizeMedian)
