@@ -487,6 +487,22 @@ struct f_transaction_short_response {
   }
 };
 
+struct transaction_pool_response {
+  std::string hash;
+  uint64_t fee;
+  uint64_t amount_out;
+  uint64_t size;
+  uint64_t receiveTime;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(hash)
+    KV_MEMBER(fee)
+    KV_MEMBER(amount_out)
+    KV_MEMBER(size)
+    KV_MEMBER(receiveTime)
+  }
+};
+
 struct f_transaction_details_extra_response {
   std::vector<size_t> padding;
   Crypto::PublicKey publicKey; 
@@ -691,7 +707,7 @@ struct F_COMMAND_RPC_GET_BLOCK_DETAILS {
 };
 
 //-----------------------------------------------
-struct K_COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
+struct COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
 	struct request {
 		std::string payment_id;
 
@@ -735,6 +751,21 @@ struct F_COMMAND_RPC_GET_TRANSACTION_DETAILS {
   };
 };
 
+struct COMMAND_RPC_GET_TRANSACTIONS_POOL {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<transaction_pool_response> transactions;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transactions)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+/* Deprecated */
 struct F_COMMAND_RPC_GET_POOL {
   typedef EMPTY_STRUCT request;
 
@@ -749,6 +780,7 @@ struct F_COMMAND_RPC_GET_POOL {
   };
 };
 
+/* Deprecated */
 struct COMMAND_RPC_GET_MEMPOOL {
   typedef EMPTY_STRUCT request;
 
