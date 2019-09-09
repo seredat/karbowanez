@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
 // Copyright (c) 2016, The Forknote developers
-// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2016-2019, The Karbowanec developers
 //
 // This file is part of Karbo.
 //
@@ -101,16 +101,17 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/get_pool_changes.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES>(&RpcServer::onGetPoolChanges), false } },
   { "/get_pool_changes_lite.bin", { binMethod<COMMAND_RPC_GET_POOL_CHANGES_LITE>(&RpcServer::onGetPoolChangesLite), false } },
 
-  // json handlers
+  // http get json handlers
   { "/getinfo", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
   { "/getheight", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
-  { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), false } },
-  { "/sendrawtransaction", { jsonMethod<COMMAND_RPC_SEND_RAW_TX>(&RpcServer::on_send_raw_tx), false } },
   { "/feeaddress", { jsonMethod<COMMAND_RPC_GET_FEE_ADDRESS>(&RpcServer::on_get_fee_address), true } },
-  { "/peers", { jsonMethod<COMMAND_RPC_GET_PEER_LIST>(&RpcServer::on_get_peer_list), true } },
+  { "/peers", { jsonMethod<COMMAND_RPC_GET_PEER_LIST>(&RpcServer::on_get_peer_list), true } }, // deprecated
+  { "/getpeers", { jsonMethod<COMMAND_RPC_GET_PEER_LIST>(&RpcServer::on_get_peer_list), true } },
   { "/paymentid", { jsonMethod<COMMAND_RPC_GEN_PAYMENT_ID>(&RpcServer::on_get_payment_id), true } },
 
-  { "/getpeers", { jsonMethod<COMMAND_RPC_GET_PEER_LIST>(&RpcServer::on_get_peer_list), true } },
+  // rpc post json handlers
+  { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), false } },
+  { "/sendrawtransaction", { jsonMethod<COMMAND_RPC_SEND_RAW_TX>(&RpcServer::on_send_raw_tx), false } },
   { "/getblocks", { jsonMethod<COMMAND_RPC_GET_BLOCKS_FAST>(&RpcServer::on_get_blocks), false } },
   { "/queryblocks", { jsonMethod<COMMAND_RPC_QUERY_BLOCKS>(&RpcServer::on_query_blocks), false } },
   { "/queryblockslite", { jsonMethod<COMMAND_RPC_QUERY_BLOCKS_LITE>(&RpcServer::on_query_blocks_lite), false } },
@@ -180,9 +181,6 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "getblockcount", { makeMemberMethod(&RpcServer::on_getblockcount), true } },
       { "getblockhash", { makeMemberMethod(&RpcServer::on_getblockhash), false } },
       { "getblocktemplate", { makeMemberMethod(&RpcServer::on_getblocktemplate), false } },
-      { "getcurrencyid", { makeMemberMethod(&RpcServer::on_get_currency_id), true } },
-      { "submitblock", { makeMemberMethod(&RpcServer::on_submitblock), false } },
-      { "getlastblockheader", { makeMemberMethod(&RpcServer::on_get_last_block_header), false } },
       { "getblockheaderbyhash", { makeMemberMethod(&RpcServer::on_get_block_header_by_hash), false } },
       { "getblockheaderbyheight", { makeMemberMethod(&RpcServer::on_get_block_header_by_height), false } },
       { "getblockbyheight", { makeMemberMethod(&RpcServer::onGetBlockDetailsByHeight), false } },
@@ -190,26 +188,25 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "getblocksbyheights", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHeights), false } },
       { "getblocksbyhashes", { makeMemberMethod(&RpcServer::onGetBlocksDetailsByHashes), false } },
       { "getblockshashesbytimestamps", { makeMemberMethod(&RpcServer::onGetBlocksHashesByTimestamps), false } },
+      { "getblockslist", { makeMemberMethod(&RpcServer::on_blocks_list_json), false } },
+      { "getlastblockheader", { makeMemberMethod(&RpcServer::on_get_last_block_header), false } },
       { "gettransaction", { makeMemberMethod(&RpcServer::onGetTransactionDetailsByHash), false } },
       { "gettransactionspool", { makeMemberMethod(&RpcServer::on_get_transactions_pool), false } },
       { "gettransactionsbypaymentid", { makeMemberMethod(&RpcServer::on_get_transactions_by_payment_id), false } },
       { "gettransactionhashesbypaymentid", { makeMemberMethod(&RpcServer::onGetTransactionHashesByPaymentId), false } },
       { "gettransactionsbyhashes", { makeMemberMethod(&RpcServer::onGetTransactionsDetailsByHashes), false } },
+      { "getcurrencyid", { makeMemberMethod(&RpcServer::on_get_currency_id), true } },
       { "checktransactionkey", { makeMemberMethod(&RpcServer::on_check_tx_key), false } },
       { "checktransactionbyviewkey", { makeMemberMethod(&RpcServer::on_check_tx_with_view_key), false } },
       { "checktransactionproof", { makeMemberMethod(&RpcServer::on_check_tx_proof), false } },
       { "checkreserveproof", { makeMemberMethod(&RpcServer::on_check_reserve_proof), false } },
       { "validateaddress", { makeMemberMethod(&RpcServer::on_validate_address), false } },
       { "verifymessage", { makeMemberMethod(&RpcServer::on_verify_message), false } },
+      { "submitblock", { makeMemberMethod(&RpcServer::on_submitblock), false } },
 
-      /* Deprecated (see above new names) */
+      /* Deprecated (rename, see above new names, remove only methods) */
       { "on_getblockhash", { makeMemberMethod(&RpcServer::on_getblockhash), false } },
-      { "f_blocks_list_json", { makeMemberMethod(&RpcServer::f_on_blocks_list_json), false } },
-      { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
-      { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
-      { "f_on_transactions_pool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
-      { "f_pool_json", { makeMemberMethod(&RpcServer::f_on_pool_json), false } },
-      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_mempool_json), false } },
+      { "f_blocks_list_json", { makeMemberMethod(&RpcServer::on_blocks_list_json), false } },
       { "k_transactions_by_payment_id", { makeMemberMethod(&RpcServer::on_get_transactions_by_payment_id), false } },
       { "get_transaction_hashes_by_payment_id", { makeMemberMethod(&RpcServer::onGetTransactionHashesByPaymentId), false } },
       { "get_transaction_details_by_hashes", { makeMemberMethod(&RpcServer::onGetTransactionsDetailsByHashes), false } },
@@ -223,7 +220,13 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "check_tx_with_view_key", { makeMemberMethod(&RpcServer::on_check_tx_with_view_key), false } },
       { "check_tx_proof", { makeMemberMethod(&RpcServer::on_check_tx_proof), false } },
       { "check_reserve_proof", { makeMemberMethod(&RpcServer::on_check_reserve_proof), false } }
-      
+
+      /* Deprecated (remove handlers - use BlockchainExplorer instead of Forknote) */
+      { "f_block_json", { makeMemberMethod(&RpcServer::f_on_block_json), false } },
+      { "f_transaction_json", { makeMemberMethod(&RpcServer::f_on_transaction_json), false } },
+      { "f_on_transactions_pool_json", { makeMemberMethod(&RpcServer::f_on_transactions_pool_json), false } },
+      { "f_pool_json", { makeMemberMethod(&RpcServer::f_on_pool_json), false } },
+      { "f_mempool_json", { makeMemberMethod(&RpcServer::f_on_mempool_json), false } },
 
     };
 
@@ -911,7 +914,7 @@ bool RpcServer::on_get_payment_id(const COMMAND_RPC_GEN_PAYMENT_ID::request& req
 // JSON RPC methods
 //------------------------------------------------------------------------------------------------------------------------------
 
-bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::request& req, F_COMMAND_RPC_GET_BLOCKS_LIST::response& res) {
+bool RpcServer::on_blocks_list_json(const COMMAND_RPC_GET_BLOCKS_LIST::request& req, COMMAND_RPC_GET_BLOCKS_LIST::response& res) {
   if (m_core.get_current_blockchain_height() <= req.height) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
       std::string("To big height: ") + std::to_string(req.height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height()) };
@@ -941,7 +944,7 @@ bool RpcServer::f_on_blocks_list_json(const F_COMMAND_RPC_GET_BLOCKS_LIST::reque
     difficulty_type blockDiff;
     m_core.getBlockDifficulty(static_cast<uint32_t>(i), blockDiff);
 
-    f_block_short_response block_short;
+    block_short_response block_short;
     block_short.timestamp = blk.timestamp;
     block_short.height = i;
     block_short.hash = Common::podToHex(block_hash);
@@ -1129,7 +1132,7 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
       m_core.getBlockSize(blockHash, tx_cumulative_block_size);
       size_t blokBlobSize = getObjectBinarySize(blk);
       size_t minerTxBlobSize = getObjectBinarySize(blk.baseTransaction);
-      f_block_short_response block_short;
+      block_short_response block_short;
 
       block_short.timestamp = blk.timestamp;
       block_short.height = blockHeight;
@@ -1174,7 +1177,6 @@ bool RpcServer::f_on_transaction_json(const F_COMMAND_RPC_GET_TRANSACTION_DETAIL
       res.txDetails.extra.padding.push_back(std::move(boost::get<CryptoNote::TransactionExtraPadding>(field).size));
     }
     else if (typeid(CryptoNote::TransactionExtraPublicKey) == field.type()) {
-      //res.txDetails.extra.publicKey = std::move(boost::get<CryptoNote::TransactionExtraPublicKey>(field).publicKey);
       res.txDetails.extra.publicKey = CryptoNote::getTransactionPublicKeyFromExtra(res.tx.extra);
     }
     else if (typeid(CryptoNote::TransactionExtraNonce) == field.type()) {
