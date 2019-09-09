@@ -147,6 +147,7 @@ struct BlockDetails {
   uint32_t nonce = 0;
   bool isOrphaned = false;
   uint32_t height = 0;
+  uint32_t depth = 0;
   Crypto::Hash hash;
   uint64_t difficulty = 0;
   uint64_t reward = 0;
@@ -156,6 +157,7 @@ struct BlockDetails {
   uint64_t alreadyGeneratedCoins = 0;
   uint64_t alreadyGeneratedTransactions = 0;
   uint64_t sizeMedian = 0;
+  uint64_t effectiveSizeMedian = 0;
   double penalty = 0.0;
   uint64_t totalFeeAmount = 0;
   std::vector<TransactionDetails> transactions;
