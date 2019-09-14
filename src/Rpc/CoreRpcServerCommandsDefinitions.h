@@ -274,8 +274,9 @@ struct COMMAND_RPC_GET_INFO {
     std::string version;
     uint32_t height;
     std::string top_block_hash;
-    uint64_t difficulty;
+    uint64_t next_difficulty;
     uint64_t cumulative_difficulty;
+    uint64_t next_reward;
     uint64_t min_tx_fee;
     std::string readable_tx_fee;
     uint64_t tx_count;
@@ -291,19 +292,16 @@ struct COMMAND_RPC_GET_INFO {
     std::string fee_address;
     uint8_t block_major_version;
     std::string already_generated_coins;
-    std::string contact;
-    uint8_t block_minor_version;
-    uint64_t last_block_reward;
-    uint64_t last_block_timestamp;
-    uint64_t last_block_difficulty;
+    std::string contact;   
 
     void serialize(ISerializer &s) {
       KV_MEMBER(status)
       KV_MEMBER(version)
       KV_MEMBER(height)
       KV_MEMBER(top_block_hash)
-      KV_MEMBER(difficulty)
+      KV_MEMBER(next_difficulty)
       KV_MEMBER(cumulative_difficulty)
+      KV_MEMBER(next_reward)
       KV_MEMBER(min_tx_fee)
       KV_MEMBER(readable_tx_fee)
       KV_MEMBER(tx_count)
@@ -319,11 +317,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(fee_address)
       KV_MEMBER(block_major_version)
       KV_MEMBER(already_generated_coins)
-      KV_MEMBER(contact)
-      KV_MEMBER(block_minor_version)
-      KV_MEMBER(last_block_reward)
-      KV_MEMBER(last_block_timestamp)
-      KV_MEMBER(last_block_difficulty)
+      KV_MEMBER(contact)      
     }
   };
 };
