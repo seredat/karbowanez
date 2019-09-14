@@ -450,7 +450,7 @@ void WalletSerializerV1::loadWallets(Common::IInputStream& source, CryptoContext
   deserializeEncrypted(count, "wallets_count", cryptoContext, source);
   cryptoContext.incIv();
 
-  bool isTrackingMode;
+  bool isTrackingMode = false;
 
   for (uint64_t i = 0; i < count; ++i) {
     WalletRecordDto dto;
