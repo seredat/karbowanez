@@ -189,6 +189,7 @@ void serialize(BlockDetails& block, ISerializer& serializer) {
   serializer(block.minorVersion, "minorVersion");
   serializer(block.timestamp, "timestamp");
   serializePod(block.prevBlockHash, "prevBlockHash", serializer);
+  serializePod(block.proofOfWork, "proofOfWork", serializer);
   serializer(block.nonce, "nonce");
   serializer(block.isOrphaned, "isOrphaned");
   serializer(block.height, "index");

@@ -144,6 +144,7 @@ struct BlockDetails {
   uint8_t minorVersion = 0;
   uint64_t timestamp = 0;
   Crypto::Hash prevBlockHash;
+  Crypto::Hash proofOfWork;
   uint32_t nonce = 0;
   bool isOrphaned = false;
   uint32_t height = 0;

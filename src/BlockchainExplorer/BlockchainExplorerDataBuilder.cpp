@@ -113,6 +113,11 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   Crypto::Hash tmpHash = core.getBlockIdByHeight(blockDetails.height);
   blockDetails.isOrphaned = hash != tmpHash;
 
+  Crypto::cn_context context;
+  if (!get_block_longhash(context, block, blockDetails.proofOfWork)) {
+    return false;
+  }
+
   if (!core.getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {
     return false;
   }
