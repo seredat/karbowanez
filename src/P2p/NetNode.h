@@ -172,7 +172,6 @@ namespace CryptoNote
 #ifdef ALLOW_DEBUG_COMMANDS
     bool check_trust(const proof_of_trust& tr);
 #endif
-    void initUpnp();
 
     bool handshake(CryptoNote::LevinProtocol& proto, P2pConnectionContext& context, bool just_take_peerlist = false);
     bool timedSync();
@@ -191,17 +190,16 @@ namespace CryptoNote
 
     //-----------------------------------------------------------------------------------------------
     bool add_host_fail(const uint32_t address_ip);
-	bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
-	bool unblock_host(const uint32_t address_ip);
-	bool handle_command_line(const boost::program_options::variables_map& vm);
-	bool is_remote_host_allowed(const uint32_t address_ip);
+    bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
+    bool unblock_host(const uint32_t address_ip);
+    bool handle_command_line(const boost::program_options::variables_map& vm);
+    bool is_remote_host_allowed(const uint32_t address_ip);
     bool handleConfig(const NetNodeConfig& config);
     bool append_net_address(std::vector<NetworkAddress>& nodes, const std::string& addr);
     bool idle_worker();
     bool handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context);
     bool get_local_node_data(basic_node_data& node_data);
 
-    bool merge_peerlist_with_local(const std::list<PeerlistEntry>& bs);
     bool fix_time_delta(std::list<PeerlistEntry>& local_peerlist, time_t local_time, int64_t& delta);
 
     bool connections_maker();
