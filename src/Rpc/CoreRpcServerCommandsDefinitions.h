@@ -507,7 +507,6 @@ struct block_short_response {
   uint64_t cumul_size;
   difficulty_type difficulty;
   uint64_t min_tx_fee;
-  int algo;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(timestamp)
@@ -517,7 +516,6 @@ struct block_short_response {
     KV_MEMBER(tx_count)
     KV_MEMBER(difficulty)
     KV_MEMBER(min_tx_fee)
-    KV_MEMBER(algo)
   }
 };
 
