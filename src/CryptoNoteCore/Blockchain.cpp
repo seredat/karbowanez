@@ -2292,7 +2292,7 @@ bool Blockchain::pushTransaction(BlockEntry& block, const Crypto::Hash& transact
           "Double spending transaction was pushed to blockchain.";
         for (size_t j = 0; j < i; ++j) {
           auto& imagesIndex = spentKeyImages.get<KeyImageTag>();
-          auto& it = imagesIndex.find(::boost::get<KeyInput>(transaction.tx.inputs[i - 1 - j]).keyImage);
+          auto it = imagesIndex.find(::boost::get<KeyInput>(transaction.tx.inputs[i - 1 - j]).keyImage);
           imagesIndex.erase(it);
         }
         
