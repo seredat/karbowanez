@@ -148,6 +148,7 @@ void serialize(TransactionDetails& transaction, ISerializer& serializer) {
   serializer(transaction.mixin, "mixin");
   serializer(transaction.unlockTime, "unlockTime");
   serializer(transaction.timestamp, "timestamp");
+  serializer(transaction.version, "version");
   serializePod(transaction.paymentId, "paymentId", serializer);
   serializer(transaction.inBlockchain, "inBlockchain");
   serializePod(transaction.blockHash, "blockHash", serializer);
