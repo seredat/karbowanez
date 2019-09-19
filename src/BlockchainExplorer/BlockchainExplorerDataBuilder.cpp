@@ -133,7 +133,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   blockDetails.sizeMedian = median(blocksSizes);
 
   size_t blockGrantedFullRewardZone = CryptoNote::parameters::CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE;
-  blockDetails.effectiveSizeMedian = std::max(blockDetails.sizeMedian, blockGrantedFullRewardZone);
+  blockDetails.effectiveSizeMedian = std::max(blockDetails.sizeMedian, (uint64_t) blockGrantedFullRewardZone);
 
   size_t blockSize = 0;
   if (!core.getBlockSize(hash, blockSize)) {
