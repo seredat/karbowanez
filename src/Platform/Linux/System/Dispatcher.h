@@ -89,7 +89,7 @@ public:
 # else
   static const int SIZEOF_PTHREAD_MUTEX_T = 32;
 # endif
-#elif __aarch64__
+#elif defined(__aarch64__)
   static const int SIZEOF_PTHREAD_MUTEX_T = 48;
 #else
   static const int SIZEOF_PTHREAD_MUTEX_T = 24;
