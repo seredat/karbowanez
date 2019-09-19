@@ -131,7 +131,9 @@ namespace Crypto {
     ge_p3 point;
     ge_p2 point2;
     ge_p1p1 point3;
-    assert(sc_check(reinterpret_cast<const unsigned char*>(&key2)) == 0);
+    if (!(sc_check(reinterpret_cast<const unsigned char*>(&key2)) == 0)) {
+      return false;
+    }
     if (ge_frombytes_vartime(&point, reinterpret_cast<const unsigned char*>(&key1)) != 0) {
       return false;
     }
