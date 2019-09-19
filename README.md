@@ -1,8 +1,4 @@
-The Karbo (Karbovanets) is cryptocurrency of Ukrainian origin, just like Bitcoin but more anonymous and privacy centric with opaque and more analysis resistant blockchain. It is people's electronic cash, not connected to government or officials.
-
-Goal of Karbo project is to create anonymous stablecoin – decentralized cryptocurrency with low price volatility by using new to crypto world techniques of regulating coin supply and its market price.
-
-Key principle of CryptoNote is adaptive parameters. Karbo already has adaptive block size limit and difficulty. In addition to it Karbo will implement adaptive emission, adaptive minimal transaction fee and adaptive monetary deposit interest rate to achieve this goal.
+Karbo is people's electronic cash, a cryptocurrency, just like Bitcoin but Ukrainian and anonymous thanks to Cryptonote technology. The key principle of CryptoNote is adaptive parameters. Karbo already has adaptive block size limit and adaptive difficulty, which we improved, and which ensures it's stable emission rate and thus makes Karbo sound money. In addition in Karbo was implemented adaptive fee to keep transaction costs stable regardless of karbo price.
 
 **HARDFORK V4 IS SET AT HEIGHT 266000!!!** In this hardfork _we introduce adaptive minimal transaction fee_ as first step towards our goal. Information for exchanges and other services how to work with new fees: https://github.com/seredat/karbowanec/wiki/Dynamic-transaction-minimum-fee
 
