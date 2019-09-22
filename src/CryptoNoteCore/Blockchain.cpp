@@ -1804,6 +1804,16 @@ bool Blockchain::is_tx_spendtime_unlocked(uint64_t unlock_time) {
   return false;
 }
 
+bool Blockchain::is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height) {
+  if (unlock_time < m_currency.maxBlockHeight()) {
+    //interpret as block index
+    if (height - 1 + m_currency.lockedTxAllowedDeltaBlocks() >= unlock_time)
+      return true;
+  }
+  
+  return false;
+}
+
 bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_prefix_hash, const std::vector<Crypto::Signature>& sig, uint32_t* pmax_related_block_height) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
