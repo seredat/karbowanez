@@ -1847,6 +1847,8 @@ bool RpcServer::on_check_reserve_proof(const K_COMMAND_RPC_CHECK_RESERVE_PROOF::
 		return true;
 	}
 
+	res.good = true;
+
 	return true;
 }
 
