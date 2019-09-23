@@ -1211,11 +1211,13 @@ struct K_COMMAND_RPC_CHECK_RESERVE_PROOF {
 		bool good;
 		uint64_t total;
 		uint64_t spent;
+		uint64_t locked;
 
 		void serialize(ISerializer &s) {
 			KV_MEMBER(good)
 			KV_MEMBER(total)
 			KV_MEMBER(spent)
+			KV_MEMBER(locked)
 		}
 	};
 };
