@@ -219,8 +219,8 @@ std::shared_ptr<WalletInfo> generateWallet(CryptoNote::WalletGreen &wallet)
 
     uint64_t creationTimestamp = static_cast<uint64_t>(time(nullptr));
 
-    const std::string walletAddress = wallet.createAddressWithTimestamp(spendKey.secretKey,
-                                                                        creationTimestamp);
+    const std::string walletAddress = wallet.createAddress(spendKey.secretKey,
+                                                           creationTimestamp);
 
     promptSaveKeys(wallet);
 

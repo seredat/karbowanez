@@ -138,7 +138,8 @@ public:
 
   virtual void initialize(const std::string& path, const std::string& password) = 0;
   virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey) = 0;
-  virtual void initializeWithViewKeyAndTimestamp(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual void initializeWithViewKey(const std::string& path, const std::string& password, const Crypto::SecretKey& viewSecretKey, const uint32_t scanHeight) = 0;
   virtual void load(const std::string& path, const std::string& password, std::string& extra) = 0;
   virtual void load(const std::string& path, const std::string& password) = 0;
   virtual void shutdown() = 0;
@@ -156,9 +157,14 @@ public:
   virtual KeyPair getViewKey() const = 0;
   virtual std::string createAddress() = 0;
   virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, bool reset = true) = 0;
-  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, bool reset = true) = 0;
+  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, const uint64_t& creationTimestamp) = 0;
+  virtual std::string createAddress(const Crypto::SecretKey& spendSecretKey, const uint32_t scanHeight) = 0;
+  virtual std::string createAddress(const Crypto::PublicKey& spendPublicKey, const uint32_t scanHeight) = 0;
   virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, bool reset = true) = 0;
-  virtual std::string createAddressWithTimestamp(const Crypto::SecretKey& spendSecretKey, const uint64_t& creationTimestamp) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, const std::vector<uint64_t>& creationTimestamps) = 0;
+  virtual std::vector<std::string> createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, const std::vector<uint32_t>& scanHeights) = 0;
   virtual void deleteAddress(const std::string& address) = 0;
 
   virtual uint64_t getActualBalance() const = 0;
