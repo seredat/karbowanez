@@ -47,6 +47,7 @@ struct Save {
 struct Reset {
   struct Request {
     std::string viewSecretKey;
+    uint32_t scanHeight = 0;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };
@@ -145,6 +146,7 @@ struct CreateAddress {
   struct Request {
     std::string spendSecretKey;
     std::string spendPublicKey;
+    uint32_t scanHeight = 0;
   	bool reset;
 
     void serialize(CryptoNote::ISerializer& serializer);
@@ -160,6 +162,7 @@ struct CreateAddress {
 struct CreateAddressList {
   struct Request {
     std::vector<std::string> spendSecretKeys;
+    std::vector<uint32_t> scanHeights;
     bool reset;
 
     void serialize(CryptoNote::ISerializer& serializer);

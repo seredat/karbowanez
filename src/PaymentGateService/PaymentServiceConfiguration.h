@@ -57,6 +57,7 @@ struct Configuration {
   std::string secretViewKey;
   std::string secretSpendKey;
   std::string mnemonicSeed;
+  uint64_t scanHeight;
 
   bool generateNewContainer;
   bool generateDeterministic;

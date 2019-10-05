@@ -208,7 +208,7 @@ void WalletGreen::initializeWithViewKey(const std::string& path, const std::stri
     throw std::system_error(make_error_code(CryptoNote::error::KEY_GENERATION_ERROR));
   }
 
-  uint64_t creationTimestamp = scanHeightToTimestamp((uint32_t)scanHeight);
+  uint64_t creationTimestamp = scanHeightToTimestamp(scanHeight);
 
   initWithKeys(path, password, viewPublicKey, viewSecretKey, creationTimestamp);
   m_logger(INFO, BRIGHT_WHITE) << "Container initialized with view secret key, public view key " << viewPublicKey;
@@ -1105,8 +1105,10 @@ std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto
 }
 
 std::vector<std::string> WalletGreen::createAddressList(const std::vector<Crypto::SecretKey>& spendSecretKeys, const std::vector<uint32_t>& scanHeights) {
-  m_logger(ERROR, BRIGHT_RED) << "createAddressList(): the sizes of keys and scan heights vectors do not match.";
-  throw std::system_error(make_error_code(std::errc::invalid_argument));
+  if (spendSecretKeys.size() != scanHeights.size()) {
+    m_logger(ERROR, BRIGHT_RED) << "createAddressList(): the sizes of keys and scan heights vectors do not match.";
+    throw std::system_error(make_error_code(std::errc::invalid_argument));
+  }
   std::vector<NewAddressData> addressDataList(spendSecretKeys.size());
   for (size_t i = 0; i < spendSecretKeys.size(); ++i) {
     Crypto::PublicKey spendPublicKey;
