@@ -111,13 +111,13 @@ std::error_code PaymentServiceJsonRpcServer::handleSave(const Save::Request& /*r
 
 std::error_code PaymentServiceJsonRpcServer::handleReset(const Reset::Request& request, Reset::Response& response) {
   if (request.viewSecretKey.empty()) {
-    if (request.scanHeight != 0) {
+    if (request.scanHeight != std::numeric_limits<uint32_t>::max()) {
       return service.resetWallet(request.scanHeight);
     } else {
       return service.resetWallet();
     }
   } else {
-    if (request.scanHeight != 0) {
+    if (request.scanHeight != std::numeric_limits<uint32_t>::max()) {
       return service.replaceWithNewWallet(request.viewSecretKey, request.scanHeight);
     } else {
       return service.replaceWithNewWallet(request.viewSecretKey);
@@ -133,13 +133,13 @@ std::error_code PaymentServiceJsonRpcServer::handleCreateAddress(const CreateAdd
   if (request.spendSecretKey.empty() && request.spendPublicKey.empty()) {
     return service.createAddress(response.address);
   } else if (!request.spendSecretKey.empty()) {
-    if (request.scanHeight != 0) {
+    if (request.scanHeight != std::numeric_limits<uint32_t>::max()) {
       return service.createAddress(request.spendSecretKey, request.scanHeight, response.address);
     } else {
       return service.createAddress(request.spendSecretKey, request.reset, response.address);
     }
   } else {
-    if (request.scanHeight != 0) {
+    if (request.scanHeight != std::numeric_limits<uint32_t>::max()) {
       return service.createTrackingAddress(request.spendPublicKey, request.scanHeight, response.address);
     } else {
       return service.createTrackingAddress(request.spendPublicKey, response.address);

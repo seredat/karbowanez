@@ -1253,12 +1253,10 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   }
 }
 
-CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight)
-{
+CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight) {
 	CryptoNote::BlockDetails block;
 
-	if (m_node.getLastKnownBlockHeight() == 0)
-	{
+	if (m_node.getLastKnownBlockHeight() == 0) {
 		return block;
 	}
 
@@ -1266,8 +1264,7 @@ CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight)
 
 	auto e = errorPromise.get_future();
 
-	auto callback = [&errorPromise](std::error_code e)
-	{
+	auto callback = [&errorPromise](std::error_code e) {
 		errorPromise.set_value(e);
 	};
 
@@ -1278,50 +1275,42 @@ CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight)
 	return block;
 }
 
-uint64_t WalletGreen::scanHeightToTimestamp(const uint32_t scanHeight)
-{
-	if (scanHeight == 0)
-	{
+uint64_t WalletGreen::scanHeightToTimestamp(const uint32_t scanHeight) {
+	if (scanHeight == 0) {
 		return 0;
 	}
 
 	/* Get the block timestamp from the node if the node has it */
 	uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
 
-	if (timestamp != 0)
-	{
+	if (timestamp != 0) {
 		return timestamp;
 	}
 
 	/* Get the amount of seconds since the blockchain launched */
-	uint64_t secondsSinceLaunch = scanHeight *
-		CryptoNote::parameters::DIFFICULTY_TARGET;
+	uint64_t secondsSinceLaunch = scanHeight * CryptoNote::parameters::DIFFICULTY_TARGET;
 
 	/* Add a bit of a buffer in case of difficulty weirdness, blocks coming
 	   out too fast */
 	secondsSinceLaunch = static_cast<uint64_t>(secondsSinceLaunch * 0.95);
 
 	/* Get the genesis block timestamp and add the time since launch */
-	timestamp = UINT64_C(1464595534)
-		+ secondsSinceLaunch;
+	timestamp = UINT64_C(1464595534) + secondsSinceLaunch;
 
 	/* Timestamp in the future */
-	if (timestamp >= static_cast<uint64_t>(std::time(nullptr)))
-	{
+	if (timestamp >= static_cast<uint64_t>(std::time(nullptr))) {
 		return getCurrentTimestampAdjusted();
 	}
 
 	return timestamp;
 }
 
-uint64_t WalletGreen::getCurrentTimestampAdjusted()
-{
+uint64_t WalletGreen::getCurrentTimestampAdjusted() {
 	/* Get the current time as a unix timestamp */
 	std::time_t time = std::time(nullptr);
 
 	/* Take the amount of time a block can potentially be in the past/future */
-	std::initializer_list<uint64_t> limits =
-	{
+	std::initializer_list<uint64_t> limits = {
 		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT,
 		CryptoNote::parameters::CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1
 	};
