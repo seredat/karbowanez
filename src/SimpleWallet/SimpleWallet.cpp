@@ -110,8 +110,8 @@ const command_line::arg_descriptor<std::string> arg_daemon_address = { "daemon-a
 const command_line::arg_descriptor<std::string> arg_daemon_host = { "daemon-host", "Use daemon instance at host <arg> instead of localhost", "" };
 const command_line::arg_descriptor<std::string> arg_password = { "password", "Wallet password", "", true };
 const command_line::arg_descriptor<std::string> arg_change_password = { "change-password", "Change wallet password and exit", "", true };
-const command_line::arg_descriptor<std::string> arg_mnemonic_seed = { "mnemonic-seed", "Specify mnemonic seed for wallet recovery/creation", "" };
-const command_line::arg_descriptor<bool> arg_restore_deterministic_wallet = { "restore-deterministic-wallet", "Recover wallet using electrum-style mnemonic", false };
+const command_line::arg_descriptor<std::string> arg_mnemonic_seed = { "mnemonic-seed", "Specify mnemonic seed for wallet recovery", "" };
+const command_line::arg_descriptor<bool> arg_restore_deterministic_wallet = { "restore", "Recover wallet using electrum-style mnemonic", false };
 const command_line::arg_descriptor<bool> arg_non_deterministic = { "non-deterministic", "Creates non-deterministic (classic) view and spend keys", false };
 const command_line::arg_descriptor<uint16_t> arg_daemon_port = { "daemon-port", "Use daemon instance at port <arg> instead of 32348", 0 };
 const command_line::arg_descriptor<std::string> arg_log_file = {"log-file", "Set the log file location", ""};
@@ -1034,7 +1034,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		{
 			if (m_non_deterministic)
 			{
-				fail_msg_writer() << "Cannot specify both --restore-deterministic-wallet and --non-deterministic";
+				fail_msg_writer() << "Cannot specify both --restore and --non-deterministic";
 				return false;
 			}
 
@@ -1066,7 +1066,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			return false;
 		}
 
-		bool r = gen_wallet(m_wallet_file_arg, pwd_container.password(), m_recovery_key, 
+		bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), m_recovery_key, 
 			m_restore_deterministic_wallet, m_non_deterministic);
 		if (!r)
 		{
@@ -1171,7 +1171,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		Crypto::SecretKey private_spend_key = *(struct Crypto::SecretKey *) &private_spend_key_hash;
 		Crypto::SecretKey private_view_key = *(struct Crypto::SecretKey *) &private_view_key_hash;
 
-		if (!new_wallet(private_spend_key, private_view_key, walletFileName, pwd_container.password()))
+		if (!new_wallet(walletFileName, pwd_container.password(), private_spend_key, private_view_key))
 		{
 			logger(ERROR, BRIGHT_RED) << "account creation failed";
 			return false;
@@ -1219,7 +1219,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			std::memcpy(&keys, data.data(), sizeof(keys));
 		}
 
-		if (!new_wallet(keys, walletFileName, pwd_container.password()))
+		if (!new_wallet(walletFileName, pwd_container.password(), keys))
 		{
 			logger(ERROR, BRIGHT_RED) << "account creation failed";
 			return false;
@@ -1369,7 +1369,7 @@ void simple_wallet::handle_command_line(const boost::program_options::variables_
 
 //----------------------------------------------------------------------------------------------------
 
-bool simple_wallet::gen_wallet(const std::string &wallet_file, const std::string& password, 
+bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, 
 	const Crypto::SecretKey& recovery_key, bool recover, bool two_random)
 {
 	m_wallet_file = wallet_file;
@@ -1519,7 +1519,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 
 //----------------------------------------------------------------------------------------------------
 
-bool simple_wallet::new_wallet(Crypto::SecretKey &secret_key, Crypto::SecretKey &view_key, const std::string &wallet_file, const std::string& password) {
+bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey &secret_key, const Crypto::SecretKey &view_key) {
   m_wallet_file = wallet_file;
 
   m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
@@ -1572,7 +1572,7 @@ bool simple_wallet::new_wallet(Crypto::SecretKey &secret_key, Crypto::SecretKey 
   return true;
 }
 //----------------------------------------------------------------------------------------------------
-bool simple_wallet::new_wallet(AccountKeys &private_key, const std::string &wallet_file, const std::string& password) {
+bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_key) {
     m_wallet_file = wallet_file;
 
     m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
