@@ -48,7 +48,6 @@ Configuration::Configuration() {
   secretViewKey = "";
   secretSpendKey = "";
   mnemonicSeed = "";
-  scanHeight = 0;
 }
 
 void Configuration::initOptions(boost::program_options::options_description& desc) {
@@ -73,7 +72,6 @@ void Configuration::initOptions(boost::program_options::options_description& des
       ("server-root", po::value<std::string>(), "server root. The service will use it as working directory. Don't set it if don't want to change it")
       ("log-level", po::value<size_t>(), "log level")
       ("address", "print wallet addresses and exit");
-      ("scan-height", po::value<uint64_t>(), "The height to begin scanning a wallet from");
 }
 
 void Configuration::init(const boost::program_options::variables_map& options) {
@@ -173,10 +171,6 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("address") != 0) {
     printAddresses = true;
-  }
-
-  if (options.count("scan-height") != 0) {
-    scanHeight = options["scan-height"].as<uint64_t>();
   }
 
   if (!registerService && !unregisterService) {

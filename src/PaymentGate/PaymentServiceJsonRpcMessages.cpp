@@ -30,7 +30,7 @@ void Save::Response::serialize(CryptoNote::ISerializer& /*serializer*/) {
 
 void Reset::Request::serialize(CryptoNote::ISerializer& serializer) {
   serializer(viewSecretKey, "viewSecretKey");
-  bool hasScanHeight = serializer(scanHeight, "scanHeight");
+  serializer(scanHeight, "scanHeight");
 }
 
 void Reset::Response::serialize(CryptoNote::ISerializer& serializer) {

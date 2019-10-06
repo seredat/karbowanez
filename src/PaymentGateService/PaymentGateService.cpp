@@ -111,7 +111,6 @@ WalletConfiguration PaymentGateService::getWalletConfig() const {
     config.gateConfiguration.secretViewKey,
     config.gateConfiguration.secretSpendKey,
     config.gateConfiguration.mnemonicSeed,
-    config.gateConfiguration.scanHeight,
     config.gateConfiguration.generateDeterministic
   };
 }

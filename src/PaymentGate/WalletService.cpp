@@ -519,7 +519,7 @@ std::error_code WalletService::resetWallet(const uint32_t scanHeight) {
     }
 
     wallet.reset(scanHeight);
-    logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet has been reset starting scanning from height" << scanHeight;
+    logger(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet has been reset starting scanning from height " << scanHeight;
   }
   catch (std::system_error& x) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Error while resetting wallet: " << x.what();
