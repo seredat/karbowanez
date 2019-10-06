@@ -330,7 +330,7 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
 
     m_account.setAccountKeys(accountKeys);
     uint64_t newTimestamp = scanHeightToTimestamp((uint32_t)scanHeight);
-    m_account.set_createtime(newTimestamp - ACCOUNT_CREATE_TIME_ACCURACY);
+    m_account.set_createtime(newTimestamp);
     m_password = password;
 
     initSync();
