@@ -145,7 +145,12 @@ public:
 
   virtual size_t estimateFusion(const uint64_t& threshold) = 0;
   virtual std::list<TransactionOutputInformation> selectFusionTransfersToSend(uint64_t threshold, size_t minInputCount, size_t maxInputCount) = 0;
-      
+
+  virtual bool getTransactionInformation(const Crypto::Hash& transactionHash, TransactionInformation& info,
+      uint64_t* amountIn = nullptr, uint64_t* amountOut = nullptr) const = 0;
+  virtual std::vector<TransactionOutputInformation> getTransactionOutputs(const Crypto::Hash& transactionHash, uint32_t flags = ITransfersContainer::IncludeDefault) const = 0;
+  virtual std::vector<TransactionOutputInformation> getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const = 0;
+
   virtual std::string sign_message(const std::string &data) = 0;
   virtual bool verify_message(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature) = 0;
 

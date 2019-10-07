@@ -1086,4 +1086,18 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 	return ret;
 }
 
+bool WalletLegacy::getTransactionInformation(const Crypto::Hash& transactionHash, TransactionInformation& info,
+                                             uint64_t* amountIn, uint64_t* amountOut) const {
+    return m_transferDetails->getTransactionInformation(transactionHash, info, amountIn, amountOut);
+};
+
+std::vector<TransactionOutputInformation> WalletLegacy::getTransactionOutputs(const Crypto::Hash& transactionHash,
+                                                                              uint32_t flags) const {
+    return m_transferDetails->getTransactionOutputs(transactionHash, flags);
+};
+
+std::vector<TransactionOutputInformation> WalletLegacy::getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const {
+    return m_transferDetails->getTransactionInputs(transactionHash, flags);
+};
+
 } //namespace CryptoNote
