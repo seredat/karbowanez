@@ -94,14 +94,12 @@ namespace CryptoNote
 
     void handle_command_line(const boost::program_options::variables_map& vm);
 
-    bool run_console_handler();
-
     bool new_wallet(const std::string &wallet_file, const std::string& password);
     bool new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey& secret_key, const Crypto::SecretKey& view_key);
     bool new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey& recovery_key);
     bool new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_key);
     bool new_tracking_wallet(AccountKeys &tracking_key, const std::string &wallet_file, const std::string& password);
-    bool open_wallet(const std::string &wallet_file, const std::string& password);
+    //bool open_wallet(const std::string &wallet_file, const std::string& password);
     bool close_wallet();
 
     bool help(const std::vector<std::string> &args = std::vector<std::string>());
@@ -135,13 +133,10 @@ namespace CryptoNote
     bool verify_message(const std::vector<std::string> &args);
 
 #ifndef __ANDROID__
-	std::string resolveAlias(const std::string& aliasUrl);
+    std::string resolveAlias(const std::string& aliasUrl);
 #endif
-
-    bool ask_wallet_create_if_needed();
-
     void printConnectionError() const;
-	uint64_t getMinimalFee();
+    uint64_t getMinimalFee();
 
     //---------------- IWalletLegacyObserver -------------------------
     virtual void initCompleted(std::error_code result) override;
@@ -213,7 +208,6 @@ namespace CryptoNote
     std::string m_wallet_file;
     uint16_t m_daemon_port;
     uint32_t m_scan_height;
-    bool m_restore_wallet;
     bool m_daemon_ssl;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
