@@ -902,11 +902,13 @@ Maybe<std::string> getDestinationAddress()
             return Nothing<std::string>();
         }
 
+#ifndef __ANDROID__
         std::string aliasAddress;
         if (getOpenAlias(transferAddr, aliasAddress))
         {
            return Just<std::string>(aliasAddress);
         }
+#endif
 
         if (parseAddress(transferAddr))
         {
@@ -1017,6 +1019,7 @@ bool parseAmount(std::string amountString)
     return true;
 }
 
+#ifndef __ANDROID__
 bool getOpenAlias(const std::string& alias, std::string& address)
 {
     // If string doesn't contain a dot, we won't consider it an URL
@@ -1128,3 +1131,4 @@ bool askAliasesTransfersConfirmation(const std::string address)
 
     return answer == "y" || answer == "Y";
 }
+#endif
