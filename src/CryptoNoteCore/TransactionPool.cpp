@@ -401,26 +401,6 @@ namespace CryptoNote {
 
     BlockTemplate blockTemplate;
 
-    for (auto it = m_fee_index.rbegin(); it != m_fee_index.rend() && it->fee == 0; ++it) {
-      const auto& txd = *it;
-
-      if (m_currency.fusionTxMaxSize() < total_size + txd.blobSize) {
-        continue;
-      }
-
-      tx_verification_context tvc;
-      if (m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
-        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
-        continue;
-      }
-
-      TransactionCheckInfo checkInfo(txd);
-      if (is_transaction_ready_to_go(txd.tx, checkInfo) && blockTemplate.addTransaction(txd.id, txd.tx)) {
-        total_size += txd.blobSize;
-        logger(DEBUGGING) << "Fusion transaction " << txd.id << " included to block template";
-      }
-    }
-
     for (auto i = m_fee_index.begin(); i != m_fee_index.end(); ++i) {
       const auto& txd = *i;
 
@@ -429,17 +409,23 @@ namespace CryptoNote {
         continue;
       }
 
+      tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
+      if (!m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
+        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
+        continue;
+      }
+
       TransactionCheckInfo checkInfo(txd);
-	  bool ready = false;
-	  if (m_validated_transactions.find(txd.id) != m_validated_transactions.end()) {
-		  ready = true;
-		  logger(DEBUGGING) << "Fill block template - tx added from cache: " << txd.id;
-	  }
-	  else if (is_transaction_ready_to_go(txd.tx, checkInfo)) {
-		  ready = true;
-		  m_validated_transactions.insert(txd.id);
-		  logger(DEBUGGING) << "Fill block template - tx added to cache: " << txd.id;
-	  }
+      bool ready = false;
+      if (m_validated_transactions.find(txd.id) != m_validated_transactions.end()) {
+        ready = true;
+        logger(DEBUGGING) << "Fill block template - tx added from cache: " << txd.id;
+      }
+      else if (is_transaction_ready_to_go(txd.tx, checkInfo)) {
+        ready = true;
+        m_validated_transactions.insert(txd.id);
+        logger(DEBUGGING) << "Fill block template - tx added to cache: " << txd.id;
+      }
 
       // update item state
       m_fee_index.modify(i, [&checkInfo](TransactionCheckInfo& item) {
