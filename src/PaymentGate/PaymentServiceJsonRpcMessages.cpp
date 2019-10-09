@@ -30,6 +30,7 @@ void Save::Response::serialize(CryptoNote::ISerializer& /*serializer*/) {
 
 void Reset::Request::serialize(CryptoNote::ISerializer& serializer) {
   serializer(viewSecretKey, "viewSecretKey");
+  serializer(scanHeight, "scanHeight");
 }
 
 void Reset::Response::serialize(CryptoNote::ISerializer& serializer) {
@@ -95,10 +96,17 @@ void GetAddresses::Response::serialize(CryptoNote::ISerializer& serializer) {
 void CreateAddress::Request::serialize(CryptoNote::ISerializer& serializer) {
   bool hasSecretKey = serializer(spendSecretKey, "spendSecretKey");
   bool hasPublicKey = serializer(spendPublicKey, "spendPublicKey");
-  if (!serializer(reset, "reset"))
+  bool hasScanHeight = serializer(scanHeight, "scanHeight");
+  bool hasReset = serializer(reset, "reset");
+  if (!hasReset && !hasScanHeight)
      reset = true;
 
   if (hasSecretKey && hasPublicKey) {
+    //TODO: replace it with error codes
+    throw RequestSerializationError();
+  }
+
+  if (hasScanHeight && hasReset) {
     //TODO: replace it with error codes
     throw RequestSerializationError();
   }
@@ -113,8 +121,18 @@ void CreateAddressList::Request::serialize(CryptoNote::ISerializer& serializer) 
     //TODO: replace it with error codes
     throw RequestSerializationError();
   }
-  if (!serializer(reset, "reset"))
+  bool hasReset = serializer(reset, "reset");
+  if (!hasReset)
     reset = true;
+  bool hasScanHeights = serializer(scanHeights, "scanHeights");
+  if (hasScanHeights && hasReset) {
+    //TODO: replace it with error codes
+    throw RequestSerializationError();
+  }
+  if (hasScanHeights && scanHeights.size() != spendSecretKeys.size()) {
+    //TODO: replace it with error codes
+    throw RequestSerializationError();
+  }
 }
 
 void CreateAddressList::Response::serialize(CryptoNote::ISerializer& serializer) {

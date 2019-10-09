@@ -65,12 +65,18 @@ public:
 
   std::error_code saveWalletNoThrow();
   std::error_code resetWallet();
+  std::error_code resetWallet(const uint32_t scanHeight);
   std::error_code exportWallet(const std::string& fileName);
   std::error_code replaceWithNewWallet(const std::string& viewSecretKey);
+  std::error_code replaceWithNewWallet(const std::string& viewSecretKey, const uint32_t scanHeight);
   std::error_code createAddress(const std::string& spendSecretKeyText, bool reset, std::string& address);
+  std::error_code createAddress(const std::string& spendSecretKeyText, const uint32_t scanHeight, std::string& address);
   std::error_code createAddress(std::string& address);
+  std::error_code createAddress(std::string& address, const uint32_t scanHeight);
   std::error_code createAddressList(const std::vector<std::string>& spendSecretKeysText, bool reset, std::vector<std::string>& addresses);
+  std::error_code createAddressList(const std::vector<std::string>& spendSecretKeysText, const std::vector<uint32_t>& scanHeights, std::vector<std::string>& addresses);
   std::error_code createTrackingAddress(const std::string& spendPublicKeyText, std::string& address);
+  std::error_code createTrackingAddress(const std::string& spendPublicKeyText, const uint32_t scanHeight, std::string& address);
   std::error_code deleteAddress(const std::string& address);
   std::error_code getSpendkeys(const std::string& address, std::string& publicSpendKeyText, std::string& secretSpendKeyText);
   std::error_code getBalance(const std::string& address, uint64_t& availableBalance, uint64_t& lockedAmount);
@@ -111,6 +117,7 @@ private:
   void loadTransactionIdIndex();
 
   void replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey);
+  void replaceWithNewWallet(const Crypto::SecretKey& viewSecretKey, const uint32_t scanHeight);
 
   std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(const Crypto::Hash& blockHash, size_t blockCount) const;
   std::vector<CryptoNote::TransactionsInBlockInfo> getTransactions(uint32_t firstBlockIndex, size_t blockCount) const;

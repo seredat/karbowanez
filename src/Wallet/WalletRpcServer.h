@@ -54,7 +54,7 @@ public:
 	void send_stop_signal();
 
 private:
-    virtual void processRequest(const CryptoNote::HttpRequest& request, CryptoNote::HttpResponse& response) override;
+	virtual void processRequest(const CryptoNote::HttpRequest& request, CryptoNote::HttpResponse& response) override;
 
 	//json_rpc
 	bool on_getbalance(const wallet_rpc::COMMAND_RPC_GET_BALANCE::request& req, wallet_rpc::COMMAND_RPC_GET_BALANCE::response& res);
@@ -79,7 +79,7 @@ private:
 	bool on_validate_address(const wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::request& req, wallet_rpc::COMMAND_RPC_VALIDATE_ADDRESS::response& res);
 	bool on_reset(const wallet_rpc::COMMAND_RPC_RESET::request& req, wallet_rpc::COMMAND_RPC_RESET::response& res);
 
-    bool handle_command_line(const boost::program_options::variables_map& vm);
+	bool handle_command_line(const boost::program_options::variables_map& vm);
 
 private:
 	Logging::LoggerRef logger;

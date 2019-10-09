@@ -74,6 +74,7 @@ public:
   virtual void initAndGenerateDeterministic(const std::string& password) override;
   virtual void initAndLoad(std::istream& source, const std::string& password) override;
   virtual void initWithKeys(const AccountKeys& accountKeys, const std::string& password) override;
+  virtual void initWithKeys(const AccountKeys& accountKeys, const std::string& password, const uint32_t scanHeight) override;
   virtual void shutdown() override;
   virtual void reset() override;
 
@@ -142,6 +143,9 @@ private:
   void notifyIfBalanceChanged();
 
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
+
+  uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight);
+  CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight);
 
   enum WalletState
   {
