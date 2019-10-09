@@ -390,7 +390,7 @@ namespace CryptoNote {
   }
   //---------------------------------------------------------------------------------
   bool tx_memory_pool::fill_block_template(Block& bl, size_t median_size, size_t maxCumulativeSize,
-    uint64_t already_generated_coins, size_t& total_size, uint64_t& fee) {
+                                           uint64_t already_generated_coins, size_t& total_size, uint64_t& fee) {
     std::lock_guard<std::recursive_mutex> lock(m_transactions_lock);
 
     total_size = 0;
@@ -409,8 +409,8 @@ namespace CryptoNote {
         continue;
       }
 
-      tx_verification_context tvc;
-      if (m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
+      tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
+      if (!m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
         logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
         continue;
       }
@@ -436,29 +436,8 @@ namespace CryptoNote {
         total_size += txd.blobSize;
         fee += txd.fee;
         logger(DEBUGGING) << "Transaction " << txd.id << " included to block template";
-      }
-      else {
+      } else {
         logger(DEBUGGING) << "Transaction " << txd.id << " is failed to include to block template";
-      }
-    }
-
-    for (auto it = m_fee_index.rbegin(); it != m_fee_index.rend() && it->fee == 0; ++it) {
-      const auto& txd = *it;
-
-      if (m_currency.fusionTxMaxSize() < total_size + txd.blobSize) {
-        continue;
-      }
-
-      tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
-      if (m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
-        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small and it's not a fusion";
-        continue;
-      }
-
-      TransactionCheckInfo checkInfo(txd);
-      if (is_transaction_ready_to_go(txd.tx, checkInfo) && blockTemplate.addTransaction(txd.id, txd.tx)) {
-        total_size += txd.blobSize;
-        logger(DEBUGGING) << "Fusion transaction " << txd.id << " included to block template";
       }
     }
 
