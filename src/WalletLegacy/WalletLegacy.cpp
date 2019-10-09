@@ -1176,4 +1176,59 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 	return ret;
 }
 
+bool WalletLegacy::getTransactionInformation(const Crypto::Hash& transactionHash, TransactionInformation& info,
+                                             uint64_t* amountIn, uint64_t* amountOut) const {
+  return m_transferDetails->getTransactionInformation(transactionHash, info, amountIn, amountOut);
+};
+
+std::vector<TransactionOutputInformation> WalletLegacy::getTransactionOutputs(const Crypto::Hash& transactionHash, uint32_t flags) const {
+  return m_transferDetails->getTransactionOutputs(transactionHash, flags);
+};
+
+std::vector<TransactionOutputInformation> WalletLegacy::getTransactionInputs(const Crypto::Hash& transactionHash, uint32_t flags) const {
+  return m_transferDetails->getTransactionInputs(transactionHash, flags);
+};
+
+bool WalletLegacy::isFusionTransaction(const CryptoNote::WalletLegacyTransaction& walletTx) const {
+  if (walletTx.fee != 0) {
+    return false;
+  }
+
+  uint64_t inputsSum = 0;
+  uint64_t outputsSum = 0;
+  std::vector<uint64_t> outputsAmounts;
+  std::vector<uint64_t> inputsAmounts;
+
+  CryptoNote::TransactionInformation txInfo;
+
+  for (const CryptoNote::TransactionOutputInformation& output :
+       getTransactionOutputs(walletTx.hash, CryptoNote::ITransfersContainer::Flags::IncludeTypeKey
+                                       | CryptoNote::ITransfersContainer::Flags::IncludeStateAll)) {
+    if (outputsAmounts.size() <= output.outputInTransaction) {
+        outputsAmounts.resize(output.outputInTransaction + 1, 0);
+    }
+
+    assert(output.amount != 0);
+    assert(outputsAmounts[output.outputInTransaction] == 0);
+    outputsAmounts[output.outputInTransaction] = output.amount;
+    outputsSum += output.amount;
+  }
+
+  for (const CryptoNote::TransactionOutputInformation& input :
+       getTransactionInputs(walletTx.hash, CryptoNote::ITransfersContainer::Flags::IncludeTypeKey)) {
+    inputsSum += input.amount;
+    inputsAmounts.push_back(input.amount);
+  }
+
+  if (!getTransactionInformation(walletTx.hash, txInfo)) {
+    return false;
+  }
+
+  if (outputsSum != inputsSum || outputsSum != txInfo.totalAmountOut || inputsSum != txInfo.totalAmountIn) {
+    return false;
+  }
+
+  return m_currency.isFusionTransaction(inputsAmounts, outputsAmounts, 0, txInfo.blockHeight); //size = 0 here because can't get real size of tx in wallet.
+}
+
 } //namespace CryptoNote
