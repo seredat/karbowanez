@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, The Monero Project
-// Copyright (c) 2017-2018, Karbo developers
+// Copyright (c) 2017-2019, Karbo developers
 //
 // All rights reserved.
 //
@@ -150,8 +150,8 @@ private:
 
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
 
-  uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight);
-  CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight);
+  uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
+  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
 
   enum WalletState
   {
