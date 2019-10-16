@@ -884,7 +884,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		return false;
 	}
 
-  if (m_wallet_file_arg.empty() && (m_generate_new.empty() || !command_line::has_arg(vm, arg_restore_wallet))) {
+  if (m_wallet_file_arg.empty() && m_generate_new.empty() && !command_line::has_arg(vm, arg_restore_wallet)) {
     std::cout << "Neither 'generate-new-wallet' nor 'wallet-file' argument was specified.\nWhat do you want to do?\n";
     std::cout << "O - open wallet\n";
     std::cout << "G - generate new wallet\n";
