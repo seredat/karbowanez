@@ -54,10 +54,10 @@ struct EllipticCurveScalar {
 
     static void generate_keys(PublicKey &, SecretKey &);
     friend void generate_keys(PublicKey &, SecretKey &);
-	static void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
-	friend void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
-	static SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key = SecretKey(), bool recover = false);
-	friend SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key, bool recover);
+    static void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
+    friend void generate_deterministic_keys(PublicKey &pub, SecretKey &sec, SecretKey& second);
+    static SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key = SecretKey(), bool recover = false);
+    friend SecretKey generate_m_keys(PublicKey &pub, SecretKey &sec, const SecretKey& recovery_key, bool recover);
     static bool check_key(const PublicKey &);
     friend bool check_key(const PublicKey &);
     static bool secret_key_to_public_key(const SecretKey &, PublicKey &);
@@ -86,10 +86,10 @@ struct EllipticCurveScalar {
     friend void generate_signature(const Hash &, const PublicKey &, const SecretKey &, Signature &);
     static bool check_signature(const Hash &, const PublicKey &, const Signature &);
     friend bool check_signature(const Hash &, const PublicKey &, const Signature &);
-	static void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
-	friend void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
-	static bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
-	friend bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
+    static void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
+    friend void generate_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const SecretKey &, Signature &);
+    static bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
+    friend bool check_tx_proof(const Hash &, const PublicKey &, const PublicKey &, const PublicKey &, const Signature &);
     static void generate_key_image(const PublicKey &, const SecretKey &, KeyImage &);
     friend void generate_key_image(const PublicKey &, const SecretKey &, KeyImage &);
     static KeyImage scalarmultKey(const KeyImage & P, const KeyImage & a);
