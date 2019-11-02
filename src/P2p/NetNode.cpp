@@ -46,6 +46,7 @@
 #include "Common/StdOutputStream.h"
 #include "Common/Util.h"
 #include "crypto/crypto.h"
+#include "crypto/random.h"
 
 #include "ConnectionContext.h"
 #include "LevinProtocol.h"
@@ -65,7 +66,7 @@ size_t get_random_index_with_fixed_probability(size_t max_index) {
   //divide by zero workaround
   if (!max_index)
     return 0;
-  size_t x = Crypto::rand<size_t>() % (max_index + 1);
+  size_t x = Random::randomValue<size_t>() % (max_index + 1);
   return (x*x*x) / (max_index*max_index); //parabola \/
 }
 
@@ -355,7 +356,7 @@ namespace CryptoNote
   //-----------------------------------------------------------------------------------
   bool NodeServer::make_default_config()
   {
-    m_config.m_peer_id  = Crypto::rand<uint64_t>();
+    m_config.m_peer_id = Random::randomValue<uint64_t>();
     logger(INFO, BRIGHT_WHITE) << "Generated new peer ID: " << m_config.m_peer_id;
     return true;
   }
@@ -454,7 +455,7 @@ namespace CryptoNote
       for(const std::string& pr_str: perrs)
       {
         PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
-        pe.id = Crypto::rand<uint64_t>();
+        pe.id = Random::randomValue<size_t>();
         bool r = parse_peer_from_string(pe.adr, pr_str);
         if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to parse address from string: " << pr_str; return false; }
         m_command_line_peers.push_back(pe);
@@ -943,7 +944,7 @@ namespace CryptoNote
 
     if(!m_peerlist.get_white_peers_count() && m_seed_nodes.size()) {
       size_t try_count = 0;
-      size_t current_index = Crypto::rand<size_t>() % m_seed_nodes.size();
+      size_t current_index = Random::randomValue<size_t>() % m_seed_nodes.size();
       
       while(true) {
         if(try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], true))
@@ -1155,7 +1156,6 @@ namespace CryptoNote
 #endif
   
   //-----------------------------------------------------------------------------------
-  
   void NodeServer::relay_notify_to_all(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) {
     net_connection_id excludeId = excludeConnection ? *excludeConnection : boost::value_initialized<net_connection_id>();
 
@@ -1167,7 +1167,7 @@ namespace CryptoNote
       }
     });
   }
- 
+
   //-----------------------------------------------------------------------------------
   bool NodeServer::invoke_notify_to_peer(int command, const BinaryArray& buffer, const CryptoNoteConnectionContext& context) {
     auto it = m_connections.find(context.m_connection_id);

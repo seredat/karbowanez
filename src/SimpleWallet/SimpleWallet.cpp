@@ -1,9 +1,8 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbovanets developers
 // Copyright (c) 2014-2016, XDN developers
-// Copyright (c) 2014-2016, The Monero Project
-// Copyright (c) 2014-2017, The Forknote developers
 // Copyright (c) 2014-2017, The Monero Project
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2014-2017, The Forknote developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // All rights reserved.
 // 
@@ -736,7 +735,10 @@ bool simple_wallet::set_log(const std::vector<std::string> &args)
 //----------------------------------------------------------------------------------------------------
 
 bool simple_wallet::payment_id(const std::vector<std::string> &args) {
-  success_msg_writer() << "Payment ID: " << Crypto::rand<Crypto::Hash>();
+  Crypto::Hash result;
+  Random::randomBytes(32, result.data);
+  std::string pid_str = Common::podToHex(result);
+  success_msg_writer() << "Payment ID: " << pid_str;
   return true;
 }
 

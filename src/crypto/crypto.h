@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2017, The Monero Project
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -29,14 +29,9 @@
 
 #include "generic-ops.h"
 #include "hash.h"
+#include "random.h"
 
 namespace Crypto {
-
-  extern "C" {
-#include "random.h"
-  }
-
-  extern std::mutex random_lock;
 
 struct EllipticCurvePoint {
   uint8_t data[32];
@@ -104,45 +99,6 @@ struct EllipticCurveScalar {
       const PublicKey *const *, size_t, const Signature *);
     friend bool check_ring_signature(const Hash &, const KeyImage &,
       const PublicKey *const *, size_t, const Signature *);
-  };
-
-  /* Generate a value filled with random bytes.
-   */
-  template<typename T>
-  typename std::enable_if<std::is_pod<T>::value, T>::type rand() {
-    typename std::remove_cv<T>::type res;
-    std::lock_guard<std::mutex> lock(random_lock);
-    generate_random_bytes(sizeof(T), &res);
-    return res;
-  }
-
-  /* Random number engine based on Crypto::rand()
-   */
-  template <typename T>
-  class random_engine {
-  public:
-    typedef T result_type;
-
-#ifdef __clang__
-    constexpr static T min() {
-      return (std::numeric_limits<T>::min)();
-    }
-
-    constexpr static T max() {
-      return (std::numeric_limits<T>::max)();
-    }
-#else
-    static T(min)() {
-      return (std::numeric_limits<T>::min)();
-    }
-
-    static T(max)() {
-      return (std::numeric_limits<T>::max)();
-    }
-#endif
-    typename std::enable_if<std::is_unsigned<T>::value, T>::type operator()() {
-      return rand<T>();
-    }
   };
 
   /* Generate a new key pair

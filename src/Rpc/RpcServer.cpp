@@ -25,6 +25,7 @@
 #include <unordered_map>
 
 // CryptoNote
+#include <crypto/random.h>
 #include "BlockchainExplorerData.h"
 #include "Common/StringTools.h"
 #include "Common/Base58.h"
@@ -829,7 +830,9 @@ bool RpcServer::on_get_peer_list(const COMMAND_RPC_GET_PEER_LIST::request& req, 
 }
 
 bool RpcServer::on_get_payment_id(const COMMAND_RPC_GEN_PAYMENT_ID::request& req, COMMAND_RPC_GEN_PAYMENT_ID::response& res) {
-  res.payment_id = Common::podToHex(Crypto::rand<Crypto::Hash>());
+  Crypto::Hash result;
+  Random::randomBytes(32, result.data);
+  res.payment_id = Common::podToHex(result);
   return true;
 }
 

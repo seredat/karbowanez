@@ -32,7 +32,7 @@
 
 #include <algorithm>
 #include <numeric>
-#include <random>
+#include <crypto/random.h>
 #include <set>
 #include <tuple>
 #include <utility>
@@ -724,7 +724,7 @@ std::list<TransactionOutputInformation> WalletLegacy::selectFusionTransfersToSen
   //now, pick the bucket
   std::vector<uint8_t> bucketNumbers(bucketSizes.size());
   std::iota(bucketNumbers.begin(), bucketNumbers.end(), 0);
-  std::shuffle(bucketNumbers.begin(), bucketNumbers.end(), std::default_random_engine{ Crypto::rand<std::default_random_engine::result_type>() });
+  std::shuffle(bucketNumbers.begin(), bucketNumbers.end(), Random::generator());
   size_t bucketNumberIndex = 0;
   for (; bucketNumberIndex < bucketNumbers.size(); ++bucketNumberIndex) {
 	  if (bucketSizes[bucketNumbers[bucketNumberIndex]] >= minInputCount) {
@@ -762,7 +762,7 @@ std::list<TransactionOutputInformation> WalletLegacy::selectFusionTransfersToSen
 	  return selectedOutputs;
   }
 
-  ShuffleGenerator<size_t, Crypto::random_engine<size_t>> generator(selectedOuts.size());
+  ShuffleGenerator<size_t> generator(selectedOuts.size());
   std::vector<TransactionOutputInformation> trimmedSelectedOuts;
   trimmedSelectedOuts.reserve(maxInputCount);
   for (size_t i = 0; i < maxInputCount; ++i) {

@@ -513,7 +513,9 @@ bool wallet_rpc_server::on_gen_paymentid(const wallet_rpc::COMMAND_RPC_GEN_PAYME
 	wallet_rpc::COMMAND_RPC_GEN_PAYMENT_ID::response& res) {
 	std::string pid;
 	try {
-		pid = Common::podToHex(Crypto::rand<Crypto::Hash>());
+    Crypto::Hash result;
+    Random::randomBytes(32, result.data);
+    pid = Common::podToHex(result);
 	}
 	catch (const std::exception& e) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_UNKNOWN_ERROR, std::string("Internal error: can't generate Payment ID: ") + e.what());
