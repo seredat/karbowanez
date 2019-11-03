@@ -107,6 +107,7 @@ namespace CryptoNote
     IP2pEndpoint* m_p2p;
     std::atomic<bool> m_synchronized;
     std::atomic<bool> m_stop;
+    std::recursive_mutex m_sync_lock;
 
     mutable std::mutex m_observedHeightMutex;
     uint32_t m_observedHeight;

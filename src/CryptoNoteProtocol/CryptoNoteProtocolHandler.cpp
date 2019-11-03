@@ -321,7 +321,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
 }
 
 int CryptoNoteProtocolHandler::handle_request_get_objects(int command, NOTIFY_REQUEST_GET_OBJECTS::request& arg, CryptoNoteConnectionContext& context) {
-  logger(Logging::TRACE) << context << "NOTIFY_REQUEST_GET_OBJECTS";
+  logger(Logging::TRACE) << context << "Received NOTIFY_REQUEST_GET_OBJECTS";
 
   /* Essentially, one can send such a large amount of IDs that core exhausts
    * all free memory. This issue can theoretically be exploited using very
@@ -368,6 +368,8 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
   context.m_remote_blockchain_height = arg.current_blockchain_height;
 
   size_t count = 0;
+  std::vector<Crypto::Hash> block_hashes;
+  block_hashes.reserve(arg.blocks.size());
   for (const block_complete_entry& block_entry : arg.blocks) {
     ++count;
     Block b;
@@ -379,8 +381,9 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     }
 
     //to avoid concurrency in core between connections, suspend connections which delivered block later then first one
+    auto blockHash = get_block_hash(b);
     if (count == 2) {
-      if (m_core.have_block(get_block_hash(b))) {
+      if (m_core.have_block(blockHash)) {
         context.m_state = CryptoNoteConnectionContext::state_idle;
         context.m_needed_objects.clear();
         context.m_requested_objects.clear();
@@ -389,7 +392,6 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
       }
     }
 
-    auto blockHash = get_block_hash(b);
     auto req_it = context.m_requested_objects.find(blockHash);
     if (req_it == context.m_requested_objects.end()) {
       logger(Logging::ERROR) << context << "sent wrong NOTIFY_RESPONSE_GET_OBJECTS: block with id=" << Common::podToHex(blockHash)
@@ -405,6 +407,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     }
 
     context.m_requested_objects.erase(req_it);
+    block_hashes.push_back(blockHash);
   }
 
   if (context.m_requested_objects.size()) {
@@ -415,8 +418,30 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     return 1;
   }
 
+  uint32_t height;
+  Crypto::Hash top;
   {
     m_core.pause_mining();
+
+    // we lock all the rest to avoid having multiple connections redo a lot
+    // of the same work, and one of them doing it for nothing: subsequent
+    // connections will wait until the current one's added its blocks, then
+    // will add any extra it has, if any
+    std::lock_guard<std::recursive_mutex> lk(m_sync_lock);
+
+    // dismiss what another connection might already have done (likely everything)
+    m_core.get_blockchain_top(height, top);
+    uint64_t dismiss = 1;
+    for (const auto &h : block_hashes) {
+      if (top == h) {
+        logger(Logging::INFO) << "Found current top block in synced blocks, dismissing "
+          << dismiss << "/" << arg.blocks.size() << " blocks";
+        while (dismiss--)
+          arg.blocks.erase(arg.blocks.begin());
+        break;
+      }
+      ++dismiss;
+    }
 
     BOOST_SCOPE_EXIT_ALL(this) { m_core.update_block_template_and_resume_mining(); };
 
@@ -426,8 +451,6 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     }
   }
 
-  uint32_t height;
-  Crypto::Hash top;
   m_core.get_blockchain_top(height, top);
   logger(DEBUGGING, BRIGHT_GREEN) << "Local blockchain updated, new height = " << height;
 
