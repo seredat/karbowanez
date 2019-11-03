@@ -50,6 +50,18 @@ namespace CryptoNote
   {
   public:
 
+
+    struct parsed_block_entry
+    {
+      Block block;
+      std::vector<BinaryArray> txs;
+
+      void serialize(ISerializer& s) {
+        KV_MEMBER(block);
+        KV_MEMBER(txs);
+      }
+    };
+
     CryptoNoteProtocolHandler(const Currency& currency, System::Dispatcher& dispatcher, ICore& rcore, IP2pEndpoint* p_net_layout, Logging::ILogger& log);
 
     virtual bool addObserver(ICryptoNoteProtocolObserver* observer) override;
@@ -94,7 +106,7 @@ namespace CryptoNote
     bool on_connection_synchronized();
     void updateObservedHeight(uint32_t peerHeight, const CryptoNoteConnectionContext& context);
     void recalculateMaxObservedHeight(const CryptoNoteConnectionContext& context);
-    int processObjects(CryptoNoteConnectionContext& context, const std::vector<block_complete_entry>& blocks);
+    int processObjects(CryptoNoteConnectionContext& context, const std::vector<parsed_block_entry>& blocks);
     Logging::LoggerRef logger;
 
   private:

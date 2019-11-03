@@ -370,12 +370,20 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
   size_t count = 0;
   std::vector<Crypto::Hash> block_hashes;
   block_hashes.reserve(arg.blocks.size());
+  std::vector<parsed_block_entry> parsed_blocks;
+  parsed_blocks.reserve(arg.blocks.size());
   for (const block_complete_entry& block_entry : arg.blocks) {
     ++count;
     Block b;
-    if (!fromBinaryArray(b, asBinaryArray(block_entry.block))) {
+    BinaryArray block_blob = asBinaryArray(block_entry.block);
+    if (block_blob.size() > m_currency.maxBlockBlobSize()) {
+      logger(INFO) << "WRONG BLOCK BLOB, too big size " << block_blob.size() << ", dropping connection";
+      context.m_state = CryptoNoteConnectionContext::state_shutdown;
+      return 1;
+    }
+    if (!fromBinaryArray(b, block_blob)) {
       logger(Logging::ERROR) << context << "sent wrong block: failed to parse and validate block: \r\n"
-        << toHex(asBinaryArray(block_entry.block)) << "\r\n dropping connection";
+        << toHex(block_blob) << "\r\n dropping connection";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
@@ -407,7 +415,16 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     }
 
     context.m_requested_objects.erase(req_it);
+
     block_hashes.push_back(blockHash);
+
+    parsed_block_entry parsedBlock;
+    parsedBlock.block = b;
+    for (auto& tx_blob : block_entry.txs) {
+      auto transactionBinary = asBinaryArray(tx_blob);
+      parsedBlock.txs.push_back(transactionBinary);
+    }
+    parsed_blocks.push_back(parsedBlock);
   }
 
   if (context.m_requested_objects.size()) {
@@ -438,6 +455,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
           << dismiss << "/" << arg.blocks.size() << " blocks";
         while (dismiss--)
           arg.blocks.erase(arg.blocks.begin());
+          parsed_blocks.erase(parsed_blocks.begin());
         break;
       }
       ++dismiss;
@@ -445,7 +463,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
 
     BOOST_SCOPE_EXIT_ALL(this) { m_core.update_block_template_and_resume_mining(); };
 
-    int result = processObjects(context, arg.blocks);
+    int result = processObjects(context, parsed_blocks);
     if (result != 0) {
       return result;
     }
@@ -461,16 +479,15 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
   return 1;
 }
 
-int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& context, const std::vector<block_complete_entry>& blocks) {
+int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& context, const std::vector<parsed_block_entry>& blocks) {
 
-  for (const block_complete_entry& block_entry : blocks) {
+  for (const parsed_block_entry& block_entry : blocks) {
     if (m_stop) {
       break;
     }
 
     //process transactions
-    for (auto& tx_blob : block_entry.txs) {
-      auto transactionBinary = asBinaryArray(tx_blob);
+    for (auto& transactionBinary : block_entry.txs) {
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       logger(DEBUGGING) << "transaction " << transactionHash << " came in processObjects";
 
@@ -478,7 +495,7 @@ int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& conte
       m_core.handle_incoming_tx(transactionBinary, tvc, true);
       if (tvc.m_verification_failed) {
         logger(Logging::DEBUGGING) << context << "transaction verification failed on NOTIFY_RESPONSE_GET_OBJECTS, \r\ntx_id = "
-          << Common::podToHex(getBinaryArrayHash(asBinaryArray(tx_blob))) << ", dropping connection";
+          << Common::podToHex(getBinaryArrayHash(transactionBinary)) << ", dropping connection";
         context.m_state = CryptoNoteConnectionContext::state_shutdown;
         return 1;
       }
@@ -486,7 +503,7 @@ int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& conte
 
     // process block
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
-    m_core.handle_incoming_block_blob(asBinaryArray(block_entry.block), bvc, false, false);
+    m_core.handle_incoming_block(block_entry.block, bvc, false, false);
 
     if (bvc.m_verification_failed) {
       logger(Logging::DEBUGGING) << context << "Block verification failed, dropping connection";
