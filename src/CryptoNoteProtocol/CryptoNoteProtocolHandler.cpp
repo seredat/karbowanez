@@ -377,7 +377,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     Block b;
     BinaryArray block_blob = asBinaryArray(block_entry.block);
     if (block_blob.size() > m_currency.maxBlockBlobSize()) {
-      logger(INFO) << "WRONG BLOCK BLOB, too big size " << block_blob.size() << ", dropping connection";
+      logger(Logging::ERROR) << context << "sent wrong block: too big size " << block_blob.size() << ", dropping connection";
       context.m_state = CryptoNoteConnectionContext::state_shutdown;
       return 1;
     }
