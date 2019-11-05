@@ -309,13 +309,6 @@ int main(int argc, char* argv[])
     }
     logger(INFO) << "P2p server initialized OK";
 
-    //logger(INFO) << "Initializing core rpc server...";
-    //if (!rpc_server.init(vm)) {
-    //  logger(ERROR, BRIGHT_RED) << "Failed to initialize core rpc server.";
-    //  return 1;
-    //}
-    // logger(INFO, BRIGHT_GREEN) << "Core rpc server initialized OK on port: " << rpc_server.get_binded_port();
-
     // initialize core here
     logger(INFO) << "Initializing core...";
     if (!ccore.init(coreConfig, minerConfig, true)) {
