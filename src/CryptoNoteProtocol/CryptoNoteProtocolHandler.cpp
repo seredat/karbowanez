@@ -451,7 +451,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     uint64_t dismiss = 1;
     for (const auto &h : block_hashes) {
       if (top == h) {
-        logger(Logging::INFO) << "Found current top block in synced blocks, dismissing "
+        logger(Logging::DEBUGGING) << "Found current top block in synced blocks, dismissing "
           << dismiss << "/" << arg.blocks.size() << " blocks";
         while (dismiss--)
           arg.blocks.erase(arg.blocks.begin());
