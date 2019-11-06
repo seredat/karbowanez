@@ -378,9 +378,9 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Imported wallet successfully.";
   }
   else {
-    if (conf.secretSpendKey.empty() || conf.secretViewKey.empty())
-    {
-  	  log(Logging::ERROR, Logging::BRIGHT_RED) << "Need both secret spend key and secret view key.";
+    if ((!conf.secretViewKey.empty() && conf.secretSpendKey.empty())
+      || (conf.secretViewKey.empty() && !conf.secretSpendKey.empty())) {
+  	  log(Logging::ERROR, Logging::BRIGHT_RED) << "Both the secret spend key and the secret view key are required.";
   	  return;
     } else {
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Importing wallet from keys";
