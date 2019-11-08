@@ -16,14 +16,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo. If not, see <http://www.gnu.org/licenses/>.
 
-
 #pragma once
 
 #include <stdint.h>
 #include <string>
+
 
 namespace Common {
 
 bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, std::string& path, bool& ssl);
 
 }
+

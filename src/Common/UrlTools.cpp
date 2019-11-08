@@ -16,11 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo. If not, see <http://www.gnu.org/licenses/>.
 
-
 #include <stdint.h>
 #include <stdio.h>
 #include <string>
 #include "CryptoNoteConfig.h"
+
 
 namespace Common {
 
@@ -81,7 +81,7 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
     path = RPC_PATH;
   }
 
-  if (host.empty() || port == 0 || path.empty()){
+  if (host.empty() || port == 0 || path.empty()) {
     host.clear();
     port = 0;
     path.clear();
@@ -93,3 +93,4 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
 }
 
 }
+
