@@ -1990,9 +1990,7 @@ bool Blockchain::update_next_cumulative_size_limit() {
   return true;
 }
 
-bool Blockchain::addNewBlock(const Block& bl_, block_verification_context& bvc) {
-  //copy block here to let modify block.target
-  Block bl = bl_;
+bool Blockchain::addNewBlock(const Block& bl, block_verification_context& bvc) {
   Crypto::Hash id;
   if (!get_block_hash(bl, id)) {
     logger(ERROR, BRIGHT_RED) <<
