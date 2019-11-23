@@ -38,12 +38,12 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
   port = 0;
   ssl = false;
 
-  boost::regex uri_exp("^(https://|http://|)([a-z|A-Z|0-9|-|\\.]+)(:[0-9]{1,5}|)(/[\\w|-|/]+/|/|)$");
+  boost::regex uri_exp("^(https://|http://|)(([a-z|A-Z|0-9]|[a-z|A-Z|0-9]-[a-z|A-Z|0-9]|[a-z|A-Z|0-9]\\.)+)(:[0-9]{1,5}|)(/([\\w|-]+/)+|/|)$");
   boost::cmatch reg_res;
   if (boost::regex_match(url.c_str(), reg_res, uri_exp)) {
-    if (reg_res.length(3) > 0) {
+    if (reg_res.length(4) > 0) {
       int port_src = 0;
-      if (sscanf(reg_res.str(3).c_str() + 1, "%d", &port_src) == 1) {
+      if (sscanf(reg_res.str(4).c_str() + 1, "%d", &port_src) == 1) {
         if (port_src > 0 && port_src <= 0xFFFF) port = (uint16_t) port_src;
       }
     } else {
@@ -54,7 +54,7 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
     if (port != 0) {
       if (strcmp(reg_res.str(1).c_str(), "https://") == 0) ssl = true;
       host.assign(reg_res[2].first, reg_res[2].second);
-      path.assign(reg_res[4].first, reg_res[4].second);
+      path.assign(reg_res[5].first, reg_res[5].second);
       if (path.empty()) path = RPC_PATH;
     } else {
       res = false;
