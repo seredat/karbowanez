@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2018, Karbo developers
+// Copyright (c) 2016-2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -40,6 +40,7 @@ public:
 
   void serialize(std::ostream& stream, const std::string& password, bool saveDetailed, const std::string& cache);
   void deserialize(std::istream& stream, const std::string& password, std::string& cache);
+  bool deserialize(std::istream& stream, const std::string& password);
 
 private:
   void saveKeys(CryptoNote::ISerializer& serializer);

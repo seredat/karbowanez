@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2017-2018, Karbo developers
+// Copyright (c) 2016-2019, Karbo developers
 // 
 // All rights reserved.
 // 
@@ -413,6 +413,12 @@ void WalletLegacy::doLoad(std::istream& source) {
   }
 
   m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
+}
+
+bool WalletLegacy::tryLoadWallet(std::istream& source, const std::string& password) {
+  std::unique_lock<std::mutex> lock(m_cacheMutex);
+  WalletLegacySerializer serializer(m_account, m_transactionsCache);
+  return serializer.deserialize(source, password);
 }
 
 void WalletLegacy::shutdown() {

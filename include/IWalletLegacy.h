@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, The Monero Project
-// Copyright (c) 2018, Karbo developers
+// Copyright (c) 2016-2019, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -111,6 +111,7 @@ public:
   virtual void initWithKeys(const AccountKeys& accountKeys, const std::string& password, const uint32_t scanHeight) = 0;
   virtual void shutdown() = 0;
   virtual void reset() = 0;
+  virtual bool tryLoadWallet(std::istream& source, const std::string& password) = 0;
 
   virtual void save(std::ostream& destination, bool saveDetailed = true, bool saveCache = true) = 0;
 
