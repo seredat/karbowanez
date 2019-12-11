@@ -487,15 +487,24 @@ int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& conte
     }
 
     //process transactions
-    for (auto& transactionBinary : block_entry.txs) {
+    for (size_t i = 0; i < block_entry.txs.size(); ++i) {
+      auto transactionBinary = block_entry.txs[i];
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       logger(DEBUGGING) << "transaction " << transactionHash << " came in processObjects";
+
+      // check if tx hashes match
+      if (transactionHash != block_entry.block.transactionHashes[i]) {
+        logger(Logging::DEBUGGING) << context << "transaction mismatch on NOTIFY_RESPONSE_GET_OBJECTS, \r\ntx_id = "
+          << Common::podToHex(transactionHash) << ", dropping connection";
+        context.m_state = CryptoNoteConnectionContext::state_shutdown;
+        return 1;
+      }
 
       tx_verification_context tvc = boost::value_initialized<decltype(tvc)>();
       m_core.handle_incoming_tx(transactionBinary, tvc, true);
       if (tvc.m_verification_failed) {
         logger(Logging::DEBUGGING) << context << "transaction verification failed on NOTIFY_RESPONSE_GET_OBJECTS, \r\ntx_id = "
-          << Common::podToHex(getBinaryArrayHash(transactionBinary)) << ", dropping connection";
+          << Common::podToHex(transactionHash) << ", dropping connection";
         context.m_state = CryptoNoteConnectionContext::state_shutdown;
         return 1;
       }
