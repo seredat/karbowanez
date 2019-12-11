@@ -8,7 +8,7 @@
 ////////////////////////////////////////
 
 #include <GreenWallet/AddressBook.h>
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/CommandImplementations.h>
 #include <GreenWallet/Fusion.h>
 #include <GreenWallet/Open.h>

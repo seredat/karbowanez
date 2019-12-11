@@ -13,7 +13,7 @@
 
 #include <Wallet/WalletGreen.h>
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/Tools.h>
 #include <GreenWallet/WalletConfig.h>
 

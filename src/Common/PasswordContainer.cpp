@@ -39,7 +39,7 @@
 #include <unistd.h>
 #endif
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 
 namespace Tools
 {

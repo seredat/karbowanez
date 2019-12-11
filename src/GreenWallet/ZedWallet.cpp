@@ -20,7 +20,7 @@
 #include <windows.h>
 #endif
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/Menu.h>
 #include <GreenWallet/ParseArguments.h>
 #include <GreenWallet/Tools.h>

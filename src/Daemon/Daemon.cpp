@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2016, The Forknote developers
 // Copyright (c) 2018, The TurtleCoin developers
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -28,6 +28,7 @@
 #include "Common/SignalHandler.h"
 #include "Common/StringTools.h"
 #include "Common/PathTools.h"
+#include <Common/ColouredMsg.h>
 #include "crypto/hash.h"
 #include "CheckpointsData.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
@@ -57,53 +58,71 @@ namespace po = boost::program_options;
 
 namespace
 {
-  const command_line::arg_descriptor<std::string> arg_config_file = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
-  const command_line::arg_descriptor<bool>        arg_os_version  = {"os-version", ""};
-  const command_line::arg_descriptor<std::string> arg_log_file    = {"log-file", "", ""};
-  const command_line::arg_descriptor<int>         arg_log_level   = {"log-level", "", 2}; // info level
-  const command_line::arg_descriptor<bool>        arg_console     = {"no-console", "Disable daemon console commands"};
-  const command_line::arg_descriptor<bool>        arg_restricted_rpc = {"restricted-rpc", "Restrict RPC to view only commands to prevent abuse"};
+  const command_line::arg_descriptor<std::string> arg_config_file               = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
+  const command_line::arg_descriptor<bool>        arg_os_version                = {"os-version", ""};
+  const command_line::arg_descriptor<std::string> arg_log_file                  = {"log-file", "", ""};
+  const command_line::arg_descriptor<int>         arg_log_level                 = {"log-level", "", 2}; // info level
+  const command_line::arg_descriptor<bool>        arg_no_console                = {"no-console", "Disable daemon console commands"};
+  const command_line::arg_descriptor<bool>        arg_restricted_rpc            = {"restricted-rpc", "Restrict RPC to view only commands to prevent abuse"};
   const command_line::arg_descriptor<bool>        arg_enable_blockchain_indexes = { "enable-blockchain-indexes", "Enable blockchain indexes", false };
-  const command_line::arg_descriptor<bool>        arg_print_genesis_tx = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
-  const command_line::arg_descriptor<std::string> arg_enable_cors = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all", "" };
-  const command_line::arg_descriptor<std::string> arg_set_fee_address = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
-  const command_line::arg_descriptor<std::string> arg_set_contact = { "contact", "Sets node admin contact", "" };
-  const command_line::arg_descriptor<std::string> arg_set_view_key = { "view-key", "Sets private view key to check for masternode's fee.", "" };
-  const command_line::arg_descriptor<bool>        arg_testnet_on  = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
+  const command_line::arg_descriptor<bool>        arg_print_genesis_tx          = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
+  const command_line::arg_descriptor<std::string> arg_enable_cors               = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all", "" };
+  const command_line::arg_descriptor<std::string> arg_set_fee_address           = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
+  const command_line::arg_descriptor<std::string> arg_set_contact               = { "contact", "Sets node admin contact", "" };
+  const command_line::arg_descriptor<std::string> arg_set_view_key              = { "view-key", "Sets private view key to check for masternode's fee.", "" };
+  const command_line::arg_descriptor<bool>        arg_testnet_on                = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
     "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
-  const command_line::arg_descriptor<std::string> arg_load_checkpoints = { "load-checkpoints", "<filename> Load checkpoints from csv file.", "" };
-  const command_line::arg_descriptor<bool>        arg_disable_checkpoints = { "without-checkpoints", "Synchronize without checkpoints" };
-  const command_line::arg_descriptor<std::string> arg_rollback = { "rollback", "Rollback blockchain to <height>" };
-}
+  const command_line::arg_descriptor<std::string> arg_load_checkpoints          = { "load-checkpoints", "<filename> Load checkpoints from csv file.", "" };
+  const command_line::arg_descriptor<bool>        arg_disable_checkpoints       = { "without-checkpoints", "Synchronize without checkpoints" };
+  const command_line::arg_descriptor<std::string> arg_rollback                  = { "rollback", "Rollback blockchain to <height>" };
 
-bool command_line_preprocessor(const boost::program_options::variables_map& vm, LoggerRef& logger);
-void print_genesis_tx_hex(const po::variables_map& vm, LoggerManager& logManager) {
-  CryptoNote::Transaction tx = CryptoNote::CurrencyBuilder(logManager).generateGenesisTransaction();
-  std::string tx_hex = Common::toHex(CryptoNote::toBinaryArray(tx));
-  std::cout << "Add this line into your coin configuration file as is: " << std::endl;
-  std::cout << "\"GENESIS_COINBASE_TX_HEX\":\"" << tx_hex << "\"," << std::endl;
-  return;
-}
+  bool command_line_preprocessor(const boost::program_options::variables_map &vm, LoggerRef &logger) {
+    bool exit = false;
 
-JsonValue buildLoggerConfiguration(Level level, const std::string& logfile) {
-  JsonValue loggerConfiguration(JsonValue::OBJECT);
-  loggerConfiguration.insert("globalLevel", static_cast<int64_t>(level));
+    if (command_line::get_arg(vm, command_line::arg_version)) {
+      std::cout << CryptoNote::CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG << ENDL;
+      exit = true;
+    }
+    if (command_line::get_arg(vm, arg_os_version)) {
+      std::cout << "OS: " << Tools::get_os_version_string() << ENDL;
+      exit = true;
+    }
 
-  JsonValue& cfgLoggers = loggerConfiguration.insert("loggers", JsonValue::ARRAY);
+    if (exit) {
+      return true;
+    }
 
-  JsonValue& fileLogger = cfgLoggers.pushBack(JsonValue::OBJECT);
-  fileLogger.insert("type", "file");
-  fileLogger.insert("filename", logfile);
-  fileLogger.insert("level", static_cast<int64_t>(TRACE));
+    return false;
+  }
 
-  JsonValue& consoleLogger = cfgLoggers.pushBack(JsonValue::OBJECT);
-  consoleLogger.insert("type", "console");
-  consoleLogger.insert("level", static_cast<int64_t>(TRACE));
-  consoleLogger.insert("pattern", "%D %T %L ");
+  void print_genesis_tx_hex(const po::variables_map& vm, LoggerManager& logManager) {
+    CryptoNote::Transaction tx = CryptoNote::CurrencyBuilder(logManager).generateGenesisTransaction();
+    std::string tx_hex = Common::toHex(CryptoNote::toBinaryArray(tx));
+    std::cout << "Add this line into your coin configuration file as is: " << std::endl;
+    std::cout << "\"GENESIS_COINBASE_TX_HEX\":\"" << tx_hex << "\"," << std::endl;
+    return;
+  }
 
-  return loggerConfiguration;
-}
+  JsonValue buildLoggerConfiguration(Level level, const std::string& logfile) {
+    JsonValue loggerConfiguration(JsonValue::OBJECT);
+    loggerConfiguration.insert("globalLevel", static_cast<int64_t>(level));
 
+    JsonValue& cfgLoggers = loggerConfiguration.insert("loggers", JsonValue::ARRAY);
+
+    JsonValue& fileLogger = cfgLoggers.pushBack(JsonValue::OBJECT);
+    fileLogger.insert("type", "file");
+    fileLogger.insert("filename", logfile);
+    fileLogger.insert("level", static_cast<int64_t>(TRACE));
+
+    JsonValue& consoleLogger = cfgLoggers.pushBack(JsonValue::OBJECT);
+    consoleLogger.insert("type", "console");
+    consoleLogger.insert("level", static_cast<int64_t>(TRACE));
+    consoleLogger.insert("pattern", "%D %T %L ");
+
+    return loggerConfiguration;
+  }
+
+} // end anonymous namespace
 
 int main(int argc, char* argv[])
 {
@@ -129,7 +148,7 @@ int main(int argc, char* argv[])
 
     command_line::add_arg(desc_cmd_sett, arg_log_file);
     command_line::add_arg(desc_cmd_sett, arg_log_level);
-    command_line::add_arg(desc_cmd_sett, arg_console);
+    command_line::add_arg(desc_cmd_sett, arg_no_console);
     command_line::add_arg(desc_cmd_sett, arg_restricted_rpc);
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
     command_line::add_arg(desc_cmd_sett, arg_enable_cors);
@@ -214,14 +233,14 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-	std::cout <<
-"\n                                                   \n"
+    std::cout << ColouredMsg("\n"
 "  _|    _|    _|_|    _|_|_|    _|_|_|      _|_|    \n"
 "  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
-"  _|_|      _|_|_|_|  _|_|_|    _|_|_|    _|    _|  \n"
+"  _|_|      _|_|_|_|  _|_|_|    _|_|_|    _|    _|  \n",Common::Console::Color::BrightCyan);
+    std::cout << ColouredMsg(
 "  _|  _|    _|    _|  _|    _|  _|    _|  _|    _|  \n"
-"  _|    _|  _|    _|  _|    _|  _|_|_|      _|_|    \n"
-"                                                    \n" << ENDL;
+"  _|    _|  _|    _|  _|    _|  _|    _|  _|    _|  \n"
+"  _|    _|  _|    _|  _|    _|  _|_|_|      _|_|    \n\n", Common::Console::Color::BrightYellow);
 
     logger(INFO) << "Module folder: " << argv[0];
 
@@ -330,7 +349,7 @@ int main(int argc, char* argv[])
     }
 
     // start components
-    if (!command_line::has_arg(vm, arg_console)) {
+    if (!command_line::has_arg(vm, arg_no_console)) {
       dch.start_handling();
     }
 
@@ -395,21 +414,3 @@ int main(int argc, char* argv[])
   return 0;
 }
 
-bool command_line_preprocessor(const boost::program_options::variables_map &vm, LoggerRef &logger) {
-  bool exit = false;
-
-  if (command_line::get_arg(vm, command_line::arg_version)) {
-    std::cout << CryptoNote::CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG << ENDL;
-    exit = true;
-  }
-  if (command_line::get_arg(vm, arg_os_version)) {
-    std::cout << "OS: " << Tools::get_os_version_string() << ENDL;
-    exit = true;
-  }
-
-  if (exit) {
-    return true;
-  }
-
-  return false;
-}

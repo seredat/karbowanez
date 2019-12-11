@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/CommandImplementations.h>
 #include <GreenWallet/GetInput.h>
 #include <GreenWallet/Tools.h>

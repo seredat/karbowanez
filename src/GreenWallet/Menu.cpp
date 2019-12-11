@@ -9,7 +9,7 @@
 
 #include <Common/SignalHandler.h>
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/CommandDispatcher.h>
 #include <GreenWallet/Commands.h>
 #include <GreenWallet/GetInput.h>

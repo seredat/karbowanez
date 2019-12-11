@@ -19,7 +19,7 @@
 
 #include <Wallet/WalletErrors.h>
 
-#include <GreenWallet/ColouredMsg.h>
+#include <Common/ColouredMsg.h>
 #include <GreenWallet/CommandImplementations.h>
 #include <GreenWallet/Tools.h>
 #include <GreenWallet/Transfer.h>
