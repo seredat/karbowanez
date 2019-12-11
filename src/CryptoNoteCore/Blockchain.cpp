@@ -2071,10 +2071,10 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     return false;
   }
 
-  if (!checkParentBlockSize(blockData, blockHash)) {
-    bvc.m_verification_failed = true;
-    return false;
-  }
+  //if (!checkParentBlockSize(blockData, blockHash)) {
+  //  bvc.m_verification_failed = true;
+  //  return false;
+  //}
 
   // Disable merged mining
   TransactionExtraMergeMiningTag mmTag;
