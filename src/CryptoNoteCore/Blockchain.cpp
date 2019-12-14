@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
 // Copyright (c) 2018, Ryo Currency Project
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -1221,10 +1221,10 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     return false;
   }
 
-  if (!checkParentBlockSize(b, id)) {
-    bvc.m_verification_failed = true;
-    return false;
-  }
+  //if (!checkParentBlockSize(b, id)) {
+  //  bvc.m_verification_failed = true;
+  //  return false;
+  //}
 
   size_t cumulativeSize;
   if (!getBlockCumulativeSize(b, cumulativeSize)) {
@@ -1295,10 +1295,12 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     }
 
     // Disable merged mining
-    TransactionExtraMergeMiningTag mmTag;
-    if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag) && bei.bl.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
-      return false;
+    if (bei.bl.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      TransactionExtraMergeMiningTag mmTag;
+      if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag)) {
+        logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
+        return false;
+      }
     }
 
     // Always check PoW for alternative blocks
@@ -1920,12 +1922,6 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
     return false;
   }
 
-  if (b.majorVersion == BLOCK_MAJOR_VERSION_2 && b.parentBlock.majorVersion > BLOCK_MAJOR_VERSION_1) {
-    logger(ERROR, BRIGHT_RED) << "Parent block of block " << blockHash << " has wrong major version: " << static_cast<int>(b.parentBlock.majorVersion) <<
-      ", at height " << height << " expected version is " << static_cast<int>(BLOCK_MAJOR_VERSION_1);
-    return false;
-  }
-
   return true;
 }
 
@@ -2080,12 +2076,14 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
   //}
 
   // Disable merged mining
-  TransactionExtraMergeMiningTag mmTag;
-  if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag) && blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
-    return false;
+  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    TransactionExtraMergeMiningTag mmTag;
+    if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag)) {
+      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
+      return false;
+    }
   }
-  
+
   if (blockData.previousBlockHash != getTailId()) {
     logger(INFO, BRIGHT_WHITE) <<
       "Block " << blockHash << " has wrong previousBlockHash: " << blockData.previousBlockHash << ", expected: " << getTailId();
