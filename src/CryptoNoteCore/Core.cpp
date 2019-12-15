@@ -1293,4 +1293,8 @@ void Core::rollbackBlockchain(const uint32_t height) {
   m_blockchain.rollbackBlockchainTo(height);
 }
 
+bool Core::saveBlockchain() {
+  return m_blockchain.storeCache();
+}
+
 }
