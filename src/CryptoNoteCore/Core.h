@@ -163,6 +163,8 @@ namespace CryptoNote {
 
      virtual void rollbackBlockchain(const uint32_t height) override;
 
+     virtual bool saveBlockchain() override;
+
      uint64_t getNextBlockDifficulty();
      uint64_t getTotalGeneratedAmount();
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
