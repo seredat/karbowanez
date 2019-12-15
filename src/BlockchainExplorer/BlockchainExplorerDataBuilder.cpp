@@ -29,7 +29,7 @@
 namespace CryptoNote {
 
 BlockchainExplorerDataBuilder::BlockchainExplorerDataBuilder(CryptoNote::ICore& core, CryptoNote::ICryptoNoteProtocolQuery& protocol) :
-core(core),
+m_core(core),
 protocol(protocol) {
 }
 
@@ -108,9 +108,9 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   if (block.baseTransaction.inputs.front().type() != typeid(BaseInput))
     return false;
   blockDetails.height = boost::get<BaseInput>(block.baseTransaction.inputs.front()).blockIndex;
-  blockDetails.depth = core.get_current_blockchain_height() - blockDetails.height - 1;
+  blockDetails.depth = m_core.get_current_blockchain_height() - blockDetails.height - 1;
 
-  Crypto::Hash tmpHash = core.getBlockIdByHeight(blockDetails.height);
+  Crypto::Hash tmpHash = m_core.getBlockIdByHeight(blockDetails.height);
   blockDetails.isOrphaned = hash != tmpHash;
 
   Crypto::cn_context context;
@@ -118,16 +118,16 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
     return false;
   }
 
-  if (!core.getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {
+  if (!m_core.getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {
     return false;
   }
 
-  if (!core.getBlockCumulativeDifficulty(blockDetails.height, blockDetails.cumulativeDifficulty)) {
+  if (!m_core.getBlockCumulativeDifficulty(blockDetails.height, blockDetails.cumulativeDifficulty)) {
     return false;
   }
 
   std::vector<size_t> blocksSizes;
-  if (!core.getBackwardBlocksSizes(blockDetails.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+  if (!m_core.getBackwardBlocksSizes(blockDetails.height, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
     return false;
   }
   blockDetails.sizeMedian = median(blocksSizes);
@@ -136,7 +136,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   blockDetails.effectiveSizeMedian = std::max(blockDetails.sizeMedian, (uint64_t) blockGrantedFullRewardZone);
 
   size_t blockSize = 0;
-  if (!core.getBlockSize(hash, blockSize)) {
+  if (!m_core.getBlockSize(hash, blockSize)) {
     return false;
   }
   blockDetails.transactionsCumulativeSize = blockSize;
@@ -145,17 +145,17 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   size_t minerTxBlobSize = getObjectBinarySize(block.baseTransaction);
   blockDetails.blockSize = blokBlobSize + blockDetails.transactionsCumulativeSize - minerTxBlobSize;
 
-  if (!core.getAlreadyGeneratedCoins(hash, blockDetails.alreadyGeneratedCoins)) {
+  if (!m_core.getAlreadyGeneratedCoins(hash, blockDetails.alreadyGeneratedCoins)) {
     return false;
   }
 
-  if (!core.getGeneratedTransactionsNumber(blockDetails.height, blockDetails.alreadyGeneratedTransactions)) {
+  if (!m_core.getGeneratedTransactionsNumber(blockDetails.height, blockDetails.alreadyGeneratedTransactions)) {
     return false;
   }
 
   uint64_t prevBlockGeneratedCoins = 0;
   if (blockDetails.height > 0) {
-    if (!core.getAlreadyGeneratedCoins(block.previousBlockHash, prevBlockGeneratedCoins)) {
+    if (!m_core.getAlreadyGeneratedCoins(block.previousBlockHash, prevBlockGeneratedCoins)) {
       return false;
     }
   }
@@ -163,11 +163,11 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   uint64_t maxReward = 0;
   uint64_t currentReward = 0;
   int64_t emissionChange = 0;
-  if (!core.getBlockReward(block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
+  if (!m_core.getBlockReward(block.majorVersion, blockDetails.sizeMedian, 0, prevBlockGeneratedCoins, 0, maxReward, emissionChange)) {
     return false;
   }
 
-  if (!core.getBlockReward(block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
+  if (!m_core.getBlockReward(block.majorVersion, blockDetails.sizeMedian, blockDetails.transactionsCumulativeSize, prevBlockGeneratedCoins, 0, currentReward, emissionChange)) {
     return false;
   }
 
@@ -191,7 +191,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
 
   std::list<Transaction> found;
   std::list<Crypto::Hash> missed;
-  core.getTransactions(block.transactionHashes, found, missed, blockDetails.isOrphaned);
+  m_core.getTransactions(block.transactionHashes, found, missed, blockDetails.isOrphaned);
   if (found.size() != block.transactionHashes.size()) {
     return false;
   }
@@ -217,7 +217,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
 
   Crypto::Hash blockHash;
   uint32_t blockHeight;
-  if (!core.getBlockContainingTx(hash, blockHash, blockHeight)) {
+  if (!m_core.getBlockContainingTx(hash, blockHash, blockHeight)) {
     transactionDetails.inBlockchain = false;
     transactionDetails.blockHeight = boost::value_initialized<uint32_t>();
     transactionDetails.blockHash = boost::value_initialized<Crypto::Hash>();
@@ -227,7 +227,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
     transactionDetails.blockHash = blockHash;
     if (timestamp == 0) {
       Block block;
-      if (!core.getBlockByHash(blockHash, block)) {
+      if (!m_core.getBlockByHash(blockHash, block)) {
         return false;
       }
       transactionDetails.timestamp = block.timestamp;
@@ -254,7 +254,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
     }
     transactionDetails.fee = fee;
     uint64_t mixin;
-    if (!core.getMixin(transaction, mixin)) {
+    if (!m_core.getMixin(transaction, mixin)) {
       return false;
     }
     transactionDetails.mixin = mixin;
@@ -292,7 +292,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
       const KeyInput& txInToKey = boost::get<KeyInput>(txIn);
       txInToKeyDetails.input = txInToKey; 
       std::list<std::pair<Crypto::Hash, size_t>> outputReferences;
-      if (!core.scanOutputkeysForIndices(txInToKey, outputReferences)) {
+      if (!m_core.scanOutputkeysForIndices(txInToKey, outputReferences)) {
         return false;
       }
       txInToKeyDetails.mixin = txInToKey.outputIndexes.size();
@@ -308,7 +308,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
       const MultisignatureInput& txInMultisig = boost::get<MultisignatureInput>(txIn);
       txInMultisigDetails.input = txInMultisig;
       std::pair<Crypto::Hash, size_t> outputReference;
-      if (!core.getMultisigOutputReference(txInMultisig, outputReference)) {
+      if (!m_core.getMultisigOutputReference(txInMultisig, outputReference)) {
         return false;
       }
       txInMultisigDetails.output.number = outputReference.second;
@@ -323,7 +323,7 @@ bool BlockchainExplorerDataBuilder::fillTransactionDetails(const Transaction& tr
   transactionDetails.outputs.reserve(transaction.outputs.size());
   std::vector<uint32_t> globalIndices;
   globalIndices.reserve(transaction.outputs.size());
-  if (!transactionDetails.inBlockchain || !core.get_tx_outputs_gindexs(hash, globalIndices)) {
+  if (!transactionDetails.inBlockchain || !m_core.get_tx_outputs_gindexs(hash, globalIndices)) {
     for (size_t i = 0; i < transaction.outputs.size(); ++i) {
       globalIndices.push_back(0);
     }

@@ -31,7 +31,7 @@
 
 namespace CryptoNote {
 
-class core;
+class Core;
 
 class InProcessNode : public INode, public CryptoNote::ICryptoNoteProtocolObserver, public CryptoNote::ICoreObserver {
 public:

@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
       return 1;
     }
     CryptoNote::Currency currency = currencyBuilder.currency();
-    CryptoNote::core ccore(currency, nullptr, logManager, command_line::get_arg(vm, arg_enable_blockchain_indexes));
+    CryptoNote::Core m_core(currency, nullptr, logManager, command_line::get_arg(vm, arg_enable_blockchain_indexes));
 
 	bool disable_checkpoints = command_line::get_arg(vm, arg_disable_checkpoints);
 	if (!disable_checkpoints) {
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 		}
 
 		if (!testnet_mode) {
-			ccore.set_checkpoints(std::move(checkpoints));
+			m_core.set_checkpoints(std::move(checkpoints));
 		}
 
 	}
@@ -312,13 +312,13 @@ int main(int argc, char* argv[])
 
     System::Dispatcher dispatcher;
 
-    CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, ccore, nullptr, logManager);
+    CryptoNote::CryptoNoteProtocolHandler cprotocol(currency, dispatcher, m_core, nullptr, logManager);
     CryptoNote::NodeServer p2psrv(dispatcher, cprotocol, logManager);
-    CryptoNote::RpcServer rpcServer(dispatcher, logManager, ccore, p2psrv, cprotocol);
+    CryptoNote::RpcServer rpcServer(dispatcher, logManager, m_core, p2psrv, cprotocol);
 	
     cprotocol.set_p2p_endpoint(&p2psrv);
-    ccore.set_cryptonote_protocol(&cprotocol);
-    DaemonCommandsHandler dch(ccore, p2psrv, logManager, cprotocol, &rpcServer);
+    m_core.set_cryptonote_protocol(&cprotocol);
+    DaemonCommandsHandler dch(m_core, p2psrv, logManager, cprotocol, &rpcServer);
 
     // initialize objects
     logger(INFO) << "Initializing p2p server...";
@@ -328,9 +328,9 @@ int main(int argc, char* argv[])
     }
     logger(INFO) << "P2p server initialized OK";
 
-    // initialize core here
+    // initialize Core here
     logger(INFO) << "Initializing core...";
-    if (!ccore.init(coreConfig, minerConfig, true)) {
+    if (!m_core.init(coreConfig, minerConfig, true)) {
       logger(ERROR, BRIGHT_RED) << "Failed to initialize core";
       return 1;
     }
@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
           std::cout << "wrong block index parameter" << ENDL;
           return false;
         }
-        ccore.rollbackBlockchain(_index);
+        m_core.rollbackBlockchain(_index);
       }
     }
 
@@ -398,11 +398,11 @@ int main(int argc, char* argv[])
 
     //deinitialize components
     logger(INFO) << "Deinitializing core...";
-    ccore.deinit();
+    m_core.deinit();
     logger(INFO) << "Deinitializing p2p...";
     p2psrv.deinit();
 
-    ccore.set_cryptonote_protocol(NULL);
+    m_core.set_cryptonote_protocol(NULL);
     cprotocol.set_p2p_endpoint(NULL);
 
   } catch (const std::exception& e) {
