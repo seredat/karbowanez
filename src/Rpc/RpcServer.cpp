@@ -372,21 +372,21 @@ bool RpcServer::on_query_blocks_lite(const COMMAND_RPC_QUERY_BLOCKS_LITE::reques
   uint32_t startHeight;
   uint32_t currentHeight;
   uint32_t fullOffset;
-  if (!m_core.queryBlocksLite(req.block_ids, req.timestamp, startHeight, currentHeight, fullOffset, res.items)) {
+  if (!m_core.queryBlocksLite(req.blockIds, req.timestamp, startHeight, currentHeight, fullOffset, res.items)) {
     res.status = "Failed to perform query";
     return false;
   }
 
-  res.start_height = startHeight;
-  res.current_height = currentHeight;
-  res.full_offset = fullOffset;
+  res.startHeight = startHeight;
+  res.currentHeight = currentHeight;
+  res.fullOffset = fullOffset;
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_indexes(const COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::request& req, COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::response& res) {
   std::vector<uint32_t> outputIndexes;
-  if (!m_core.get_tx_outputs_gindexs(req.transaction_id, outputIndexes)) {
+  if (!m_core.get_tx_outputs_gindexs(req.txid, outputIndexes)) {
     res.status = "Failed";
     return true;
   }
@@ -429,7 +429,7 @@ bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOU
 bool RpcServer::on_get_pool_changes(const COMMAND_RPC_GET_POOL_CHANGES::request& req, COMMAND_RPC_GET_POOL_CHANGES::response& rsp) {
   rsp.status = CORE_RPC_STATUS_OK;
   std::vector<CryptoNote::Transaction> addedTransactions;
-  rsp.is_tail_block_actual = m_core.getPoolChanges(req.tail_block_id, req.known_transactions_ids, addedTransactions, rsp.deleted_transactions_ids);
+  rsp.isTailBlockActual = m_core.getPoolChanges(req.tailBlockId, req.knownTxsIds, addedTransactions, rsp.deletedTxsIds);
   for (auto& tx : addedTransactions) {
     BinaryArray txBlob;
     if (!toBinaryArray(tx, txBlob)) {
@@ -437,7 +437,7 @@ bool RpcServer::on_get_pool_changes(const COMMAND_RPC_GET_POOL_CHANGES::request&
       break;;
     }
 
-    rsp.added_transactions.emplace_back(std::move(txBlob));
+    rsp.addedTxs.emplace_back(std::move(txBlob));
   }
   return true;
 }
@@ -445,14 +445,14 @@ bool RpcServer::on_get_pool_changes(const COMMAND_RPC_GET_POOL_CHANGES::request&
 
 bool RpcServer::on_get_pool_changes_lite(const COMMAND_RPC_GET_POOL_CHANGES_LITE::request& req, COMMAND_RPC_GET_POOL_CHANGES_LITE::response& rsp) {
   rsp.status = CORE_RPC_STATUS_OK;
-  rsp.is_tail_block_actual = m_core.getPoolChangesLite(req.tail_block_id, req.known_transactions_ids, rsp.added_transactions, rsp.deleted_transactions_ids);
+  rsp.isTailBlockActual = m_core.getPoolChangesLite(req.tailBlockId, req.knownTxsIds, rsp.addedTxs, rsp.deletedTxsIds);
 
   return true;
 }
 
 bool RpcServer::on_get_blocks_details_by_heights(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS::response& rsp) {
   std::vector<BlockDetails> blockDetails;
-  for (const uint32_t& height : req.block_heights) {
+  for (const uint32_t& height : req.blockHeights) {
     if (m_core.get_current_blockchain_height() <= height) {
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
         std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height() - 1) };
@@ -476,7 +476,7 @@ bool RpcServer::on_get_blocks_details_by_heights(const COMMAND_RPC_GET_BLOCKS_DE
 
 bool RpcServer::on_get_blocks_details_by_hashes(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
   std::vector<BlockDetails> blockDetails;
-  for (const Crypto::Hash& hash : req.block_hashes) {
+  for (const Crypto::Hash& hash : req.blockHashes) {
     Block blk;
     if (!m_core.getBlockByHash(hash, blk)) {
       //throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by hash " + Common::PodToHex(hash) + '.' };
@@ -495,15 +495,15 @@ bool RpcServer::on_get_blocks_details_by_hashes(const COMMAND_RPC_GET_BLOCKS_DET
 
 bool RpcServer::on_get_block_details_by_height(const COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::request& req, COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::response& rsp) {
   BlockDetails blockDetails;
-  if (m_core.get_current_blockchain_height() <= req.block_height) {
+  if (m_core.get_current_blockchain_height() <= req.blockHeight) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
-      std::string("To big height: ") + std::to_string(req.block_height) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height() - 1) };
+      std::string("To big height: ") + std::to_string(req.blockHeight) + ", current blockchain height = " + std::to_string(m_core.get_current_blockchain_height() - 1) };
   }
-  Crypto::Hash block_hash = m_core.getBlockIdByHeight(req.block_height);
+  Crypto::Hash block_hash = m_core.getBlockIdByHeight(req.blockHeight);
   Block blk;
   if (!m_core.getBlockByHash(block_hash, blk)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't get block by height " + std::to_string(req.block_height) + '.' };
+      "Internal error: can't get block by height " + std::to_string(req.blockHeight) + '.' };
 }
   if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
@@ -540,11 +540,11 @@ bool RpcServer::on_get_block_details_by_hash(const COMMAND_RPC_GET_BLOCK_DETAILS
 bool RpcServer::on_get_blocks_hashes_by_timestamps(const COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS::request& req, COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS::response& rsp) {
   uint32_t count;
   std::vector<Crypto::Hash> blockHashes;
-  if (!m_core.get_blockchain_storage().getBlockIdsByTimestamp(req.timestamp_begin, req.timestamp_end, req.limit, blockHashes, count)) {
+  if (!m_core.get_blockchain_storage().getBlockIdsByTimestamp(req.timestampBegin, req.timestampEnd, req.limit, blockHashes, count)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't get blocks within timestamps " + std::to_string(req.timestamp_begin) + " - " + std::to_string(req.timestamp_end) + "." };
+      "Internal error: can't get blocks within timestamps " + std::to_string(req.timestampBegin) + " - " + std::to_string(req.timestampEnd) + "." };
   }
-  rsp.block_hashes = std::move(blockHashes);
+  rsp.blockHashes = std::move(blockHashes);
   rsp.count = count;
   
   rsp.status = CORE_RPC_STATUS_OK;
@@ -553,11 +553,11 @@ bool RpcServer::on_get_blocks_hashes_by_timestamps(const COMMAND_RPC_GET_BLOCKS_
 
 bool RpcServer::on_get_transactions_details_by_hashes(const COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::response& rsp) {
   std::vector<TransactionDetails> transactionsDetails;
-  transactionsDetails.reserve(req.transaction_hashes.size());
+  transactionsDetails.reserve(req.transactionHashes.size());
 
   std::list<Crypto::Hash> missed_txs;
   std::list<Transaction> txs;
-  m_core.getTransactions(req.transaction_hashes, txs, missed_txs, true);
+  m_core.getTransactions(req.transactionHashes, txs, missed_txs, true);
 
   if (!txs.empty()) {
     for (const Transaction& tx : txs) {
@@ -611,7 +611,7 @@ bool RpcServer::on_get_transaction_details_by_hash(const COMMAND_RPC_GET_TRANSAC
 }
 
 bool RpcServer::on_get_transaction_hashes_by_paymentid(const COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request& req, COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response& rsp) {
-  rsp.transaction_hashes = m_core.getTransactionHashesByPaymentId(req.payment_id);
+  rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(req.paymentId);
 
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
@@ -676,7 +676,7 @@ bool RpcServer::on_get_height(const COMMAND_RPC_GET_HEIGHT::request& req, COMMAN
 
 bool RpcServer::on_get_transactions(const COMMAND_RPC_GET_TRANSACTIONS::request& req, COMMAND_RPC_GET_TRANSACTIONS::response& res) {
   std::vector<Crypto::Hash> vh;
-  for (const auto& tx_hex_str : req.transactions_hashes) {
+  for (const auto& tx_hex_str : req.txs_hashes) {
     BinaryArray b;
     if (!Common::fromHex(tx_hex_str, b))
     {
@@ -694,11 +694,11 @@ bool RpcServer::on_get_transactions(const COMMAND_RPC_GET_TRANSACTIONS::request&
   m_core.getTransactions(vh, txs, missed_txs);
 
   for (auto& tx : txs) {
-    res.transactions_as_hex.push_back(Common::toHex(toBinaryArray(tx)));
+    res.txs_as_hex.push_back(Common::toHex(toBinaryArray(tx)));
   }
 
   for (const auto& miss_tx : missed_txs) {
-    res.missed_transactions.push_back(Common::podToHex(miss_tx));
+    res.missed_txs.push_back(Common::podToHex(miss_tx));
   }
 
   res.status = CORE_RPC_STATUS_OK;
@@ -707,34 +707,34 @@ bool RpcServer::on_get_transactions(const COMMAND_RPC_GET_TRANSACTIONS::request&
 
 bool RpcServer::on_send_raw_transaction(const COMMAND_RPC_SEND_RAW_TRANSACTION::request& req, COMMAND_RPC_SEND_RAW_TRANSACTION::response& res) {
   BinaryArray tx_blob;
-  if (!Common::fromHex(req.transaction_as_hex, tx_blob))
+  if (!Common::fromHex(req.tx_as_hex, tx_blob))
   {
-    logger(Logging::INFO) << "[on_send_raw_transaction]: Failed to parse transaction from hexbuff: " << req.transaction_as_hex;
+    logger(Logging::INFO) << "[on_send_raw_tx]: Failed to parse transaction from hexbuff: " << req.tx_as_hex;
     res.status = "Failed";
     return true;
   }
 
   Crypto::Hash transactionHash = Crypto::cn_fast_hash(tx_blob.data(), tx_blob.size());
-  logger(Logging::DEBUGGING) << "transaction " << transactionHash << " came in on_send_raw_transaction";
+  logger(Logging::DEBUGGING) << "transaction " << transactionHash << " came in on_send_raw_tx";
 
   tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
   if (!m_core.handle_incoming_tx(tx_blob, tvc, false))
   {
-    logger(Logging::INFO) << "[on_send_raw_transaction]: Failed to process tx";
+    logger(Logging::INFO) << "[on_send_raw_tx]: Failed to process tx";
     res.status = "Failed";
     return true;
   }
 
   if (tvc.m_verification_failed)
   {
-    logger(Logging::INFO) << "[on_send_raw_transaction]: transaction verification failed";
+    logger(Logging::INFO) << "[on_send_raw_tx]: transaction verification failed";
     res.status = "Failed";
     return true;
   }
 
   if (!tvc.m_should_be_relayed)
   {
-    logger(Logging::INFO) << "[on_send_raw_transaction]: transaction accepted, but not relayed";
+    logger(Logging::INFO) << "[on_send_raw_tx]: transaction accepted, but not relayed";
     res.status = "Not relayed";
     return true;
   }
