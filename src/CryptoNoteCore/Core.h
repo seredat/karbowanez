@@ -188,10 +188,8 @@ namespace CryptoNote {
      //check if tx is not sending unmixable outputs
      bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 
-     bool check_tx_ring_signature(const KeyInput& tx, const Crypto::Hash& tx_prefix_hash, const std::vector<Crypto::Signature>& sig);
      bool update_miner_block_template();
      bool handle_command_line(const boost::program_options::variables_map& vm);
-     bool on_update_blocktemplate_interval();
      bool check_tx_inputs_keyimages_diff(const Transaction& tx);
      virtual void blockchainUpdated() override;
      virtual void txDeletedFromPool() override;
