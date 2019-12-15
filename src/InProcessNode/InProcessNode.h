@@ -31,7 +31,7 @@
 
 namespace CryptoNote {
 
-class core;
+class Core;
 
 class InProcessNode : public INode, public CryptoNote::ICryptoNoteProtocolObserver, public CryptoNote::ICoreObserver {
 public:
@@ -135,7 +135,6 @@ private:
   std::error_code doGetTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions);
 
   void isSynchronizedAsync(bool& syncStatus, const Callback& callback);
-  std::error_code doIsSynchronized(bool& syncStatus);
 
   void workerFunc();
   bool doShutdown();

@@ -272,7 +272,7 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
 
-	m_minimalFee.store(getInfoResp.min_tx_fee, std::memory_order_relaxed);
+	m_minimalFee.store(getInfoResp.min_fee, std::memory_order_relaxed);
 	m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
   }
 
@@ -547,8 +547,8 @@ void NodeRpcProxy::isSynchronized(bool& syncStatus, const Callback& callback) {
 }
 
 std::error_code NodeRpcProxy::doRelayTransaction(const CryptoNote::Transaction& transaction) {
-  COMMAND_RPC_SEND_RAW_TX::request req;
-  COMMAND_RPC_SEND_RAW_TX::response rsp;
+  COMMAND_RPC_SEND_RAW_TRANSACTION::request req;
+  COMMAND_RPC_SEND_RAW_TRANSACTION::response rsp;
   req.tx_as_hex = toHex(toBinaryArray(transaction));
   return jsonCommand("/sendrawtransaction", req, rsp);
 }
