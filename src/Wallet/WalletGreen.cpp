@@ -2857,8 +2857,8 @@ std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::str
     const TransactionOutputInformation &td = selectedTransfers[i];
     reserve_proof_entry& proof = proofs[i];
     proof.key_image = kimages[i];
-    proof.txid = td.transactionHash;
-    proof.index_in_tx = td.outputInTransaction;
+    proof.transaction_id = td.transactionHash;
+    proof.index_in_transaction = td.outputInTransaction;
 
     auto txPubKey = td.transactionPublicKey;
 
