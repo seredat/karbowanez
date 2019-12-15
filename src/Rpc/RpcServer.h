@@ -28,7 +28,7 @@
 #include "ITransaction.h"
 #include "CoreRpcServerCommandsDefinitions.h"
 #include "BlockchainExplorer/BlockchainExplorerDataBuilder.h"
-
+#include "CryptoNoteCore/Core.h"
 #include "Common/Math.h"
 
 namespace CryptoNote {
@@ -40,7 +40,7 @@ class ICryptoNoteProtocolQuery;
 
 class RpcServer : public HttpServer {
 public:
-  RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& c, NodeServer& p2p, ICryptoNoteProtocolQuery& protocolQuery);
+  RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, core& core, NodeServer& p2p, ICryptoNoteProtocolQuery& protocolQuery);
 
   typedef std::function<bool(RpcServer*, const HttpRequest& request, HttpResponse& response)> HandlerFunction;
   bool restrictRpc(const bool is_resctricted);
@@ -119,9 +119,9 @@ private:
   void fill_block_header_response(const Block& blk, bool orphan_status, uint32_t height, const Crypto::Hash& hash, block_header_response& responce);
 
   Logging::LoggerRef logger;
-  core& m_core;
-  NodeServer& m_p2p;
-  BlockchainExplorerDataBuilder blockchainExplorerDataBuilder;
+  CryptoNote::core& m_core;
+  CryptoNote::NodeServer& m_p2p;
+  CryptoNote::BlockchainExplorerDataBuilder blockchainExplorerDataBuilder;
   const ICryptoNoteProtocolQuery& m_protocolQuery;
   bool m_restricted_rpc;
   std::string m_cors_domain;
