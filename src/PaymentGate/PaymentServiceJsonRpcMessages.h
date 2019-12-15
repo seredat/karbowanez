@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Cash2 developers
 // Copyright (c) 2018-2019 The Karbo developers
 //
 // This file is part of Karbo.
@@ -137,6 +138,18 @@ struct GetAddresses {
 
   struct Response {
     std::vector<std::string> addresses;
+
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+};
+
+struct GetAddressesCount {
+  struct Request {
+    void serialize(CryptoNote::ISerializer& serializer);
+  };
+
+  struct Response {
+    size_t addresses_count;
 
     void serialize(CryptoNote::ISerializer& serializer);
   };

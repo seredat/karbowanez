@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Monero developers
 // Copyright (c) 2018, Ryo Currency Project
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -333,7 +333,6 @@ logger(logger, "Blockchain"),
 m_currency(currency),
 m_tx_pool(tx_pool),
 m_current_block_cumul_sz_limit(0),
-m_is_in_checkpoint_zone(false),
 m_upgradeDetectorV2(currency, m_blocks, BLOCK_MAJOR_VERSION_2, logger),
 m_upgradeDetectorV3(currency, m_blocks, BLOCK_MAJOR_VERSION_3, logger),
 m_upgradeDetectorV4(currency, m_blocks, BLOCK_MAJOR_VERSION_4, logger),
@@ -482,7 +481,7 @@ bool Blockchain::init(const std::string& config_folder, bool load_existing) {
     logger(INFO, BRIGHT_WHITE)
       << "Blockchain not loaded, generating genesis block.";
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
-    pushBlock(m_currency.genesisBlock(), bvc);
+    pushBlock(m_currency.genesisBlock(), get_block_hash(m_currency.genesisBlock()), bvc);
     if (bvc.m_verification_failed) {
       logger(ERROR, BRIGHT_RED) << "Failed to add genesis block to blockchain";
       return false;
@@ -840,7 +839,7 @@ bool Blockchain::rollback_blockchain_switching(std::list<Block> &original_chain,
   for (auto &bl : original_chain) {
     block_verification_context bvc =
       boost::value_initialized<block_verification_context>();
-    bool r = pushBlock(bl, bvc);
+    bool r = pushBlock(bl, get_block_hash(bl), bvc);
     if (!(r && bvc.m_added_to_main_chain)) {
       logger(ERROR, BRIGHT_RED) << "PANIC!!! failed to add (again) block while "
         "chain switching during the rollback!";
@@ -969,7 +968,7 @@ bool Blockchain::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::
   for (auto alt_ch_iter = alt_chain.begin(); alt_ch_iter != alt_chain.end(); alt_ch_iter++) {
     auto ch_ent = *alt_ch_iter;
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
-    bool r = pushBlock(ch_ent->second.bl, bvc);
+    bool r = pushBlock(ch_ent->second.bl, get_block_hash(ch_ent->second.bl), bvc);
     if (!r || !bvc.m_added_to_main_chain) {
       logger(INFO, BRIGHT_WHITE) << "Failed to switch to alternative blockchain";
       rollback_blockchain_switching(disconnected_chain, split_height);
@@ -1221,10 +1220,10 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     return false;
   }
 
-  if (!checkParentBlockSize(b, id)) {
-    bvc.m_verification_failed = true;
-    return false;
-  }
+  //if (!checkParentBlockSize(b, id)) {
+  //  bvc.m_verification_failed = true;
+  //  return false;
+  //}
 
   size_t cumulativeSize;
   if (!getBlockCumulativeSize(b, cumulativeSize)) {
@@ -1295,18 +1294,19 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     }
 
     // Disable merged mining
-    TransactionExtraMergeMiningTag mmTag;
-    if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag) && bei.bl.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
-      return false;
+    if (bei.bl.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+      TransactionExtraMergeMiningTag mmTag;
+      if (getMergeMiningTagFromExtra(bei.bl.baseTransaction.extra, mmTag)) {
+        logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
+        return false;
+      }
     }
 
-    // Always check PoW for alternative blocks
-    m_is_in_checkpoint_zone = false;
     // Check the block's hash against the difficulty target for its alt chain
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
     if (!(current_diff)) { logger(ERROR, BRIGHT_RED) << "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!"; return false; }
     Crypto::Hash proof_of_work = NULL_HASH;
+    // Always check PoW for alternative blocks
     if (!m_currency.checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
       logger(INFO, BRIGHT_RED) <<
         "Block with id: " << id
@@ -1743,18 +1743,21 @@ bool Blockchain::checkTransactionInputs(const Transaction& tx, const Crypto::Has
         return false;
       }
 
-      if (!check_tx_input(in_to_key, tx_prefix_hash, tx.signatures[inputIndex], pmax_used_block_height)) {
-        logger(INFO, BRIGHT_WHITE) <<
-          "Failed to check ring signature for tx " << transactionHash;
-        return false;
+      if (!isInCheckpointZone(getCurrentBlockchainHeight())) {
+        if (!check_tx_input(in_to_key, tx_prefix_hash, tx.signatures[inputIndex], pmax_used_block_height)) {
+          logger(INFO, BRIGHT_WHITE) <<
+            "Failed to check input in transaction " << transactionHash;
+          return false;
+        }
       }
 
       ++inputIndex;
     } else if (txin.type() == typeid(MultisignatureInput)) {
-      if (!validateInput(::boost::get<MultisignatureInput>(txin), transactionHash, tx_prefix_hash, tx.signatures[inputIndex])) {
-        return false;
+      if (!isInCheckpointZone(getCurrentBlockchainHeight())) {
+        if (!validateInput(::boost::get<MultisignatureInput>(txin), transactionHash, tx_prefix_hash, tx.signatures[inputIndex])) {
+          return false;
+        }
       }
-
       ++inputIndex;
     } else {
       logger(INFO, BRIGHT_WHITE) <<
@@ -1830,8 +1833,8 @@ bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_pre
   static const Crypto::KeyImage I = { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
   static const Crypto::KeyImage L = { { 0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7, 0xa2, 0xde, 0xf9, 0xde, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10 } };
   if (!(scalarmultKey(txin.keyImage, L) == I)) {
-	 logger(ERROR) << "Transaction uses key image not in the valid domain";
-	 return false;
+    logger(ERROR) << "Transaction uses key image not in the valid domain";
+    return false;
   }
 
   //check ring signature
@@ -1851,7 +1854,7 @@ bool Blockchain::check_tx_input(const KeyInput& txin, const Crypto::Hash& tx_pre
   }
 
   if (!(sig.size() == output_keys.size())) { logger(ERROR, BRIGHT_RED) << "internal error: tx signatures count=" << sig.size() << " mismatch with outputs keys count for inputs=" << output_keys.size(); return false; }
-  if (m_is_in_checkpoint_zone) {
+  if (isInCheckpointZone(getCurrentBlockchainHeight())) {
     return true;
   }
 
@@ -1914,12 +1917,6 @@ bool Blockchain::checkBlockVersion(const Block& b, const Crypto::Hash& blockHash
   if (b.majorVersion != expectedBlockVersion) {
     logger(TRACE) << "Block " << blockHash << " has wrong major version: " << static_cast<int>(b.majorVersion) <<
       ", at height " << height << " expected version is " << static_cast<int>(expectedBlockVersion);
-    return false;
-  }
-
-  if (b.majorVersion == BLOCK_MAJOR_VERSION_2 && b.parentBlock.majorVersion > BLOCK_MAJOR_VERSION_1) {
-    logger(ERROR, BRIGHT_RED) << "Parent block of block " << blockHash << " has wrong major version: " << static_cast<int>(b.parentBlock.majorVersion) <<
-      ", at height " << height << " expected version is " << static_cast<int>(BLOCK_MAJOR_VERSION_1);
     return false;
   }
 
@@ -2015,13 +2012,13 @@ bool Blockchain::addNewBlock(const Block& bl, block_verification_context& bvc) {
     if (!(bl.previousBlockHash == getTailId())) {
       //chain switching or wrong block
       logger(DEBUGGING) << "handling alternative block " << Common::podToHex(id)
-                   << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
-                   << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
-                   << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
+                        << " at height " << boost::get<BaseInput>(bl.baseTransaction.inputs.front()).blockIndex 
+                        << " as it doesn't refer to chain tail " << Common::podToHex(getTailId())
+                        << ", its prev. block hash: " << Common::podToHex(bl.previousBlockHash);
       bvc.m_added_to_main_chain = false;
       add_result = handle_alternative_block(bl, id, bvc);
     } else {
-      add_result = pushBlock(bl, bvc);
+      add_result = pushBlock(bl, id, bvc);
       if (add_result) {
         sendMessage(BlockchainMessage(NewBlockMessage(id)));
       }
@@ -2039,14 +2036,14 @@ const Blockchain::TransactionEntry& Blockchain::transactionByIndex(TransactionIn
   return m_blocks[index.block].transactions[index.transaction];
 }
 
-bool Blockchain::pushBlock(const Block& blockData, block_verification_context& bvc) {
+bool Blockchain::pushBlock(const Block& blockData, const Crypto::Hash& id, block_verification_context& bvc) {
   std::vector<Transaction> transactions;
   if (!loadTransactions(blockData, transactions)) {
     bvc.m_verification_failed = true;
     return false;
   }
 
-  if (!pushBlock(blockData, transactions, bvc)) {
+  if (!pushBlock(blockData, transactions, id, bvc)) {
     saveTransactions(transactions);
     return false;
   }
@@ -2054,12 +2051,10 @@ bool Blockchain::pushBlock(const Block& blockData, block_verification_context& b
   return true;
 }
 
-bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction>& transactions, block_verification_context& bvc) {
+bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction>& transactions, const Crypto::Hash& blockHash, block_verification_context& bvc) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
 
   auto blockProcessingStart = std::chrono::steady_clock::now();
-
-  Crypto::Hash blockHash = get_block_hash(blockData);
 
   if (m_blockIndex.hasBlock(blockHash)) {
     logger(ERROR, BRIGHT_RED) <<
@@ -2073,18 +2068,20 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     return false;
   }
 
-  if (!checkParentBlockSize(blockData, blockHash)) {
-    bvc.m_verification_failed = true;
-    return false;
-  }
+  //if (!checkParentBlockSize(blockData, blockHash)) {
+  //  bvc.m_verification_failed = true;
+  //  return false;
+  //}
 
   // Disable merged mining
-  TransactionExtraMergeMiningTag mmTag;
-  if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag) && blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
-    return false;
+  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    TransactionExtraMergeMiningTag mmTag;
+    if (getMergeMiningTagFromExtra(blockData.baseTransaction.extra, mmTag)) {
+      logger(ERROR, BRIGHT_RED) << "Merge mining tag was found in extra of miner transaction";
+      return false;
+    }
   }
-  
+
   if (blockData.previousBlockHash != getTailId()) {
     logger(INFO, BRIGHT_WHITE) <<
       "Block " << blockHash << " has wrong previousBlockHash: " << blockData.previousBlockHash << ", expected: " << getTailId();
@@ -2109,7 +2106,6 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     logger(ERROR, BRIGHT_RED) << "!!!!!!!!! difficulty overhead !!!!!!!!!";
     return false;
   }
-
 
   auto longhashTimeStart = std::chrono::steady_clock::now();
   Crypto::Hash proof_of_work = NULL_HASH;

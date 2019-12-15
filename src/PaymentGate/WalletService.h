@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Cash2 developers
 // Copyright (c) 2016-2019 The Karbo developers
 //
 // This file is part of Karbo.
@@ -26,7 +27,9 @@
 #include "INode.h"
 #include "CryptoNoteCore/Currency.h"
 #include "PaymentServiceJsonRpcMessages.h"
+#ifdef _WIN32
 #undef ERROR //TODO: workaround for windows build. fix it
+#endif
 #include "Logging/LoggerRef.h"
 
 #include <fstream>
@@ -72,7 +75,6 @@ public:
   std::error_code createAddress(const std::string& spendSecretKeyText, bool reset, std::string& address);
   std::error_code createAddress(const std::string& spendSecretKeyText, const uint32_t scanHeight, std::string& address);
   std::error_code createAddress(std::string& address);
-  std::error_code createAddress(std::string& address, const uint32_t scanHeight);
   std::error_code createAddressList(const std::vector<std::string>& spendSecretKeysText, bool reset, std::vector<std::string>& addresses);
   std::error_code createAddressList(const std::vector<std::string>& spendSecretKeysText, const std::vector<uint32_t>& scanHeights, std::vector<std::string>& addresses);
   std::error_code createTrackingAddress(const std::string& spendPublicKeyText, std::string& address);
@@ -96,6 +98,7 @@ public:
   std::error_code getTransactionSecretKey(const std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code getTransactionProof(const std::string& transactionHash, const std::string& destinationAddress, const std::string& transactionSecretKey, std::string& transactionProof);
   std::error_code getAddresses(std::vector<std::string>& addresses);
+  std::error_code getAddressesCount(size_t& addressesCount);
   std::error_code sendTransaction(const SendTransaction::Request& request, std::string& transactionHash, std::string& transactionSecretKey);
   std::error_code createDelayedTransaction(const CreateDelayedTransaction::Request& request, std::string& transactionHash);
   std::error_code getDelayedTransactionHashes(std::vector<std::string>& transactionHashes);

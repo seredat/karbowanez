@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin Developers
+// Copyright (c) 2018-2019 The Cash2 developers
 // Copyright (c) 2016-2019, Karbo developers
 //
 // This file is part of Karbo.
@@ -1176,6 +1177,20 @@ std::error_code WalletService::getAddresses(std::vector<std::string>& addresses)
     }
   } catch (std::exception& e) {
     logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Can't get addresses: " << e.what();
+    return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
+  }
+
+  return std::error_code();
+}
+
+std::error_code WalletService::getAddressesCount(size_t& addressesCount) {
+  try {
+    System::EventLock lk(readyEvent);
+
+    addressesCount = wallet.getAddressCount();
+  }
+  catch (std::exception& e) {
+    logger(Logging::WARNING) << "Can't get addresses count : " << e.what();
     return make_error_code(CryptoNote::error::INTERNAL_WALLET_ERROR);
   }
 
