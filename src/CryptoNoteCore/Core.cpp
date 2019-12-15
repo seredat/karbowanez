@@ -68,16 +68,17 @@ private:
   friend class Core;
 };
 
-Core::Core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, bool blockchainIndexesEnabled) :
-m_currency(currency),
-logger(logger, "Core"),
-m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
-m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
-m_miner(new miner(currency, *this, logger)),
-m_starter_message_showed(false),
-m_checkpoints(logger) {
-  set_cryptonote_protocol(pprotocol);
-  m_blockchain.addObserver(this);
+Core::Core(const Currency& currency, i_cryptonote_protocol* pprotocol, Logging::ILogger& logger, System::Dispatcher& dispatcher, bool blockchainIndexesEnabled) :
+  m_dispatcher(dispatcher),
+  m_currency(currency),
+  logger(logger, "Core"),
+  m_mempool(currency, m_blockchain, *this, m_timeProvider, logger, blockchainIndexesEnabled),
+  m_blockchain(currency, m_mempool, logger, blockchainIndexesEnabled),
+  m_miner(new miner(currency, *this, logger)),
+  m_starter_message_showed(false),
+  m_checkpoints(logger) {
+    set_cryptonote_protocol(pprotocol);
+    m_blockchain.addObserver(this);
     m_mempool.addObserver(this);
   }
   //-----------------------------------------------------------------------------------------------
@@ -213,7 +214,7 @@ size_t Core::addChain(const std::vector<const IBlock*>& chain) {
     }
 
     ++blocksCounter;
-    // TODO m_dispatcher.yield()?
+    m_dispatcher.yield();
   }
 
   return blocksCounter;
