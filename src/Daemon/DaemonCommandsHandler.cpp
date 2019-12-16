@@ -132,7 +132,6 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
   std::time_t uptime = std::time(nullptr) - m_core.getStartTime();
   uint8_t majorVersion = m_core.getBlockMajorVersionForHeight(height);
   bool synced = ((uint32_t)height == (uint32_t)last_known_block_index);
-  uint64_t alt_block_count = m_core.get_alternative_blocks_count();
 
   std::cout << std::endl
     << (synced ? ColouredMsg("Synced ", Common::Console::Color::BrightGreen) : ColouredMsg("Syncing ", Common::Console::Color::BrightYellow)) 
@@ -143,7 +142,7 @@ bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
     << "network hashrate: " << ColouredMsg(get_mining_speed(hashrate), Common::Console::Color::BrightWhite)
     << ", next difficulty: " << ColouredMsg(std::to_string(difficulty), Common::Console::Color::BrightWhite) << ", "
     << "block v. " << ColouredMsg(std::to_string((int)majorVersion), Common::Console::Color::BrightWhite)
-    << ", alt. blocks: " << ColouredMsg(std::to_string(alt_block_count), Common::Console::Color::BrightWhite) << ", \n"
+    << ", alt. blocks: " << ColouredMsg(std::to_string(alt_blocks_count), Common::Console::Color::BrightWhite) << ", \n"
     << ColouredMsg(std::to_string(outgoing_connections_count), Common::Console::Color::BrightWhite) << " out. + " 
     << ColouredMsg(std::to_string(incoming_connections_count), Common::Console::Color::BrightWhite) << " inc. connection(s), "
     << ColouredMsg(std::to_string(rpc_conn), Common::Console::Color::BrightWhite) << " rpc connection(s), " 
@@ -423,7 +422,7 @@ bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
   if (args.size() != 1 && args.size() != 2) return false;
   std::string addr = args[0];
   uint32_t ip;
-  time_t seconds;
+  time_t seconds = 0;
   if (args.size() > 1) {
     try {
       seconds = std::stoi(args[1]);
