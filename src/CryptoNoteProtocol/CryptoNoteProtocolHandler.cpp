@@ -419,7 +419,7 @@ int CryptoNoteProtocolHandler::handle_response_get_objects(int command, NOTIFY_R
     block_hashes.push_back(blockHash);
 
     parsed_block_entry parsedBlock;
-    parsedBlock.block = b;
+    parsedBlock.block = std::move(b);
     for (auto& tx_blob : block_entry.txs) {
       auto transactionBinary = asBinaryArray(tx_blob);
       parsedBlock.txs.push_back(transactionBinary);
