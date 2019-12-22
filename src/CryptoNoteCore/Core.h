@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -79,6 +80,8 @@ namespace CryptoNote {
      virtual bool scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) override;
      virtual bool getBlockDifficulty(uint32_t height, difficulty_type& difficulty) override;
      virtual bool getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) override;
+     virtual difficulty_type getAvgDifficulty(uint32_t height, size_t window) override;
+     virtual difficulty_type getAvgDifficulty(uint32_t height) override;
      virtual bool getBlockContainingTx(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight) override;
      virtual bool getMultisigOutputReference(const MultisignatureInput& txInMultisig, std::pair<Crypto::Hash, size_t>& output_reference) override;
      virtual bool getGeneratedTransactionsNumber(uint32_t height, uint64_t& generatedTransactions) override;
@@ -101,7 +104,7 @@ namespace CryptoNote {
 
      uint32_t get_current_blockchain_height() override;
      uint8_t getCurrentBlockMajorVersion() override;
-     uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
+     virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
 
      static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 

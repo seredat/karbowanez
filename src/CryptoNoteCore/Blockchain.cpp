@@ -751,7 +751,7 @@ difficulty_type Blockchain::getDifficultyForNextBlock() {
   return m_currency.nextDifficulty(static_cast<uint32_t>(m_blocks.size()), BlockMajorVersion, timestamps, cumulative_difficulties);
 }
 
-difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, uint32_t window) {
+difficulty_type Blockchain::getAvgDifficulty(uint32_t height, size_t window) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   height = std::min<uint32_t>(height, (uint32_t)m_blocks.size() - 1);
   if (height <= 1)
@@ -768,6 +768,13 @@ difficulty_type Blockchain::getAvgDifficultyForHeight(uint32_t height, uint32_t 
   }
   difficulty_type cumulDiffForPeriod = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
   return cumulDiffForPeriod / std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), window);
+}
+
+difficulty_type Blockchain::getAvgDifficulty(uint32_t height) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  if (height <= 1)
+    return 1;
+  return m_blocks[std::min<difficulty_type>(height, m_blocks.size())].cumulative_difficulty / std::min<difficulty_type>(height, m_blocks.size());
 }
 
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
@@ -796,7 +803,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
   }
 
   // calculate average difficulty for ~last month
-  uint64_t avgDifficultyCurrent = getAvgDifficultyForHeight(height, window * 7 * 4);
+  uint64_t avgDifficultyCurrent = getAvgDifficulty(height, window * 7 * 4);
   // historical reference trailing average difficulty
   uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
   // calculate average reward for ~last day (base, excluding fees)
@@ -813,6 +820,16 @@ uint64_t Blockchain::getCoinsInCirculation() {
     return 0;
   } else {
     return m_blocks.back().already_generated_coins;
+  }
+}
+
+uint64_t Blockchain::getCoinsInCirculation(uint32_t height) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  if (m_blocks.empty()) {
+    return 0;
+  }
+  else {
+    return m_blocks[height].already_generated_coins;
   }
 }
 
@@ -1057,7 +1074,7 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
   // and timestamps from it alone
   } else {
     timestamps.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
-	cumulative_difficulties.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
+    cumulative_difficulties.resize(std::min(alt_chain.size(), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
     size_t count = 0;
     size_t max_i = timestamps.size() - 1;
     // get difficulties and timestamps from most recent blocks in alt chain

@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbowanec developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -148,7 +149,7 @@ std::time_t Core::getStartTime() const {
   return start_time;
 }
 
-  //-----------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------
 bool Core::init(const CoreConfig& config, const MinerConfig& minerConfig, bool load_existing) {
   m_config_folder = config.configFolder;
   bool r = m_mempool.init(m_config_folder);
@@ -606,8 +607,14 @@ void Core::pause_mining() {
 }
 
 void Core::update_block_template_and_resume_mining() {
-  update_miner_block_template();
-  m_miner->resume();
+  if (update_miner_block_template()) {
+    m_miner->resume();
+    logger(DEBUGGING) << "updated block template and resumed mining";
+  }
+  else {
+    logger(ERROR) << "updating block template failed, mining not resumed";
+    m_miner->stop();
+  }
 }
 
 bool Core::handle_block_found(Block& b) {
@@ -794,8 +801,7 @@ std::string Core::print_pool(bool short_format) {
 }
 
 bool Core::update_miner_block_template() {
-  m_miner->on_block_chain_update();
-  return true;
+  return m_miner->on_block_chain_update();
 }
 
 bool Core::on_idle() {
@@ -1129,6 +1135,14 @@ std::vector<Crypto::Hash> Core::getTransactionHashesByPaymentId(const Crypto::Ha
   std::move(poolTransactionHashes.begin(), poolTransactionHashes.end(), std::back_inserter(blockchainTransactionHashes));
 
   return blockchainTransactionHashes;
+}
+
+difficulty_type Core::getAvgDifficulty(uint32_t height, size_t window) {
+  return m_blockchain.getAvgDifficulty(height, window);
+}
+
+difficulty_type Core::getAvgDifficulty(uint32_t height) {
+  return m_blockchain.getAvgDifficulty(height);
 }
 
 uint64_t Core::getMinimalFee() {
