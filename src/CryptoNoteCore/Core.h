@@ -190,7 +190,7 @@ namespace CryptoNote {
      //check if tx already in memory pool or in main blockchain
      bool check_tx_mixin(const Transaction& tx, uint32_t height);
      //check if the mixin is not too large
-     virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height);
+     virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) override;
      //check if tx is not sending unmixable outputs
      bool check_tx_unmixable(const Transaction& tx, uint32_t height);
 
