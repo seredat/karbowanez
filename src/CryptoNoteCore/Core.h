@@ -168,8 +168,8 @@ namespace CryptoNote {
 
      virtual bool saveBlockchain() override;
 
-     uint64_t getNextBlockDifficulty();
-     uint64_t getTotalGeneratedAmount();
+     uint64_t getNextBlockDifficulty() override;
+     uint64_t getTotalGeneratedAmount() override;
      uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
      virtual bool getMixin(const Transaction& transaction, uint64_t& mixin) override;
 
