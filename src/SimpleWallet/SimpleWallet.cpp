@@ -1033,6 +1033,9 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
     fail_msg_writer() << "Specify a wallet file name with the '--wallet-file <filename>' parameter";
     return false;
   } else if (command_line::has_arg(vm, arg_restore_wallet) && !m_wallet_file_arg.empty()) {
+    std::string walletFileName, ignoredString;
+    WalletHelper::prepareFileNames(m_wallet_file_arg, ignoredString, walletFileName);
+
     std::string walletAddressFile = prepareWalletAddressFilename(m_wallet_file_arg);
     boost::system::error_code ignore;
     if (boost::filesystem::exists(walletAddressFile, ignore)) {
@@ -1052,7 +1055,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       CryptoNote::AccountBase account;
       account.generateViewFromSpend(private_spend_key, private_view_key);
 
-      bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), private_spend_key, private_view_key);
+      bool r = new_wallet(walletFileName, pwd_container.password(), private_spend_key, private_view_key);
       if (!r) {
         logger(ERROR, BRIGHT_RED) << "Account creation failed";
         return false;
@@ -1078,7 +1081,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       CryptoNote::AccountBase account;
       account.generateViewFromSpend(private_spend_key, private_view_key);
 
-      bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), private_spend_key, private_view_key);
+      bool r = new_wallet(walletFileName, pwd_container.password(), private_spend_key, private_view_key);
       if (!r) {
         logger(ERROR, BRIGHT_RED) << "Account creation failed";
         return false;
@@ -1098,7 +1101,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       Crypto::SecretKey private_spend_key = *(struct Crypto::SecretKey *) &private_spend_key_hash;
       Crypto::SecretKey private_view_key = *(struct Crypto::SecretKey *) &private_view_key_hash;
 
-      if (!new_wallet(m_wallet_file_arg, pwd_container.password(), private_spend_key, private_view_key)) {
+      if (!new_wallet(walletFileName, pwd_container.password(), private_spend_key, private_view_key)) {
         logger(ERROR, BRIGHT_RED) << "account creation failed";
         return false;
       }
