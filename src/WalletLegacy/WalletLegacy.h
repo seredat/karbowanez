@@ -79,9 +79,6 @@ public:
   virtual void reset() override;
   virtual bool tryLoadWallet(std::istream& source, const std::string& password) override;
 
-  virtual Crypto::SecretKey generateKey(const std::string& password, const Crypto::SecretKey& recovery_param = Crypto::SecretKey(),
-	  bool recover = false, bool two_random = false) override;
-
   virtual void save(std::ostream& destination, bool saveDetailed = true, bool saveCache = true) override;
 
   virtual std::error_code changePassword(const std::string& oldPassword, const std::string& newPassword) override;

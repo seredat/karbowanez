@@ -69,6 +69,7 @@
 #include "Common/DnsTools.h"
 #include "Common/UrlTools.h"
 #include "Common/Util.h"
+#include "CryptoNoteCore/Account.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
 #include "NodeRpcProxy/NodeRpcProxy.h"
@@ -1039,23 +1040,45 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       return false;
     }
 
-    if (m_mnemonic_seed.empty() && m_view_key.empty() && m_spend_key.empty()) {
-      std::cout << "Specify mnemonic seed: ";
-      std::getline(std::cin, m_mnemonic_seed);
-
-      if (m_mnemonic_seed.empty()) {
-        fail_msg_writer() << "Specify a recovery parameter with the --mnemonic-seed=\"words list here\"";
-        return false;
-      }
-
-      Crypto::SecretKey recoveryKey;
+    if (!m_mnemonic_seed.empty() && m_view_key.empty() && m_spend_key.empty()) {
+      Crypto::SecretKey private_spend_key;
       std::string languageName;
-      if (!Crypto::ElectrumWords::words_to_bytes(m_mnemonic_seed, recoveryKey, languageName)) {
+      if (!Crypto::ElectrumWords::words_to_bytes(m_mnemonic_seed, private_spend_key, languageName)) {
         fail_msg_writer() << "Electrum-style word list failed verification";
         return false;
       }
 
-      bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), recoveryKey);
+      Crypto::SecretKey private_view_key;
+      CryptoNote::AccountBase account;
+      account.generateViewFromSpend(private_spend_key, private_view_key);
+
+      bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), private_spend_key, private_view_key);
+      if (!r) {
+        logger(ERROR, BRIGHT_RED) << "Account creation failed";
+        return false;
+      }
+
+    } else if (m_mnemonic_seed.empty() && m_view_key.empty() && m_spend_key.empty()) {
+      std::cout << "Specify mnemonic seed: ";
+      std::getline(std::cin, m_mnemonic_seed);
+
+      if (m_mnemonic_seed.empty()) {
+        fail_msg_writer() << "Specify a recovery parameter either with the '--mnemonic-seed=\"words list here\"' or with '--view-key' and '--spend-key'";
+        return false;
+      }
+
+      Crypto::SecretKey private_spend_key;
+      std::string languageName;
+      if (!Crypto::ElectrumWords::words_to_bytes(m_mnemonic_seed, private_spend_key, languageName)) {
+        fail_msg_writer() << "Electrum-style word list failed verification";
+        return false;
+      }
+
+      Crypto::SecretKey private_view_key;
+      CryptoNote::AccountBase account;
+      account.generateViewFromSpend(private_spend_key, private_view_key);
+
+      bool r = new_wallet(m_wallet_file_arg, pwd_container.password(), private_spend_key, private_view_key);
       if (!r) {
         logger(ERROR, BRIGHT_RED) << "Account creation failed";
         return false;
@@ -1079,9 +1102,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
         logger(ERROR, BRIGHT_RED) << "account creation failed";
         return false;
       }
-    } else {
-      fail_msg_writer() << "Specify a recovery parameter either with the '--mnemonic-seed=\"words list here\"' or with '--view-key' and '--spend-key'";
-      return false;
     }
   }
 
@@ -1379,78 +1399,6 @@ void simple_wallet::handle_command_line(const boost::program_options::variables_
 }
 
 //----------------------------------------------------------------------------------------------------
-
-bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, 
-	const Crypto::SecretKey& recovery_key) {
-	m_wallet_file = wallet_file;
-
-	m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
-	m_node->addObserver(static_cast<INodeObserver*>(this));
-	m_wallet->addObserver(this);
-
-	Crypto::SecretKey recovery_val;
-	try
-	{
-		m_initResultPromise.reset(new std::promise<std::error_code>());
-		std::future<std::error_code> f_initError = m_initResultPromise->get_future();
-
-		recovery_val = m_wallet->generateKey(password, recovery_key, true, false);
-		auto initError = f_initError.get();
-		m_initResultPromise.reset(nullptr);
-		if (initError)
-		{
-			fail_msg_writer() << "failed to generate new wallet: " << initError.message();
-			return false;
-		}
-
-		try
-		{
-			CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
-		}
-		catch (std::exception& e)
-		{
-			fail_msg_writer() << "failed to save new wallet: " << e.what();
-			throw;
-		}
-
-		AccountKeys keys;
-		m_wallet->getAccountKeys(keys);
-
-		logger(INFO, BRIGHT_WHITE) <<
-			"Generated new wallet: " << m_wallet->getAddress() << std::endl <<
-			"view key: " << Common::podToHex(keys.viewSecretKey);
-	}
-	catch (const std::exception& e)
-	{
-		fail_msg_writer() << "failed to generate new wallet: " << e.what();
-		return false;
-	}
-
-	// convert rng value to electrum-style word list
-	std::string electrum_words;
-	Crypto::ElectrumWords::bytes_to_words(recovery_val, electrum_words, "English");
-	std::string print_electrum = "";
-
-	success_msg_writer() <<
-		"**********************************************************************\n" <<
-		"Your wallet has been generated.\n" <<
-		"Use \"help\" command to see the list of available commands.\n" <<
-		"Always use \"exit\" command when closing simplewallet to save\n" <<
-		"current session's state. Otherwise, you will possibly need to synchronize \n" <<
-		"your wallet again. Your wallet key is NOT under risk anyway.\n";
-
-	seedFormater(electrum_words);
-	std::cout << "\nPLEASE NOTE: the following 25 words can be used to recover access to your wallet. " <<
-		"Please write them down and store them somewhere safe and secure. Please do not store them in your email or " <<
-		"on file storage services outside of your immediate control.\n\n";
-	std::cout << electrum_words << std::endl;
-	success_msg_writer() << "**********************************************************************";
-
-	return true;
-}
-
-//----------------------------------------------------------------------------------------------------
-
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password)
 {
 	m_wallet_file = wallet_file;
@@ -1525,7 +1473,6 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 }
 
 //----------------------------------------------------------------------------------------------------
-
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey &secret_key, const Crypto::SecretKey &view_key) {
   m_wallet_file = wallet_file;
 
@@ -1584,7 +1531,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
   return true;
 }
 //----------------------------------------------------------------------------------------------------
-bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_key) {
+bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_keys) {
     m_wallet_file = wallet_file;
 
     m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
@@ -1595,10 +1542,10 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
         std::future<std::error_code> f_initError = m_initResultPromise->get_future();
 
         if (m_scan_height != 0) {
-          m_wallet->initWithKeys(private_key, password, m_scan_height);
+          m_wallet->initWithKeys(private_keys, password, m_scan_height);
         }
         else {
-          m_wallet->initWithKeys(private_key, password);
+          m_wallet->initWithKeys(private_keys, password);
         }
 
         auto initError = f_initError.get();
