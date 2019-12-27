@@ -236,23 +236,22 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
 CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight) {
   CryptoNote::BlockDetails block;
 
-  if (m_node.getLastKnownBlockHeight() == 0)
-  {
-    return block;
+  auto getBlockCompleted = std::promise<std::error_code>();
+  auto getBlockWaitFuture = getBlockCompleted.get_future();
+
+  m_node.getBlock(blockHeight, block,
+    [&getBlockCompleted](std::error_code ec) {
+    auto detachedPromise = std::move(getBlockCompleted);
+    detachedPromise.set_value(ec);
+  });
+
+  std::error_code ec = getBlockWaitFuture.get();
+
+  if (ec) {
+    m_logger(ERROR) << "Failed to get block: " << ec << ", " << ec.message();
+  } else {
+    m_logger(INFO) << "Block received, timestamp: " << block.timestamp;
   }
-
-  std::promise<std::error_code> errorPromise;
-
-  auto e = errorPromise.get_future();
-
-  auto callback = [&errorPromise](std::error_code e)
-  {
-    errorPromise.set_value(e);
-  };
-
-  m_node.getBlock(blockHeight, block, callback);
-
-  e.get();
 
   return block;
 }
@@ -280,7 +279,7 @@ uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight) {
   }
 
   /* Get the block timestamp from the node if the node has it */
-  uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
+  uint64_t timestamp = getBlock(scanHeight).timestamp;
 
   if (timestamp != 0) {
     return timestamp;
