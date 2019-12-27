@@ -1027,7 +1027,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	{
 		fail_msg_writer() << "failed to init NodeRPCProxy: " << error.message();
 		return false;
-	}
+  }
 
   if (command_line::has_arg(vm, arg_restore_wallet) && m_wallet_file_arg.empty()) {
     fail_msg_writer() << "Specify a wallet file name with the '--wallet-file <filename>' parameter";
@@ -1104,8 +1104,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       }
     }
   }
-
-	if (command_line::has_arg(vm, arg_change_password) && command_line::has_arg(vm, arg_password) && !m_wallet_file_arg.empty())
+  else if (command_line::has_arg(vm, arg_change_password) && command_line::has_arg(vm, arg_password) && !m_wallet_file_arg.empty())
 	{
 		m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
 		pwd_container.password(command_line::get_arg(vm, arg_password));
@@ -1138,8 +1137,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		std::exit(0);
 		return true;
 	}
-
-	if (!m_generate_new.empty())
+	else if (!m_generate_new.empty())
 	{
 		std::string walletAddressFile = prepareWalletAddressFilename(m_generate_new);
 		boost::system::error_code ignore;
@@ -1364,10 +1362,10 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 			"**********************************************************************\n" <<
 			"Use \"help\" command to see the list of available commands.\n" <<
 			"**********************************************************************";
-
-		if (command_line::has_arg(vm, arg_reset))
-			reset({});
 	}
+
+  if (command_line::has_arg(vm, arg_reset))
+    reset({});
 
 	return true;
 }
@@ -1403,7 +1401,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 {
 	m_wallet_file = wallet_file;
 
-	m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
+	m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
 	m_node->addObserver(static_cast<INodeObserver*>(this));
 	m_wallet->addObserver(this);
 
@@ -1476,7 +1474,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey &secret_key, const Crypto::SecretKey &view_key) {
   m_wallet_file = wallet_file;
 
-  m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
+  m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
   m_node->addObserver(static_cast<INodeObserver*>(this));
   m_wallet->addObserver(this);
   try {
@@ -1534,7 +1532,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_keys) {
     m_wallet_file = wallet_file;
 
-    m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
+    m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
     m_node->addObserver(static_cast<INodeObserver*>(this));
     m_wallet->addObserver(this);
     try {
