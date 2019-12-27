@@ -233,27 +233,25 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
   m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
 }
 
-CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight) {
-  CryptoNote::BlockDetails block;
+uint64_t WalletLegacy::getBlockTimestamp(const uint32_t blockHeight) {
+  uint64_t timestamp = 0;
 
-  auto getBlockCompleted = std::promise<std::error_code>();
-  auto getBlockWaitFuture = getBlockCompleted.get_future();
+  auto getBlockTimestampCompleted = std::promise<std::error_code>();
+  auto getBlockTimestampWaitFuture = getBlockTimestampCompleted.get_future();
 
-  m_node.getBlock(blockHeight, block,
-    [&getBlockCompleted](std::error_code ec) {
-    auto detachedPromise = std::move(getBlockCompleted);
+  m_node.getBlockTimestamp(std::move(blockHeight), std::ref(timestamp),
+    [&getBlockTimestampCompleted](std::error_code ec) {
+    auto detachedPromise = std::move(getBlockTimestampCompleted);
     detachedPromise.set_value(ec);
   });
 
-  std::error_code ec = getBlockWaitFuture.get();
+  std::error_code ec = getBlockTimestampWaitFuture.get();
 
   if (ec) {
-    m_logger(ERROR) << "Failed to get block: " << ec << ", " << ec.message();
-  } else {
-    m_logger(INFO) << "Block received, timestamp: " << block.timestamp;
+    m_logger(ERROR) << "Failed to get block timestamp: " << ec << ", " << ec.message();
   }
 
-  return block;
+  return timestamp;
 }
 
 uint64_t getCurrentTimestampAdjusted() {
@@ -279,7 +277,7 @@ uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight) {
   }
 
   /* Get the block timestamp from the node if the node has it */
-  uint64_t timestamp = getBlock(scanHeight).timestamp;
+  uint64_t timestamp = getBlockTimestamp(scanHeight);
 
   if (timestamp != 0) {
     return timestamp;
@@ -312,7 +310,7 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
     }
 
     m_account.setAccountKeys(accountKeys);
-    uint64_t newTimestamp = scanHeightToTimestamp((uint32_t)scanHeight);
+    uint64_t newTimestamp = scanHeightToTimestamp(scanHeight);
     m_account.set_createtime(newTimestamp);
     m_password = password;
 

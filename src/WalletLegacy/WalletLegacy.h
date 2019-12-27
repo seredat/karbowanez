@@ -151,7 +151,7 @@ private:
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
 
   uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
-  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+  uint64_t getBlockTimestamp(const uint32_t blockHeight);
 
   enum WalletState
   {

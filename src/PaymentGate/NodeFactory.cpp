@@ -91,6 +91,8 @@ public:
   virtual void getMultisignatureOutputByGlobalIndex(uint64_t amount, uint32_t gindex, CryptoNote::MultisignatureOutput& out,
     const Callback& callback) override { }
 
+  void getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) { }
+
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
 
   virtual std::string feeAddress() const override { return std::string(); }
