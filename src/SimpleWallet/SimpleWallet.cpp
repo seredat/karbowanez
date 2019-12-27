@@ -1035,11 +1035,14 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
   } else if (command_line::has_arg(vm, arg_restore_wallet) && !m_wallet_file_arg.empty()) {
     std::string walletFileName, ignoredString;
     WalletHelper::prepareFileNames(m_wallet_file_arg, ignoredString, walletFileName);
-
-    std::string walletAddressFile = prepareWalletAddressFilename(m_wallet_file_arg);
     boost::system::error_code ignore;
+    if (boost::filesystem::exists(walletFileName, ignore)) {
+      fail_msg_writer() << walletFileName << " already exists! Try a different name." << std::endl;
+      return false;
+    }
+    std::string walletAddressFile = prepareWalletAddressFilename(m_wallet_file_arg);
     if (boost::filesystem::exists(walletAddressFile, ignore)) {
-      logger(ERROR, BRIGHT_RED) << "Address file already exists: " + walletAddressFile;
+      fail_msg_writer() << "Address file already exists: " + walletAddressFile;
       return false;
     }
 
