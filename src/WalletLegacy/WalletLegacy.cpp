@@ -137,16 +137,16 @@ public:
   BlockchainSynchronizer& m_sync;
 };
 
-WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup) :
+WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& log) :
   m_state(NOT_INITIALIZED),
   m_currency(currency),
   m_node(node),
-  m_loggerGroup(loggerGroup),
+  m_logger(log, "WalletLegacy"),
   m_isStopping(false),
   m_lastNotifiedActualBalance(0),
   m_lastNotifiedPendingBalance(0),
-  m_blockchainSync(node, m_loggerGroup, currency.genesisBlockHash()),
-  m_transfersSync(currency, m_loggerGroup, m_blockchainSync, node),
+  m_blockchainSync(node, m_logger.getLogger(), currency.genesisBlockHash()),
+  m_transfersSync(currency, m_logger.getLogger(), m_blockchainSync, node),
   m_transferDetails(nullptr),
   m_transactionsCache(m_currency.mempoolTxLiveTime()),
   m_sender(nullptr),
@@ -378,8 +378,7 @@ void WalletLegacy::doLoad(std::istream& source) {
 	// Read all output keys cache
     std::vector<TransactionOutputInformation> allTransfers;
     m_transferDetails->getOutputs(allTransfers, ITransfersContainer::IncludeAll);
-    auto message = "Loaded " + std::to_string(allTransfers.size()) + " known transfer(s)\r\n";
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), message);
+    m_logger(Logging::INFO) << "Loaded " + std::to_string(allTransfers.size()) + " known transfer(s)";
     for (auto& o : allTransfers) {
       if (o.type != TransactionTypes::OutputType::Invalid) {
         m_transfersSync.addPublicKeysSeen(m_account.getAccountKeys().address, o.transactionHash, o.outputKey);
@@ -463,7 +462,7 @@ void WalletLegacy::reset() {
       initWaiter.waitInit();
     }
   } catch (std::exception& e) {
-    std::cout << "exception in reset: " << e.what() << std::endl;
+    m_logger(Logging::ERROR) << "exception in reset: " << e.what();
   }
 }
 
@@ -567,19 +566,19 @@ std::string WalletLegacy::sign_message(const std::string &message) {
 bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
   const size_t header_len = strlen("SigV1");
   if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
-    std::cout << "Signature header check error";
+    m_logger(Logging::ERROR) << "Signature header check error";
     return false;
   }
   Crypto::Hash hash;
   Crypto::cn_fast_hash(message.data(), message.size(), hash);
   std::string decoded;
   if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
-    std::cout <<"Signature decoding error";
+    m_logger(Logging::ERROR) << "Signature decoding error";
     return false;
   }
   Crypto::Signature s;
   if (sizeof(s) != decoded.size()) {
-    std::cout << "Signature decoding error";
+    m_logger(Logging::ERROR) << "Signature decoding error";
     return false;
   }
   memcpy(&s, decoded.data(), sizeof(s));
@@ -1013,7 +1012,7 @@ bool WalletLegacy::get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey
   getTransaction(ti, transaction);
   txSecretKey = transaction.secretKey.get();
   if (txSecretKey == NULL_SECRET_KEY) {
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), "Transaction secret key is not stored in wallet cache.");
+    m_logger(Logging::INFO) << "Transaction secret key is not stored in wallet cache.";
     return false;
   }
 
@@ -1032,7 +1031,7 @@ bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddre
     Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
   }
   catch (const std::runtime_error &e) {
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), "Proof generation error: " + *e.what());
+    m_logger(Logging::ERROR) << "Proof generation error: " << *e.what();
     return false;
   }
 
