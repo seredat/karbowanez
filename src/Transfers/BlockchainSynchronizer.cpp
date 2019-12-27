@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
+// Copyright (c) 2016-2019, The Karbo Developers
 //
 // This file is part of Karbo.
 //
@@ -534,9 +536,8 @@ void BlockchainSynchronizer::processBlocks(GetBlocksResponse& response) {
       if (m_node.getLastKnownBlockHeight() != m_node.getLastLocalBlockHeight()) {
         m_logger(DEBUGGING) << "Blockchain updated, resume blockchain synchronization";
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      } else {
-        break;
       }
+      break;
 
     case UpdateConsumersResult::addedNewBlocks:
       setFutureState(State::blockchainSync);

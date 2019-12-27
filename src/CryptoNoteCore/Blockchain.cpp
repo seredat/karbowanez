@@ -208,7 +208,9 @@ public:
     if (s.type() == ISerializer::OUTPUT) {
       writeSequence<Blockchain::SpentKeyImage>(m_bs.spentKeyImages.begin(), m_bs.spentKeyImages.end(), "spent_key_images", s);
     } else {
-      readSequence<Blockchain::SpentKeyImage>(std::inserter(m_bs.spentKeyImages, m_bs.spentKeyImages.end()), "spent_key_images", s);
+      Blockchain::SpentKeyImagesContainer restoredSpentKeyImages;
+      readSequence<Blockchain::SpentKeyImage>(std::inserter(restoredSpentKeyImages, restoredSpentKeyImages.end()), "spent_key_images", s);
+      m_bs.spentKeyImages = std::move(restoredSpentKeyImages);
     }
 
     logger(INFO) << operation << "outputs...";
