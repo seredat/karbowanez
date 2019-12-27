@@ -104,6 +104,7 @@ public:
   virtual bool scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pair<Crypto::Hash, size_t>>& outputReferences) = 0;
   virtual bool getBlockDifficulty(uint32_t height, difficulty_type& difficulty) = 0;
   virtual bool getBlockCumulativeDifficulty(uint32_t height, difficulty_type& difficulty) = 0;
+  virtual bool getBlockTimestamp(uint32_t height, uint64_t& timestamp) = 0;
   virtual difficulty_type getAvgDifficulty(uint32_t height, size_t window) = 0;
   virtual difficulty_type getAvgDifficulty(uint32_t height) = 0;
   virtual bool getBlockContainingTx(const Crypto::Hash& txId, Crypto::Hash& blockId, uint32_t& blockHeight) = 0;
