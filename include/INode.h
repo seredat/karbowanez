@@ -95,6 +95,9 @@ public:
   virtual uint32_t getLocalBlockCount() const = 0;
   virtual uint32_t getKnownBlockCount() const = 0;
   virtual uint64_t getMinimalFee() const = 0;
+  virtual uint64_t getNextDifficulty() const = 0;
+  virtual uint64_t getNextReward() const = 0;
+  virtual uint64_t getAlreadyGeneratedCoins() const = 0;
   virtual uint64_t getLastLocalBlockTimestamp() const = 0;
   virtual uint32_t getNodeHeight() const = 0;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const = 0;

@@ -22,6 +22,7 @@
 #include <CryptoNoteCore/TransactionApi.h>
 
 #include "CryptoNoteConfig.h"
+#include "Common/Math.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/IBlock.h"
@@ -437,6 +438,40 @@ void InProcessNode::getFeeAddress() {
 
 std::string InProcessNode::feeAddress() const { 
   return std::string();
+}
+
+uint64_t InProcessNode::getNextDifficulty() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  return core.getNextBlockDifficulty();
+}
+
+uint64_t InProcessNode::getNextReward() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  std::vector<size_t> blocksSizes;
+  if (!core.getBackwardBlocksSizes(core.get_current_blockchain_height() - 1, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+    return false;
+  }
+  uint64_t sizeMedian = Common::medianValue(blocksSizes);
+  uint64_t nextReward = 0;
+  int64_t emissionChange = 0;
+  if (!core.getBlockReward(core.getCurrentBlockMajorVersion(), sizeMedian, 0, core.getTotalGeneratedAmount(), 0, nextReward, emissionChange)) {
+    throw std::system_error(make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR));
+  }
+  return nextReward;
+}
+
+uint64_t InProcessNode::getAlreadyGeneratedCoins() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  return core.getTotalGeneratedAmount();
 }
 
 BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
