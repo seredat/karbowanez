@@ -12,6 +12,7 @@
 #include "Common/Base58.h"
 #include "Common/StringTools.h"
 #include "Common/FormatTools.h"
+#include "Tools.h"
 #include "CryptoNoteCore/Account.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 
@@ -291,10 +292,10 @@ void printSyncStatus(uint32_t localHeight, uint32_t remoteHeight,
 	uint32_t walletHeight)
 {
 	std::string networkSyncPercentage
-		= Common::get_sync_percentage(localHeight, remoteHeight) + "%";
+		= Common::Format::get_sync_percentage(localHeight, remoteHeight) + "%";
 
 	std::string walletSyncPercentage
-		= Common::get_sync_percentage(walletHeight, remoteHeight) + "%";
+		= Common::Format::get_sync_percentage(walletHeight, remoteHeight) + "%";
 
 	std::cout << "Network sync status: ";
 
@@ -370,7 +371,7 @@ void printHashrate(uint64_t difficulty)
     );
 
     std::cout << "Network hashrate: "
-              << SuccessMsg(Common::get_mining_speed(hashrate))
+              << SuccessMsg(Common::Format::get_mining_speed(hashrate))
               << " (Based on the last local block)" << std::endl;
 }
 
