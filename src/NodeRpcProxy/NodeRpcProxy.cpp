@@ -503,6 +503,26 @@ void NodeRpcProxy::getBlock(const uint32_t blockHeight, BlockDetails &block, con
   scheduleRequest(std::bind(&NodeRpcProxy::doGetBlock, this, blockHeight, std::ref(block)), callback);
 }
 
+void NodeRpcProxy::getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (m_state != STATE_INITIALIZED) {
+    callback(make_error_code(error::NOT_INITIALIZED));
+    return;
+  }
+
+  scheduleRequest(std::bind(&NodeRpcProxy::doGetBlockTimestamp, this, height, std::ref(timestamp)), callback);
+}
+
+std::error_code NodeRpcProxy::doGetBlockTimestamp(uint32_t height, uint64_t& timestamp) {
+  COMMAND_RPC_GET_BLOCK_TIMESTAMP_BY_HEIGHT::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_BLOCK_TIMESTAMP_BY_HEIGHT::response rsp = AUTO_VAL_INIT(rsp);
+  req.height = height;
+  std::error_code ec = jsonRpcCommand("getblocktimestamp", req, rsp);
+
+  timestamp = rsp.timestamp;
+  return ec;
+}
+
 void NodeRpcProxy::getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions, const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_state != STATE_INITIALIZED) {

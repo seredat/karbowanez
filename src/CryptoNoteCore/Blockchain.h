@@ -99,9 +99,12 @@ namespace CryptoNote {
     Crypto::Hash getTailId();
     Crypto::Hash getTailId(uint32_t& height);
     difficulty_type getDifficultyForNextBlock();
+    difficulty_type getAvgDifficulty(uint32_t height);
+    difficulty_type getAvgDifficulty(uint32_t height, size_t window);
     uint64_t getBlockTimestamp(uint32_t height);
     uint64_t getMinimalFee(uint32_t height);
     uint64_t getCoinsInCirculation();
+    uint64_t getCoinsInCirculation(uint32_t height);
     uint8_t getBlockMajorVersionForHeight(uint32_t height) const;
     bool addNewBlock(const Block& bl, block_verification_context& bvc);
     bool resetAndSetGenesisBlock(const Block& b);
@@ -131,7 +134,6 @@ namespace CryptoNote {
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
     bool isBlockInMainChain(const Crypto::Hash& blockId);
     bool isInCheckpointZone(const uint32_t height);
-    uint64_t getAvgDifficultyForHeight(uint32_t height, uint32_t window);
 
     template<class visitor_t> bool scanOutputKeysForIndexes(const KeyInput& tx_in_to_key, visitor_t& vis, uint32_t* pmax_related_block_height = NULL);
 
@@ -223,9 +225,6 @@ namespace CryptoNote {
     bool is_tx_spendtime_unlocked(uint64_t unlock_time);
     bool is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height);
 
-    //bool checkIfSpentMultisignature(uint64_t amount, uint32_t globalIndex) const override;
-    //bool checkIfSpentMultisignature(uint64_t amount, uint32_t globalIndex, uint32_t blockIndex) const override;
-
     void rebuildCache();
     bool storeCache();
 
@@ -277,14 +276,14 @@ namespace CryptoNote {
     typedef boost::multi_index_container<
       SpentKeyImage,
       boost::multi_index::indexed_by<
-      boost::multi_index::ordered_non_unique<
-      boost::multi_index::tag<BlockIndexTag>,
-      BOOST_MULTI_INDEX_MEMBER(SpentKeyImage, uint32_t, blockIndex)
-      >,
-      boost::multi_index::hashed_unique<
-      boost::multi_index::tag<KeyImageTag>,
-      BOOST_MULTI_INDEX_MEMBER(SpentKeyImage, Crypto::KeyImage, keyImage)
-      >
+        boost::multi_index::ordered_non_unique<
+          boost::multi_index::tag<BlockIndexTag>,
+          BOOST_MULTI_INDEX_MEMBER(SpentKeyImage, uint32_t, blockIndex)
+        >,
+        boost::multi_index::hashed_unique<
+          boost::multi_index::tag<KeyImageTag>,
+          BOOST_MULTI_INDEX_MEMBER(SpentKeyImage, Crypto::KeyImage, keyImage)
+        >
       >
     > SpentKeyImagesContainer;
     typedef std::unordered_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;

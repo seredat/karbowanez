@@ -23,6 +23,7 @@
 #include "Common/CommandLine.h"
 #include "Common/StringTools.h"
 #include "crypto/crypto.h"
+#include "crypto/random.h"
 #include "CryptoNoteConfig.h"
 
 namespace CryptoNote {
@@ -111,7 +112,7 @@ bool NetNodeConfig::init(const boost::program_options::variables_map& vm)
     std::vector<std::string> perrs = command_line::get_arg(vm, arg_p2p_add_peer);
     for(const std::string& pr_str: perrs) {
       PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
-      pe.id = Crypto::rand<uint64_t>();
+      pe.id = Random::randomValue<uint64_t>();
       if (!parsePeerFromString(pe.adr, pr_str)) {
         return false;
       }

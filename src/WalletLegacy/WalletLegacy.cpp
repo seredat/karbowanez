@@ -32,7 +32,7 @@
 
 #include <algorithm>
 #include <numeric>
-#include <random>
+#include <crypto/random.h>
 #include <set>
 #include <tuple>
 #include <utility>
@@ -137,16 +137,16 @@ public:
   BlockchainSynchronizer& m_sync;
 };
 
-WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup) :
+WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& log) :
   m_state(NOT_INITIALIZED),
   m_currency(currency),
   m_node(node),
-  m_loggerGroup(loggerGroup),
+  m_logger(log, "WalletLegacy"),
   m_isStopping(false),
   m_lastNotifiedActualBalance(0),
   m_lastNotifiedPendingBalance(0),
-  m_blockchainSync(node, m_loggerGroup, currency.genesisBlockHash()),
-  m_transfersSync(currency, m_loggerGroup, m_blockchainSync, node),
+  m_blockchainSync(node, m_logger.getLogger(), currency.genesisBlockHash()),
+  m_transfersSync(currency, m_logger.getLogger(), m_blockchainSync, node),
   m_transferDetails(nullptr),
   m_transactionsCache(m_currency.mempoolTxLiveTime()),
   m_sender(nullptr),
@@ -215,22 +215,6 @@ void WalletLegacy::initAndGenerateDeterministic(const std::string& password) {
   m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
 }
 
-Crypto::SecretKey WalletLegacy::generateKey(const std::string& password, const Crypto::SecretKey& recovery_param, bool recover, bool two_random) {
-  std::unique_lock<std::mutex> stateLock(m_cacheMutex);
-
-  if (m_state != NOT_INITIALIZED) {
-    throw std::system_error(make_error_code(error::ALREADY_INITIALIZED));
-  }
-
-  Crypto::SecretKey retval = m_account.generate_key(recovery_param, recover, two_random);
-  m_password = password;
-
-  initSync();
-
-  m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
-  return retval;
-}
-
 void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::string& password) {
   {
     std::unique_lock<std::mutex> stateLock(m_cacheMutex);
@@ -249,28 +233,25 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
   m_observerManager.notify(&IWalletLegacyObserver::initCompleted, std::error_code());
 }
 
-CryptoNote::BlockDetails WalletLegacy::getBlock(const uint32_t blockHeight) {
-  CryptoNote::BlockDetails block;
+uint64_t WalletLegacy::getBlockTimestamp(const uint32_t blockHeight) {
+  uint64_t timestamp = 0;
 
-  if (m_node.getLastKnownBlockHeight() == 0)
-  {
-    return block;
+  auto getBlockTimestampCompleted = std::promise<std::error_code>();
+  auto getBlockTimestampWaitFuture = getBlockTimestampCompleted.get_future();
+
+  m_node.getBlockTimestamp(std::move(blockHeight), std::ref(timestamp),
+    [&getBlockTimestampCompleted](std::error_code ec) {
+    auto detachedPromise = std::move(getBlockTimestampCompleted);
+    detachedPromise.set_value(ec);
+  });
+
+  std::error_code ec = getBlockTimestampWaitFuture.get();
+
+  if (ec) {
+    m_logger(ERROR) << "Failed to get block timestamp: " << ec << ", " << ec.message();
   }
 
-  std::promise<std::error_code> errorPromise;
-
-  auto e = errorPromise.get_future();
-
-  auto callback = [&errorPromise](std::error_code e)
-  {
-    errorPromise.set_value(e);
-  };
-
-  m_node.getBlock(blockHeight, block, callback);
-
-  e.get();
-
-  return block;
+  return timestamp;
 }
 
 uint64_t getCurrentTimestampAdjusted() {
@@ -296,7 +277,7 @@ uint64_t WalletLegacy::scanHeightToTimestamp(const uint32_t scanHeight) {
   }
 
   /* Get the block timestamp from the node if the node has it */
-  uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
+  uint64_t timestamp = getBlockTimestamp(scanHeight);
 
   if (timestamp != 0) {
     return timestamp;
@@ -329,7 +310,7 @@ void WalletLegacy::initWithKeys(const AccountKeys& accountKeys, const std::strin
     }
 
     m_account.setAccountKeys(accountKeys);
-    uint64_t newTimestamp = scanHeightToTimestamp((uint32_t)scanHeight);
+    uint64_t newTimestamp = scanHeightToTimestamp(scanHeight);
     m_account.set_createtime(newTimestamp);
     m_password = password;
 
@@ -394,8 +375,7 @@ void WalletLegacy::doLoad(std::istream& source) {
 	// Read all output keys cache
     std::vector<TransactionOutputInformation> allTransfers;
     m_transferDetails->getOutputs(allTransfers, ITransfersContainer::IncludeAll);
-    auto message = "Loaded " + std::to_string(allTransfers.size()) + " known transfer(s)\r\n";
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), message);
+    m_logger(Logging::INFO) << "Loaded " + std::to_string(allTransfers.size()) + " known transfer(s)";
     for (auto& o : allTransfers) {
       if (o.type != TransactionTypes::OutputType::Invalid) {
         m_transfersSync.addPublicKeysSeen(m_account.getAccountKeys().address, o.transactionHash, o.outputKey);
@@ -479,7 +459,7 @@ void WalletLegacy::reset() {
       initWaiter.waitInit();
     }
   } catch (std::exception& e) {
-    std::cout << "exception in reset: " << e.what() << std::endl;
+    m_logger(Logging::ERROR) << "exception in reset: " << e.what();
   }
 }
 
@@ -583,19 +563,19 @@ std::string WalletLegacy::sign_message(const std::string &message) {
 bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
   const size_t header_len = strlen("SigV1");
   if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
-    std::cout << "Signature header check error";
+    m_logger(Logging::ERROR) << "Signature header check error";
     return false;
   }
   Crypto::Hash hash;
   Crypto::cn_fast_hash(message.data(), message.size(), hash);
   std::string decoded;
   if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
-    std::cout <<"Signature decoding error";
+    m_logger(Logging::ERROR) << "Signature decoding error";
     return false;
   }
   Crypto::Signature s;
   if (sizeof(s) != decoded.size()) {
-    std::cout << "Signature decoding error";
+    m_logger(Logging::ERROR) << "Signature decoding error";
     return false;
   }
   memcpy(&s, decoded.data(), sizeof(s));
@@ -724,7 +704,7 @@ std::list<TransactionOutputInformation> WalletLegacy::selectFusionTransfersToSen
   //now, pick the bucket
   std::vector<uint8_t> bucketNumbers(bucketSizes.size());
   std::iota(bucketNumbers.begin(), bucketNumbers.end(), 0);
-  std::shuffle(bucketNumbers.begin(), bucketNumbers.end(), std::default_random_engine{ Crypto::rand<std::default_random_engine::result_type>() });
+  std::shuffle(bucketNumbers.begin(), bucketNumbers.end(), Random::generator());
   size_t bucketNumberIndex = 0;
   for (; bucketNumberIndex < bucketNumbers.size(); ++bucketNumberIndex) {
 	  if (bucketSizes[bucketNumbers[bucketNumberIndex]] >= minInputCount) {
@@ -762,7 +742,7 @@ std::list<TransactionOutputInformation> WalletLegacy::selectFusionTransfersToSen
 	  return selectedOutputs;
   }
 
-  ShuffleGenerator<size_t, Crypto::random_engine<size_t>> generator(selectedOuts.size());
+  ShuffleGenerator<size_t> generator(selectedOuts.size());
   std::vector<TransactionOutputInformation> trimmedSelectedOuts;
   trimmedSelectedOuts.reserve(maxInputCount);
   for (size_t i = 0; i < maxInputCount; ++i) {
@@ -1029,7 +1009,7 @@ bool WalletLegacy::get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey
   getTransaction(ti, transaction);
   txSecretKey = transaction.secretKey.get();
   if (txSecretKey == NULL_SECRET_KEY) {
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), "Transaction secret key is not stored in wallet cache.");
+    m_logger(Logging::INFO) << "Transaction secret key is not stored in wallet cache.";
     return false;
   }
 
@@ -1048,7 +1028,7 @@ bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddre
     Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
   }
   catch (const std::runtime_error &e) {
-    m_loggerGroup("WalletLegacy", INFO, boost::posix_time::second_clock::local_time(), "Proof generation error: " + *e.what());
+    m_logger(Logging::ERROR) << "Proof generation error: " << *e.what();
     return false;
   }
 

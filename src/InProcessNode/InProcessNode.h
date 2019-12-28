@@ -82,6 +82,7 @@ public:
   virtual void getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions, const Callback& callback) override;
   virtual void getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions, const Callback& callback) override;
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) override;
+  virtual void getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) override;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override;
 
 private:
@@ -133,6 +134,9 @@ private:
 
   void getTransactionsByPaymentIdAsync(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions, const Callback& callback);
   std::error_code doGetTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<TransactionDetails>& transactions);
+
+  void getBlockTimestampAsync(uint32_t height, uint64_t& timestamp, const Callback& callback);
+  std::error_code doGetBlockTimestampAsync(uint32_t height, uint64_t& timestamp);
 
   void isSynchronizedAsync(bool& syncStatus, const Callback& callback);
 

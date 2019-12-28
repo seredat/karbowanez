@@ -54,6 +54,8 @@
 #include "Transfers/BlockchainSynchronizer.h"
 #include "Transfers/TransfersSynchronizer.h"
 
+#include <Logging/LoggerRef.h>
+
 namespace CryptoNote {
 
 class SyncStarter;
@@ -64,7 +66,7 @@ class WalletLegacy :
   ITransfersObserver {
 
 public:
-  WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& loggerGroup);
+  WalletLegacy(const CryptoNote::Currency& currency, INode& node, Logging::ILogger& log);
   virtual ~WalletLegacy();
 
   virtual void addObserver(IWalletLegacyObserver* observer) override;
@@ -78,9 +80,6 @@ public:
   virtual void shutdown() override;
   virtual void reset() override;
   virtual bool tryLoadWallet(std::istream& source, const std::string& password) override;
-
-  virtual Crypto::SecretKey generateKey(const std::string& password, const Crypto::SecretKey& recovery_param = Crypto::SecretKey(),
-	  bool recover = false, bool two_random = false) override;
 
   virtual void save(std::ostream& destination, bool saveDetailed = true, bool saveCache = true) override;
 
@@ -152,7 +151,7 @@ private:
   std::vector<TransactionId> deleteOutdatedUnconfirmedTransactions();
 
   uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
-  CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+  uint64_t getBlockTimestamp(const uint32_t blockHeight);
 
   enum WalletState
   {
@@ -168,7 +167,7 @@ private:
   std::string m_password;
   const CryptoNote::Currency& m_currency;
   INode& m_node;
-  Logging::ILogger& m_loggerGroup;
+  Logging::LoggerRef m_logger;
   bool m_isStopping;
 
   std::atomic<uint64_t> m_lastNotifiedActualBalance;

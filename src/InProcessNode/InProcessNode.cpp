@@ -638,6 +638,32 @@ void InProcessNode::getOutByMSigGIndexAsync(uint64_t amount, uint32_t gindex, Mu
   callback(ec);
 }
 
+void InProcessNode::getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    lock.unlock();
+    callback(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    return;
+  }
+
+  ioService.post([this, height, &timestamp, callback]() mutable {
+    this->getBlockTimestampAsync(height, timestamp, callback);
+  });
+}
+
+void InProcessNode::getBlockTimestampAsync(uint32_t height, uint64_t& timestamp, const Callback& callback) {
+  std::error_code ec = doGetBlockTimestampAsync(height, timestamp);
+  callback(ec);
+}
+
+std::error_code InProcessNode::doGetBlockTimestampAsync(uint32_t height, uint64_t& timestamp) {
+  if (!core.getBlockTimestamp(height, timestamp)) {
+    return make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR);
+  }
+
+  return std::error_code();
+}
+
 void InProcessNode::getBlocks(const std::vector<uint32_t>& blockHeights, std::vector<std::vector<BlockDetails>>& blocks, const Callback& callback) {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {

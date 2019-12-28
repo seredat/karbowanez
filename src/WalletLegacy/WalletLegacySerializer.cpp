@@ -99,7 +99,7 @@ Crypto::chacha8_iv WalletLegacySerializer::encrypt(const std::string& plain, con
 
   cipher.resize(plain.size());
 
-  Crypto::chacha8_iv iv = Crypto::rand<Crypto::chacha8_iv>();
+  Crypto::chacha8_iv iv = Crypto::randomChachaIV();
   Crypto::chacha8(plain.data(), plain.size(), key, iv, &cipher[0]);
 
   return iv;

@@ -270,7 +270,7 @@ namespace CryptoNote {
 
 		tx.version = CURRENT_TRANSACTION_VERSION;
 		//lock
-		tx.unlockTime = height + (height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_minedMoneyUnlockWindow : m_minedMoneyUnlockWindow_v1);
+		tx.unlockTime = height + (blockMajorVersion < BLOCK_MAJOR_VERSION_5 ? minedMoneyUnlockWindow() : minedMoneyUnlockWindow_v1());
 		tx.inputs.push_back(in);
 		return true;
 	}
