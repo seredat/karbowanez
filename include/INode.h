@@ -95,9 +95,21 @@ public:
   virtual uint32_t getLocalBlockCount() const = 0;
   virtual uint32_t getKnownBlockCount() const = 0;
   virtual uint64_t getMinimalFee() const = 0;
+  virtual uint64_t getNextDifficulty() const = 0;
+  virtual uint64_t getNextReward() const = 0;
+  virtual uint64_t getAlreadyGeneratedCoins() const = 0;
   virtual uint64_t getLastLocalBlockTimestamp() const = 0;
   virtual uint32_t getNodeHeight() const = 0;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const = 0;
+  virtual uint64_t getTransactionsCount() const = 0;
+  virtual uint64_t getTransactionsPoolSize() const = 0;
+  virtual uint64_t getAltBlocksCount() const = 0;
+  virtual uint64_t getOutConnectionsCount() const = 0;
+  virtual uint64_t getIncConnectionsCount() const = 0;
+  virtual uint64_t getRpcConnectionsCount() const = 0;
+  virtual uint64_t getWhitePeerlistSize() const = 0;
+  virtual uint64_t getGreyPeerlistSize() const = 0;
+  virtual std::string getNodeVersion() const = 0;
 
   virtual void getFeeAddress() = 0;
 

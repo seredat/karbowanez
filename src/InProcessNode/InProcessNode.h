@@ -59,7 +59,19 @@ public:
   virtual uint32_t getNodeHeight() const override;
   virtual uint64_t getLastLocalBlockTimestamp() const override;
   virtual uint64_t getMinimalFee() const override;
+  virtual uint64_t getNextDifficulty() const override;
+  virtual uint64_t getNextReward() const override;
+  virtual uint64_t getAlreadyGeneratedCoins() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
+  virtual uint64_t getTransactionsCount() const override;
+  virtual uint64_t getTransactionsPoolSize() const override;
+  virtual uint64_t getAltBlocksCount() const override;
+  virtual uint64_t getOutConnectionsCount() const override;
+  virtual uint64_t getIncConnectionsCount() const override;
+  virtual uint64_t getRpcConnectionsCount() const override;
+  virtual uint64_t getWhitePeerlistSize() const override;
+  virtual uint64_t getGreyPeerlistSize() const override;
+  virtual std::string getNodeVersion() const override;
 
   virtual void getFeeAddress() override;
   virtual std::string feeAddress() const override;

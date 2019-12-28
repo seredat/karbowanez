@@ -22,6 +22,7 @@
 #include <CryptoNoteCore/TransactionApi.h>
 
 #include "CryptoNoteConfig.h"
+#include "Common/Math.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/IBlock.h"
@@ -29,6 +30,7 @@
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "InProcessNodeErrors.h"
 #include "Common/StringTools.h"
+#include "version.h"
 
 using namespace Crypto;
 using namespace Common;
@@ -439,6 +441,40 @@ std::string InProcessNode::feeAddress() const {
   return std::string();
 }
 
+uint64_t InProcessNode::getNextDifficulty() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  return core.getNextBlockDifficulty();
+}
+
+uint64_t InProcessNode::getNextReward() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  std::vector<size_t> blocksSizes;
+  if (!core.getBackwardBlocksSizes(core.getCurrentBlockchainHeight() - 1, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+    return false;
+  }
+  uint64_t sizeMedian = Common::medianValue(blocksSizes);
+  uint64_t nextReward = 0;
+  int64_t emissionChange = 0;
+  if (!core.getBlockReward(core.getCurrentBlockMajorVersion(), sizeMedian, 0, core.getTotalGeneratedAmount(), 0, nextReward, emissionChange)) {
+    throw std::system_error(make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR));
+  }
+  return nextReward;
+}
+
+uint64_t InProcessNode::getAlreadyGeneratedCoins() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+  return core.getTotalGeneratedAmount();
+}
+
 BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {
@@ -446,6 +482,67 @@ BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
   }
 
   return lastLocalBlockHeaderInfo;
+}
+
+uint64_t InProcessNode::getTransactionsCount() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getBlockchainTotalTransactions() - core.getCurrentBlockchainHeight();
+}
+
+uint64_t InProcessNode::getTransactionsPoolSize() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getPoolTransactionsCount();
+}
+
+uint64_t InProcessNode::getAltBlocksCount() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getAlternativeBlocksCount();
+}
+
+uint64_t InProcessNode::getOutConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getIncConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getRpcConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getWhitePeerlistSize() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getGreyPeerlistSize() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+std::string InProcessNode::getNodeVersion() const {
+  return PROJECT_VERSION_LONG;
 }
 
 void InProcessNode::peerCountUpdated(size_t count) {

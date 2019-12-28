@@ -67,9 +67,21 @@ public:
   virtual uint32_t getKnownBlockCount() const override;
   virtual uint64_t getLastLocalBlockTimestamp() const override;
   virtual uint64_t getMinimalFee() const override;
+  virtual uint64_t getNextDifficulty() const override;
+  virtual uint64_t getNextReward() const override;
+  virtual uint64_t getAlreadyGeneratedCoins() const override;
   virtual uint32_t getNodeHeight() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
   virtual void getFeeAddress() override;
+  virtual uint64_t getTransactionsCount() const override;
+  virtual uint64_t getTransactionsPoolSize() const override;
+  virtual uint64_t getAltBlocksCount() const override;
+  virtual uint64_t getOutConnectionsCount() const override;
+  virtual uint64_t getIncConnectionsCount() const override;
+  virtual uint64_t getRpcConnectionsCount() const override;
+  virtual uint64_t getWhitePeerlistSize() const override;
+  virtual uint64_t getGreyPeerlistSize() const override;
+  virtual std::string getNodeVersion() const override;
 
   virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount, std::vector<COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) override;
@@ -163,6 +175,18 @@ private:
   std::atomic<uint32_t> m_networkHeight;
   std::atomic<uint32_t> m_nodeHeight;
   std::atomic<uint64_t> m_minimalFee;
+  std::atomic<uint64_t> m_nextDifficulty;
+  std::atomic<uint64_t> m_nextReward;
+  std::atomic<uint64_t> m_alreadyGeneratedCoins;
+  std::atomic<uint64_t> m_transactionsCount;
+  std::atomic<uint64_t> m_transactionsPoolSize;
+  std::atomic<uint64_t> m_altBlocksCount;
+  std::atomic<uint64_t> m_outConnectionsCount;
+  std::atomic<uint64_t> m_incConnectionsCount;
+  std::atomic<uint64_t> m_rpcConnectionsCount;
+  std::atomic<uint64_t> m_whitePeerlistSize;
+  std::atomic<uint64_t> m_greyPeerlistSize;
+  std::string m_nodeVersion = "";
 
   BlockHeaderInfo lastLocalBlockHeaderInfo;
   //protect it with mutex if decided to add worker threads

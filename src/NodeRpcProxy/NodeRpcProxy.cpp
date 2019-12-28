@@ -70,8 +70,20 @@ NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort)
     m_peerCount(0),
     m_networkHeight(0),
     m_nodeHeight(0),
-    m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE) {
-    resetInternalState();
+    m_nextDifficulty(0),
+    m_nextReward(0),
+    m_minimalFee(CryptoNote::parameters::MAXIMUM_FEE),
+    m_alreadyGeneratedCoins(0),
+    m_transactionsCount(0),
+    m_transactionsPoolSize(0),
+    m_altBlocksCount(0),
+    m_outConnectionsCount(0),
+    m_incConnectionsCount(0),
+    m_rpcConnectionsCount(0),
+    m_whitePeerlistSize(0),
+    m_greyPeerlistSize(0)
+{
+  resetInternalState();
 }
 
 NodeRpcProxy::~NodeRpcProxy() {
@@ -272,8 +284,20 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
 
-	m_minimalFee.store(getInfoResp.min_fee, std::memory_order_relaxed);
-	m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
+    m_minimalFee.store(getInfoResp.min_fee, std::memory_order_relaxed);
+    m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
+    m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
+    m_nextReward.store(getInfoResp.next_reward, std::memory_order_relaxed);
+    m_alreadyGeneratedCoins.store(getInfoResp.already_generated_coins, std::memory_order_relaxed);
+    m_transactionsCount.store(getInfoResp.transactions_count, std::memory_order_relaxed);
+    m_transactionsPoolSize.store(getInfoResp.transactions_pool_size, std::memory_order_relaxed);
+    m_altBlocksCount.store(getInfoResp.alt_blocks_count, std::memory_order_relaxed);
+    m_outConnectionsCount.store(getInfoResp.outgoing_connections_count, std::memory_order_relaxed);
+    m_incConnectionsCount.store(getInfoResp.incoming_connections_count, std::memory_order_relaxed);
+    m_rpcConnectionsCount.store(getInfoResp.rpc_connections_count, std::memory_order_relaxed);
+    m_whitePeerlistSize.store(getInfoResp.white_peerlist_size, std::memory_order_relaxed);
+    m_greyPeerlistSize.store(getInfoResp.grey_peerlist_size, std::memory_order_relaxed);
+    m_nodeVersion = getInfoResp.version;
   }
 
   if (m_connected != m_httpClient->isConnected()) {
@@ -369,6 +393,18 @@ uint64_t NodeRpcProxy::getMinimalFee() const {
   return m_minimalFee.load(std::memory_order_relaxed);
 }
 
+uint64_t NodeRpcProxy::getNextDifficulty() const {
+  return m_nextDifficulty.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getNextReward() const {
+  return m_nextReward.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getAlreadyGeneratedCoins() const {
+  return m_alreadyGeneratedCoins.load(std::memory_order_relaxed);
+}
+
 BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {
   std::lock_guard<std::mutex> lock(m_mutex);
   return lastLocalBlockHeaderInfo;
@@ -376,6 +412,42 @@ BlockHeaderInfo NodeRpcProxy::getLastLocalBlockHeaderInfo() const {
 
 uint32_t NodeRpcProxy::getNodeHeight() const {
   return m_nodeHeight.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getTransactionsCount() const {
+  return m_transactionsCount.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getTransactionsPoolSize() const {
+  return m_transactionsPoolSize.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getAltBlocksCount() const {
+  return m_altBlocksCount.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getOutConnectionsCount() const {
+  return m_outConnectionsCount.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getIncConnectionsCount() const {
+  return m_incConnectionsCount.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getRpcConnectionsCount() const {
+  return m_rpcConnectionsCount.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getWhitePeerlistSize() const {
+  return m_whitePeerlistSize.load(std::memory_order_relaxed);
+}
+
+uint64_t NodeRpcProxy::getGreyPeerlistSize() const {
+  return m_greyPeerlistSize.load(std::memory_order_relaxed);
+}
+
+std::string NodeRpcProxy::getNodeVersion() const {
+  return m_nodeVersion;
 }
 
 void NodeRpcProxy::relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) {
