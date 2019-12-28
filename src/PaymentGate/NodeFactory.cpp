@@ -43,6 +43,15 @@ public:
   virtual uint64_t getNextDifficulty() const override { return 0; }
   virtual uint64_t getNextReward() const override { return 0; }
   virtual uint64_t getAlreadyGeneratedCoins() const override { return 0; }
+  virtual uint64_t getTransactionsCount() const { return 0; }
+  virtual uint64_t getTransactionsPoolSize() const { return 0; }
+  virtual uint64_t getAltBlocksCount() const { return 0; }
+  virtual uint64_t getOutConnectionsCount() const { return 0; }
+  virtual uint64_t getIncConnectionsCount() const { return 0; }
+  virtual uint64_t getRpcConnectionsCount() const { return 0;return 0; }
+  virtual uint64_t getWhitePeerlistSize() const { return 0; }
+  virtual uint64_t getGreyPeerlistSize() const { return 0; }
+  virtual std::string getNodeVersion() const { return ""; }
 
   virtual void getFeeAddress() override { }
 

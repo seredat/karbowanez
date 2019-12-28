@@ -121,10 +121,12 @@ public:
   virtual uint64_t getNextBlockDifficulty() = 0;
   virtual uint64_t getTotalGeneratedAmount() = 0;
   virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) = 0;
-  
-  virtual uint32_t get_current_blockchain_height() = 0;
+  virtual size_t getPoolTransactionsCount() = 0;
+  virtual size_t getBlockchainTotalTransactions() = 0;
+  virtual uint32_t getCurrentBlockchainHeight() = 0;
   virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) = 0;
   virtual uint8_t getCurrentBlockMajorVersion() = 0;
+  virtual size_t getAlternativeBlocksCount() = 0;
 
   virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) = 0;
   virtual bool handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, bool keptByBlock, uint32_t height) = 0;

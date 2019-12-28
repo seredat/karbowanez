@@ -30,6 +30,7 @@
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
 #include "InProcessNodeErrors.h"
 #include "Common/StringTools.h"
+#include "version.h"
 
 using namespace Crypto;
 using namespace Common;
@@ -454,7 +455,7 @@ uint64_t InProcessNode::getNextReward() const {
     throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
   }
   std::vector<size_t> blocksSizes;
-  if (!core.getBackwardBlocksSizes(core.get_current_blockchain_height() - 1, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
+  if (!core.getBackwardBlocksSizes(core.getCurrentBlockchainHeight() - 1, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
     return false;
   }
   uint64_t sizeMedian = Common::medianValue(blocksSizes);
@@ -481,6 +482,67 @@ BlockHeaderInfo InProcessNode::getLastLocalBlockHeaderInfo() const {
   }
 
   return lastLocalBlockHeaderInfo;
+}
+
+uint64_t InProcessNode::getTransactionsCount() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getBlockchainTotalTransactions() - core.getCurrentBlockchainHeight();
+}
+
+uint64_t InProcessNode::getTransactionsPoolSize() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getPoolTransactionsCount();
+}
+
+uint64_t InProcessNode::getAltBlocksCount() const {
+  std::unique_lock<std::mutex> lock(mutex);
+  if (state != INITIALIZED) {
+    throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+  }
+
+  return core.getAlternativeBlocksCount();
+}
+
+uint64_t InProcessNode::getOutConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getIncConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getRpcConnectionsCount() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getWhitePeerlistSize() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+uint64_t InProcessNode::getGreyPeerlistSize() const {
+  // TODO NOT IMPLEMENTED
+
+  return 0;
+}
+
+std::string InProcessNode::getNodeVersion() const {
+  return PROJECT_VERSION_LONG;
 }
 
 void InProcessNode::peerCountUpdated(size_t count) {

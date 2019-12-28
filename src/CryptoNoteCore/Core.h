@@ -103,7 +103,7 @@ namespace CryptoNote {
 
      virtual std::time_t getStartTime() const;
 
-     uint32_t get_current_blockchain_height() override;
+     uint32_t getCurrentBlockchainHeight() override;
      uint8_t getCurrentBlockMajorVersion() override;
      virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) override;
 
@@ -133,14 +133,14 @@ namespace CryptoNote {
      //void get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid);
 
      bool get_alternative_blocks(std::list<Block>& blocks);
-     size_t get_alternative_blocks_count();
+     virtual size_t getAlternativeBlocksCount() override;
 
      void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);
 
      std::vector<Transaction> getPoolTransactions() override;
-     size_t get_pool_transactions_count();
-     size_t get_blockchain_total_transactions();
+     virtual size_t getPoolTransactionsCount() override;
+     virtual size_t getBlockchainTotalTransactions() override;
      //bool get_outs(uint64_t amount, std::list<Crypto::PublicKey>& pkeys);
      virtual std::vector<Crypto::Hash> findBlockchainSupplement(const std::vector<Crypto::Hash>& remoteBlockIds, size_t maxCount,
        uint32_t& totalBlockCount, uint32_t& startBlockIndex) override;

@@ -142,7 +142,7 @@ namespace CryptoNote {
     }
 
     const uint64_t fee = inputs_amount - outputs_amount;
-    bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, m_core.get_current_blockchain_height());
+    bool isFusionTransaction = fee == 0 && m_currency.isFusionTransaction(tx, blobSize, m_core.getCurrentBlockchainHeight());
 
     //check key images for transaction if it is not kept by block
     if (!keptByBlock) {
@@ -410,7 +410,7 @@ namespace CryptoNote {
       }
 
       tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
-      if (!m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.get_current_blockchain_height())) {
+      if (!m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.getCurrentBlockchainHeight())) {
         logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
         continue;
       }

@@ -116,10 +116,10 @@ bool DaemonCommandsHandler::help(const std::vector<std::string>& args) {
 
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::status(const std::vector<std::string>& args) {
-  uint32_t height = m_core.get_current_blockchain_height() - 1;
+  uint32_t height = m_core.getCurrentBlockchainHeight() - 1;
   uint64_t difficulty = m_core.getNextBlockDifficulty();
-  size_t tx_pool_size = m_core.get_pool_transactions_count();
-  size_t alt_blocks_count = m_core.get_alternative_blocks_count();
+  size_t tx_pool_size = m_core.getPoolTransactionsCount();
+  size_t alt_blocks_count = m_core.getAlternativeBlocksCount();
   uint32_t last_known_block_index = std::max(static_cast<uint32_t>(1), protocolQuery.getObservedHeight()) - 1;
   Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(height);
   size_t total_conn = m_srv.get_connections_count();
@@ -205,7 +205,7 @@ bool DaemonCommandsHandler::print_bc(const std::vector<std::string> &args) {
 
   uint32_t start_index = 0;
   uint32_t end_index = 0;
-  uint32_t end_block_parametr = m_core.get_current_blockchain_height();
+  uint32_t end_block_parametr = m_core.getCurrentBlockchainHeight();
   if (!Common::fromString(args[0], start_index)) {
     std::cout << "wrong starter block index parameter" << ENDL;
     return false;
@@ -235,7 +235,7 @@ bool DaemonCommandsHandler::print_bc(const std::vector<std::string> &args) {
 }
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_height(const std::vector<std::string> &args) {
-  logger(Logging::INFO) << "Height: " << m_core.get_current_blockchain_height() << std::endl;
+  logger(Logging::INFO) << "Height: " << m_core.getCurrentBlockchainHeight() << std::endl;
   return true;
 }
 //--------------------------------------------------------------------------------
@@ -379,7 +379,7 @@ bool DaemonCommandsHandler::print_diff(const std::vector<std::string>& args)
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_pool_count(const std::vector<std::string>& args)
 {
-  logger(Logging::INFO) << "Pending transactions in mempool: " << m_core.get_pool_transactions_count() << std::endl;
+  logger(Logging::INFO) << "Pending transactions in mempool: " << m_core.getPoolTransactionsCount() << std::endl;
   return true;
 }
 //--------------------------------------------------------------------------------
