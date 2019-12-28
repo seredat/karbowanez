@@ -290,7 +290,7 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t start_time;
     std::string fee_address;
     uint8_t block_major_version;
-    uint64_t already_generated_coins;
+    std::string already_generated_coins;
     std::string contact;   
 
     void serialize(ISerializer &s) {

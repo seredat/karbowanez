@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2019, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -21,6 +22,7 @@
 #include <atomic>
 #include <system_error>
 #include <thread>
+#include <boost/lexical_cast.hpp>
 
 #include <HTTP/HttpRequest.h>
 #include <HTTP/HttpResponse.h>
@@ -30,7 +32,7 @@
 #include <System/EventLock.h>
 #include <System/Timer.h>
 #include <CryptoNoteCore/TransactionApi.h>
-
+#include "Common/FormatTools.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
@@ -288,7 +290,6 @@ void NodeRpcProxy::updateBlockchainStatus() {
     m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
     m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
     m_nextReward.store(getInfoResp.next_reward, std::memory_order_relaxed);
-    m_alreadyGeneratedCoins.store(getInfoResp.already_generated_coins, std::memory_order_relaxed);
     m_transactionsCount.store(getInfoResp.transactions_count, std::memory_order_relaxed);
     m_transactionsPoolSize.store(getInfoResp.transactions_pool_size, std::memory_order_relaxed);
     m_altBlocksCount.store(getInfoResp.alt_blocks_count, std::memory_order_relaxed);
@@ -298,6 +299,10 @@ void NodeRpcProxy::updateBlockchainStatus() {
     m_whitePeerlistSize.store(getInfoResp.white_peerlist_size, std::memory_order_relaxed);
     m_greyPeerlistSize.store(getInfoResp.grey_peerlist_size, std::memory_order_relaxed);
     m_nodeVersion = getInfoResp.version;
+    uint64_t alreadyGenCoins;
+    if (Common::Format::parseAmount(boost::lexical_cast<std::string>(getInfoResp.already_generated_coins), alreadyGenCoins)) {
+      m_alreadyGeneratedCoins.store(alreadyGenCoins, std::memory_order_relaxed);
+    }
   }
 
   if (m_connected != m_httpClient->isConnected()) {

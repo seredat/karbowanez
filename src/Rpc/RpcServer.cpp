@@ -644,8 +644,9 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.min_fee = m_core.getMinimalFee();
   res.start_time = (uint64_t)m_core.getStartTime();
 
-  // that large uint64_t number is unsafe in JavaScript environment and therefore as a JSON value but inaccuracy is neglectible to bother about
-  res.already_generated_coins = m_core.getTotalGeneratedAmount();
+  uint64_t alreadyGeneratedCoins = m_core.getTotalGeneratedAmount();
+  // that large uint64_t number is unsafe in JavaScript environment and therefore as a JSON value so we display it as a formatted string
+  res.already_generated_coins = m_core.currency().formatAmount(alreadyGeneratedCoins);
   res.block_major_version = m_core.getCurrentBlockMajorVersion();
   std::vector<size_t> blocksSizes;
   if (!m_core.getBackwardBlocksSizes(res.height - 1, blocksSizes, parameters::CRYPTONOTE_REWARD_BLOCKS_WINDOW)) {
@@ -654,7 +655,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   uint64_t sizeMedian = Common::medianValue(blocksSizes);
   uint64_t nextReward = 0;
   int64_t emissionChange = 0;
-  if (!m_core.getBlockReward(res.block_major_version, sizeMedian, 0, res.already_generated_coins, 0, nextReward, emissionChange)) {
+  if (!m_core.getBlockReward(res.block_major_version, sizeMedian, 0, alreadyGeneratedCoins, 0, nextReward, emissionChange)) {
     throw JsonRpc::JsonRpcError{
       CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get already generated coins for prev. block." };
   }
