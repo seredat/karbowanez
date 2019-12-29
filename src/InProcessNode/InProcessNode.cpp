@@ -1202,4 +1202,51 @@ void InProcessNode::isSynchronizedAsync(bool& syncStatus, const Callback& callba
   callback(std::error_code());
 }
 
+void InProcessNode::getConnections(std::vector<p2pConnection>& connections, const Callback& callback) {
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (state != INITIALIZED) {
+      throw std::system_error(make_error_code(CryptoNote::error::NOT_INITIALIZED));
+    }
+  }
+
+  ioService.post(
+    std::bind(&InProcessNode::getConnectionsAsync,
+      this,
+      std::ref(connections),
+      callback
+    )
+  );
+}
+
+void InProcessNode::getConnectionsAsync(std::vector<p2pConnection>& connections, const Callback& callback) {
+  std::error_code ec = doGetConnections(connections);
+  callback(ec);
+}
+
+std::error_code InProcessNode::doGetConnections(std::vector<p2pConnection>& connections) {
+  std::vector<CryptoNoteConnectionContext> peers;
+  if (!protocol.getConnections(peers)) {
+    return make_error_code(CryptoNote::error::INTERNAL_NODE_ERROR);
+  }
+
+  for (const auto& p : peers) {
+    p2pConnection c;
+
+    c.version = p.version;
+    c.connection_state = static_cast<p2pConnection::state>(p.m_state);
+    c.connection_id = p.m_connection_id;
+    c.remote_ip = p.m_remote_ip;
+    c.remote_port = p.m_remote_port;
+    c.is_incoming = p.m_is_income;
+    c.started = static_cast<uint64_t>(p.m_started);
+    c.remote_blockchain_height = p.m_remote_blockchain_height;
+    c.last_response_height = p.m_last_response_height;
+
+    connections.push_back(c);
+  }
+
+  return std::error_code();
+}
+
 } //namespace CryptoNote

@@ -21,6 +21,8 @@
 #include <functional>
 #include <system_error>
 #include <vector>
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid.hpp>
 
 #include "crypto/crypto.h"
 #include "CryptoNoteCore/CryptoNoteBasic.h"
@@ -78,6 +80,39 @@ struct BlockHeaderInfo {
   uint64_t reward;
 };
 
+struct p2pConnection {
+  uint8_t version;
+  boost::uuids::uuid connection_id;
+  uint32_t remote_ip = 0;
+  uint32_t remote_port = 0;
+  bool is_incoming = false;
+  uint64_t started = 0;
+
+  enum state {
+    state_befor_handshake = 0, //default state
+    state_synchronizing,
+    state_idle,
+    state_normal,
+    state_sync_required,
+    state_pool_sync_required,
+    state_shutdown
+  };
+
+  state connection_state = state_befor_handshake;
+  uint32_t remote_blockchain_height = 0;
+  uint32_t last_response_height = 0;
+};
+
+inline p2pConnection::state get_protocol_state_from_string(std::string s) {
+  if (s == "state_befor_handshake") return p2pConnection::state_befor_handshake;
+  if (s == "state_synchronizing") return p2pConnection::state_synchronizing;
+  if (s == "state_idle") return p2pConnection::state_idle;
+  if (s == "state_normal") return p2pConnection::state_normal;
+  if (s == "state_sync_required") return p2pConnection::state_sync_required;
+  if (s == "state_pool_sync_required") return p2pConnection::state_pool_sync_required;
+  if (s == "state_shutdown") return p2pConnection::state_shutdown;
+}
+
 class INode {
 public:
   typedef std::function<void(std::error_code)> Callback;
@@ -112,6 +147,7 @@ public:
   virtual std::string getNodeVersion() const = 0;
 
   virtual void getFeeAddress() = 0;
+  virtual std::string feeAddress() const = 0;
 
   virtual void relayTransaction(const Transaction& transaction, const Callback& callback) = 0;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount, std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) = 0;
@@ -130,7 +166,7 @@ public:
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) = 0;
   virtual void getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) = 0;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) = 0;
-  virtual std::string feeAddress() const = 0;
+  virtual void getConnections(std::vector<p2pConnection>& connections, const Callback& callback) = 0;
 };
 
 }

@@ -847,6 +847,7 @@ bool RpcServer::on_get_connections(const COMMAND_RPC_GET_CONNECTIONS::request& r
 
   for (const auto& p : peers) {
     p2p_connection_entry c;
+
     c.version = p.version;
     c.state = get_protocol_state_string(p.m_state);
     c.connection_id = boost::lexical_cast<std::string>(p.m_connection_id);
@@ -856,6 +857,7 @@ bool RpcServer::on_get_connections(const COMMAND_RPC_GET_CONNECTIONS::request& r
     c.started = static_cast<uint64_t>(p.m_started);
     c.remote_blockchain_height = p.m_remote_blockchain_height;
     c.last_response_height = p.m_last_response_height;
+
     res.connections.push_back(c);
   }
 

@@ -22,6 +22,8 @@
 #include <atomic>
 #include <system_error>
 #include <thread>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <HTTP/HttpRequest.h>
@@ -597,6 +599,45 @@ std::error_code NodeRpcProxy::doGetBlockTimestamp(uint32_t height, uint64_t& tim
   std::error_code ec = jsonRpcCommand("getblocktimestamp", req, rsp);
 
   timestamp = rsp.timestamp;
+  return ec;
+}
+
+void NodeRpcProxy::getConnections(std::vector<p2pConnection>& connections, const Callback& callback) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (m_state != STATE_INITIALIZED) {
+    callback(make_error_code(error::NOT_INITIALIZED));
+    return;
+  }
+
+  scheduleRequest(std::bind(&NodeRpcProxy::doGetConnections, this, std::ref(connections)), callback);
+}
+
+std::error_code NodeRpcProxy::doGetConnections(std::vector<p2pConnection>& connections) {
+  COMMAND_RPC_GET_CONNECTIONS::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_CONNECTIONS::response rsp = AUTO_VAL_INIT(rsp);
+
+  std::error_code ec = jsonCommand("/connections", req, rsp);
+
+  if (ec || rsp.status != CORE_RPC_STATUS_OK) {
+    return ec;
+  }
+
+  for (const auto& p : rsp.connections) {
+    p2pConnection c;
+
+    c.version = p.version;
+    c.connection_state = get_protocol_state_from_string(p.state);
+    c.connection_id = boost::lexical_cast<boost::uuids::uuid>(p.connection_id);
+    c.remote_ip = Common::stringToIpAddress(p.remote_ip);
+    c.remote_port = p.remote_port;
+    c.is_incoming = p.is_incoming;
+    c.started = p.started;
+    c.remote_blockchain_height = p.remote_blockchain_height;
+    c.last_response_height = p.last_response_height;
+
+    connections.push_back(c);
+  }
+
   return ec;
 }
 
