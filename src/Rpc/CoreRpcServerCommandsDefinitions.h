@@ -348,6 +348,47 @@ struct COMMAND_RPC_GET_PEER_LIST {
 };
 
 //-----------------------------------------------
+struct p2p_connection_entry
+{
+  uint8_t version;
+  std::string state;
+  std::string connection_id;
+  std::string remote_ip;
+  uint32_t remote_port = 0;
+  bool is_incoming = false;
+  uint64_t started = 0;
+  uint32_t remote_blockchain_height = 0;
+  uint32_t last_response_height = 0;
+
+  void serialize(ISerializer& s)
+  {
+    KV_MEMBER(version)
+    KV_MEMBER(state)
+    KV_MEMBER(connection_id)
+    KV_MEMBER(remote_ip)
+    KV_MEMBER(remote_port)
+    KV_MEMBER(is_incoming)
+    KV_MEMBER(started)
+    KV_MEMBER(remote_blockchain_height)
+    KV_MEMBER(last_response_height)
+  }
+};
+
+struct COMMAND_RPC_GET_CONNECTIONS {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<p2p_connection_entry> connections;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(connections)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+//-----------------------------------------------
 struct COMMAND_RPC_GET_FEE_ADDRESS {
   typedef EMPTY_STRUCT request;
 
