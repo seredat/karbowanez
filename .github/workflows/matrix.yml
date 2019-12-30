@@ -100,7 +100,7 @@ jobs:
 
       # Upload to GH Release
       - name: Upload to GH Release
-        if: github.event_name == 'release' && github.repository == 'Karbovanets/karbowanec' && matrix.deployable
+        if: github.event_name == 'release' && matrix.deployable
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -177,7 +177,7 @@ jobs:
 
       # Upload to GH Release
       - name: Upload to GH Release
-        if: github.event_name == 'release' && github.repository == 'Karbovanets/karbowanec'
+        if: github.event_name == 'release'
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -250,7 +250,7 @@ jobs:
 
       # Upload to GH Release
       - name: Upload to GH Release
-        if: github.event_name == 'release' && github.repository == 'Karbovanets/karbowanec'
+        if: github.event_name == 'release'
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
