@@ -93,9 +93,8 @@ jobs:
           cp ${TARGETS} karbowanec-${TAG}/
           cp ../../LICENSE karbowanec-${TAG}/
           tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
-          rm -rf builds
-          mkdir builds
-          cp karbowanec-${LABEL}-${TAG}.tar.gz builds
+          echo ::set-output name=binary_path::karbowanec-${TAG}
+		  echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
           echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
       # Upload to GH Release
@@ -114,8 +113,8 @@ jobs:
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
-          name: ${{ steps.before_deploy.outputs.file_name }}
-          path: ./build/src/${{ steps.before_deploy.outputs.file_name }}
+          name: ${{ steps.before_deploy.outputs.artifact_name }}
+          path: ./build/src/${{ steps.before_deploy.outputs.binary_path }}
 
   # Mac builds on Catalina VM
   macos_build:
@@ -169,9 +168,8 @@ jobs:
           cp ${TARGETS} karbowanec-${TAG}/
           cp ../../LICENSE karbowanec-${TAG}/
           tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
-          rm -rf builds
-          mkdir builds
-          cp karbowanec-${LABEL}-${TAG}.tar.gz builds
+          echo ::set-output name=binary_path::karbowanec-${TAG}
+		  echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
           echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
 
@@ -191,8 +189,8 @@ jobs:
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
-          name: ${{ steps.before_deploy.outputs.file_name }}
-          path: ./build/src/${{ steps.before_deploy.outputs.file_name }}
+          name: ${{ steps.before_deploy.outputs.artifact_name }}
+          path: ./build/src/${{ steps.before_deploy.outputs.binary_path }}
 
   # Windows Builds on Windows Server 2019
   windows_build:
@@ -242,9 +240,8 @@ jobs:
           cp *.exe karbowanec-${TAG}/
           cp ../../../LICENSE karbowanec-${TAG}/
           7z a karbowanec-${LABEL}-${TAG}.zip karbowanec-${TAG}/
-          rm -rf builds
-          mkdir builds
-          cp karbowanec-${LABEL}-${TAG}.zip builds
+          echo ::set-output name=binary_path::karbowanec-${TAG}
+          echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
           echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.zip
 
 
@@ -264,5 +261,5 @@ jobs:
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
-          name: ${{ steps.before_deploy.outputs.file_name }}
-          path: ./build/src/Release/${{ steps.before_deploy.outputs.file_name }}
+          name: ${{ steps.before_deploy.outputs.artifact_name }}
+          path: ./build/src/Release/${{ steps.before_deploy.outputs.binary_path }}
