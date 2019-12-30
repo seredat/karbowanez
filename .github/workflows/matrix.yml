@@ -84,7 +84,7 @@ jobs:
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA}; fi
+          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
           cd build/src
           TARGETS="karbowanecd simplewallet greenwallet walletd optimizer miner"
           if [[ "${LABEL}" != "aarch64" ]]; then strip ${TARGETS}; fi
@@ -92,11 +92,11 @@ jobs:
           mkdir karbowanec-${TAG}
           cp ${TARGETS} karbowanec-${TAG}/
           cp ../../LICENSE karbowanec-${TAG}/
-          tar cvfz karbowanec-${TAG}-${LABEL}.tar.gz karbowanec-${TAG}/
+          tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
           rm -rf builds
           mkdir builds
-          cp karbowanec-${TAG}-${LABEL}.tar.gz builds
-          echo ::set-output name=file_name::karbowanec-${TAG}-${LABEL}.tar.gz
+          cp karbowanec-${LABEL}-${TAG}.tar.gz builds
+          echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
       # Upload to GH Release
       - name: Upload to GH Release
@@ -160,7 +160,7 @@ jobs:
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA}; fi
+          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
           cd build/src
           TARGETS="karbowanecd simplewallet greenwallet walletd optimizer miner"
           strip ${TARGETS}
@@ -168,11 +168,11 @@ jobs:
           mkdir karbowanec-${TAG}
           cp ${TARGETS} karbowanec-${TAG}/
           cp ../../LICENSE karbowanec-${TAG}/
-          tar cvfz karbowanec-${TAG}-${LABEL}.tar.gz karbowanec-${TAG}/
+          tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
           rm -rf builds
           mkdir builds
-          cp karbowanec-${TAG}-${LABEL}.tar.gz builds
-          echo ::set-output name=file_name::karbowanec-${TAG}-${LABEL}.tar.gz
+          cp karbowanec-${LABEL}-${TAG}.tar.gz builds
+          echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
 
       # Upload to GH Release
@@ -235,17 +235,17 @@ jobs:
         env:
           COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA}; fi
+          if [[ "${TAG:5:4}" == "tags" ]]; then export TAG=${TAG:10}; else export TAG=${COMMIT_SHA::8}; fi
           cd build/src/Release
           rm -rf karbowanec-${TAG}
           mkdir karbowanec-${TAG}
           cp *.exe karbowanec-${TAG}/
           cp ../../../LICENSE karbowanec-${TAG}/
-          7z a karbowanec-${TAG}-${LABEL}.zip karbowanec-${TAG}/
+          7z a karbowanec-${LABEL}-${TAG}.zip karbowanec-${TAG}/
           rm -rf builds
           mkdir builds
-          cp karbowanec-${TAG}-${LABEL}.zip builds
-          echo ::set-output name=file_name::karbowanec-${TAG}-${LABEL}.zip
+          cp karbowanec-${LABEL}-${TAG}.zip builds
+          echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.zip
 
 
       # Upload to GH Release
