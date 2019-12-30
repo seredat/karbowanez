@@ -100,6 +100,7 @@ public:
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) override;
   virtual void getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) override;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override;
+  virtual void getConnections(std::vector<p2pConnection>& connections, const Callback& callback) override;
 
   virtual std::string feeAddress() const override;
 
@@ -138,6 +139,7 @@ private:
   std::error_code doGetTransactionHashesByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
   std::error_code doGetTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions);
   std::error_code doGetBlockTimestamp(uint32_t height, uint64_t& timestamp);
+  std::error_code doGetConnections(std::vector<p2pConnection>& connections);
 
   void scheduleRequest(std::function<std::error_code()>&& procedure, const Callback& callback);
   template <typename Request, typename Response>

@@ -146,6 +146,14 @@ void CryptoNoteProtocolHandler::log_connections() {
   logger(INFO) << "Connections: " << ENDL << ss.str();
 }
 
+bool CryptoNoteProtocolHandler::getConnections(std::vector<CryptoNoteConnectionContext>& connections) const {
+  m_p2p->for_each_connection([&](const CryptoNoteConnectionContext& cntxt, PeerIdType peer_id) {
+    connections.push_back(cntxt);
+  });
+
+  return true;
+}
+
 uint32_t CryptoNoteProtocolHandler::get_current_blockchain_height() {
   uint32_t height;
   Crypto::Hash blockId;

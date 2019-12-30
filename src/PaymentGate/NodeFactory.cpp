@@ -107,6 +107,8 @@ public:
 
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override { }
 
+  virtual void getConnections(std::vector<CryptoNote::p2pConnection>& connections, const Callback& callback) override { }
+
   virtual std::string feeAddress() const override { return std::string(); }
 
 };

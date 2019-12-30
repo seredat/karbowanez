@@ -97,6 +97,7 @@ public:
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) override;
   virtual void getBlockTimestamp(uint32_t height, uint64_t& timestamp, const Callback& callback) override;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) override;
+  virtual void getConnections(std::vector<p2pConnection>& connections, const Callback& callback) override;
 
 private:
   virtual void peerCountUpdated(size_t count) override;
@@ -152,6 +153,9 @@ private:
   std::error_code doGetBlockTimestampAsync(uint32_t height, uint64_t& timestamp);
 
   void isSynchronizedAsync(bool& syncStatus, const Callback& callback);
+
+  void getConnectionsAsync(std::vector<p2pConnection>& connections, const Callback& callback);
+  std::error_code doGetConnections(std::vector<p2pConnection>& connections);
 
   void workerFunc();
   bool doShutdown();
