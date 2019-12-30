@@ -94,7 +94,7 @@ jobs:
           cp ../../LICENSE karbowanec-${TAG}/
           tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
           echo ::set-output name=binary_path::karbowanec-${TAG}
-		  echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
+          echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
           echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
       # Upload to GH Release
@@ -169,7 +169,7 @@ jobs:
           cp ../../LICENSE karbowanec-${TAG}/
           tar cvfz karbowanec-${LABEL}-${TAG}.tar.gz karbowanec-${TAG}/
           echo ::set-output name=binary_path::karbowanec-${TAG}
-		  echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
+          echo ::set-output name=artifact_name::karbowanec-${LABEL}-${TAG}
           echo ::set-output name=file_name::karbowanec-${LABEL}-${TAG}.tar.gz
 
 
