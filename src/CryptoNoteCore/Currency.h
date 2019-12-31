@@ -81,7 +81,7 @@ public:
   uint64_t coin() const { return m_coin; }
 
   uint64_t minimumFee() const { return m_minimumFee; }
-  uint64_t getMinimalFee(uint64_t dailyDifficulty, uint64_t reward, uint64_t avgHistoricalDifficulty, uint64_t medianHistoricalReward, uint32_t height) const;
+  uint64_t getMinimalFee(uint64_t avgCurrentDifficulty, uint64_t avgCurrentReward, uint64_t avgHistoricDifficulty, uint64_t avgHistoricReward, uint32_t height) const;
   uint64_t defaultDustThreshold() const { return m_defaultDustThreshold; }
 
   uint64_t difficultyTarget() const { return m_difficultyTarget; }
@@ -89,7 +89,10 @@ public:
   size_t difficultyLag() const { return m_difficultyLag; }
   size_t difficultyCut() const { return m_difficultyCut; }
   size_t difficultyBlocksCountByBlockVersion(uint8_t blockMajorVersion) const {
-    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_3) {
+    if (blockMajorVersion >= BLOCK_MAJOR_VERSION_5) {
+      return difficultyBlocksCount4() + 1;
+    }
+    else if (blockMajorVersion == BLOCK_MAJOR_VERSION_3 || blockMajorVersion == BLOCK_MAJOR_VERSION_4) {
       return difficultyBlocksCount3() + 1;
     }
     else if (blockMajorVersion == BLOCK_MAJOR_VERSION_2) {
@@ -102,6 +105,7 @@ public:
   size_t difficultyBlocksCount() const { return m_difficultyWindow + m_difficultyLag; }
   size_t difficultyBlocksCount2() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V2; }
   size_t difficultyBlocksCount3() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V3; }
+  size_t difficultyBlocksCount4() const { return CryptoNote::parameters::DIFFICULTY_WINDOW_V4; }
 
   size_t maxBlockSizeInitial() const { return m_maxBlockSizeInitial; }
   uint64_t maxBlockSizeGrowthSpeedNumerator() const { return m_maxBlockSizeGrowthSpeedNumerator; }
@@ -165,6 +169,7 @@ public:
   difficulty_type nextDifficultyV2(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV3(std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
   difficulty_type nextDifficultyV4(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
+  difficulty_type nextDifficultyV5(uint32_t height, uint8_t blockMajorVersion, std::vector<uint64_t> timestamps, std::vector<difficulty_type> Difficulties) const;
 
   bool checkProofOfWorkV1(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
   bool checkProofOfWorkV2(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) const;
