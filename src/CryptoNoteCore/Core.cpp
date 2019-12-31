@@ -305,14 +305,14 @@ bool Core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
   bool enough = true;
   if (!isFusionTransaction && !m_checkpoints.is_in_checkpoint_zone(getCurrentBlockchainHeight())) {
     if (getBlockMajorVersionForHeight(height) < BLOCK_MAJOR_VERSION_4) {
-      if (fee < m_currency.minimumFee()) {
-        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << m_currency.minimumFee();
+      if (fee < CryptoNote::parameters::MINIMUM_FEE_V1) {
+        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << m_currency.formatAmount(CryptoNote::parameters::MINIMUM_FEE_V1);
         enough = false;
       }
     } else {
       uint64_t min = getMinimalFeeForHeight(height);
       if (fee < (min - min * 20 / 100)) {
-        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << min;
+        logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << m_currency.formatAmount(min);
         enough = false;
       }
     }
