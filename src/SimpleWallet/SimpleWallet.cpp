@@ -1407,7 +1407,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 {
 	m_wallet_file = wallet_file;
 
-	m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
+	m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
 	m_node->addObserver(static_cast<INodeObserver*>(this));
 	m_wallet->addObserver(this);
 
@@ -1480,7 +1480,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const Crypto::SecretKey &secret_key, const Crypto::SecretKey &view_key) {
   m_wallet_file = wallet_file;
 
-  m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
+  m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
   m_node->addObserver(static_cast<INodeObserver*>(this));
   m_wallet->addObserver(this);
   try {
@@ -1538,7 +1538,7 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string& password, const AccountKeys& private_keys) {
     m_wallet_file = wallet_file;
 
-    m_wallet.reset(new WalletLegacy(m_currency, *m_node, m_logManager));
+    m_wallet.reset(new WalletLegacy(m_currency, *m_node.get(), m_logManager));
     m_node->addObserver(static_cast<INodeObserver*>(this));
     m_wallet->addObserver(this);
     try {
