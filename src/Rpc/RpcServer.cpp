@@ -147,7 +147,7 @@ RpcServer::RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, Cryp
 }
 
 void RpcServer::processRequest(const HttpRequest& request, HttpResponse& response) {
-  logger(Logging::TRACE) << "RPC request came: \n" << request << std::endl;
+  //logger(Logging::TRACE) << "RPC request came: \n" << request << std::endl;
 
   auto url = request.getUrl();
 
@@ -181,7 +181,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
   JsonRpcResponse jsonResponse;
 
   try {
-    logger(Logging::TRACE) << "JSON-RPC request: " << request.getBody();
+    //logger(Logging::TRACE) << "JSON-RPC request: " << request.getBody();
     jsonRequest.parseRequest(request.getBody());
     jsonResponse.setId(jsonRequest.getId()); // copy id
 
@@ -234,7 +234,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
   }
 
   response.setBody(jsonResponse.getBody());
-  logger(Logging::TRACE) << "JSON-RPC response: " << jsonResponse.getBody();
+  //logger(Logging::TRACE) << "JSON-RPC response: " << jsonResponse.getBody();
   return true;
 }
 
@@ -398,7 +398,7 @@ bool RpcServer::on_get_indexes(const COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::
 
   res.o_indexes.assign(outputIndexes.begin(), outputIndexes.end());
   res.status = CORE_RPC_STATUS_OK;
-  logger(Logging::TRACE) << "COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES: [" << res.o_indexes.size() << "]";
+  //logger(Logging::TRACE) << "COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES: [" << res.o_indexes.size() << "]";
   return true;
 }
 
@@ -426,7 +426,7 @@ bool RpcServer::on_get_random_outs(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOU
     ss << ENDL;
   });
   std::string s = ss.str();
-  logger(Logging::TRACE) << "COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS: " << ENDL << s;
+  //logger(Logging::TRACE) << "COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS: " << ENDL << s;
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }
@@ -944,7 +944,6 @@ bool RpcServer::on_get_transactions_by_payment_id(const COMMAND_RPC_GET_TRANSACT
 	if (!req.payment_id.size()) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Wrong parameters, expected payment_id" };
 	}
-	logger(Logging::DEBUGGING, Logging::WHITE) << "RPC request came: Search by Payment ID: " << req.payment_id;
 
 	Crypto::Hash paymentId;
 	std::vector<Transaction> transactions;
