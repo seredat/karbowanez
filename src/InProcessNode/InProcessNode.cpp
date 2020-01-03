@@ -354,6 +354,9 @@ std::error_code InProcessNode::doRelayTransaction(const CryptoNote::Transaction&
 
     CryptoNote::NOTIFY_NEW_TRANSACTIONS::request r;
     r.txs.push_back(asString(transactionBinaryArray));
+    std::mt19937 rng = Random::generator();
+    std::uniform_int_distribution<size_t> dis(0, CryptoNote::parameters::DANDELION_TX_STEM);
+    r.stem = dis(rng);
     core.get_protocol()->relay_transactions(r);
   } catch (std::system_error& e) {
     return e.code();

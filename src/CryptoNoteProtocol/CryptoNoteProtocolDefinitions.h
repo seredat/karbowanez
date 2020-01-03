@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbowanec developers
 //
 // This file is part of Karbo.
 //
@@ -105,10 +106,12 @@ namespace CryptoNote
   /************************************************************************/
   struct NOTIFY_NEW_TRANSACTIONS_request
   {
+    size_t stem = 0;
     std::vector<std::string> txs;
 
     void serialize(ISerializer& s) {
-      KV_MEMBER(txs);
+      KV_MEMBER(stem)
+      KV_MEMBER(txs)
     }
 
   };

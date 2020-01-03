@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -22,6 +23,7 @@
 #include <Common/ObserverManager.h>
 
 #include "CryptoNoteCore/ICore.h"
+#include "CryptoNoteCore/OnceInInterval.h"
 
 #include "CryptoNoteProtocol/CryptoNoteProtocolDefinitions.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandlerCommon.h"
@@ -86,6 +88,7 @@ namespace CryptoNote
     virtual size_t getPeerCount() const override;
     virtual uint32_t getObservedHeight() const override;
     void requestMissingPoolTransactions(const CryptoNoteConnectionContext& context);
+    bool select_dandelion_stem();
 
   private:
     //----------------- commands handlers ----------------------------------------------
@@ -127,5 +130,8 @@ namespace CryptoNote
 
     std::atomic<size_t> m_peersCount;
     Tools::ObserverManager<ICryptoNoteProtocolObserver> m_observerManager;
+
+    OnceInInterval m_dandelionStemSelectInterval;
+    std::vector<CryptoNoteConnectionContext> m_dandelion_stem;
   };
 }
