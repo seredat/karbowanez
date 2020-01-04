@@ -49,6 +49,8 @@
 
 static const Crypto::SecretKey I = { { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 
+const uint32_t MAX_NUMBER_OF_BLOCKS_PER_STATS_REQUEST = 1000;
+
 namespace CryptoNote {
 
 namespace {
@@ -206,7 +208,8 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "gettransactionhashesbypaymentid", { makeMemberMethod(&RpcServer::on_get_transaction_hashes_by_paymentid), true } },
       { "gettransactionsbyhashes", { makeMemberMethod(&RpcServer::on_get_transactions_details_by_hashes), true } },
       { "getcurrencyid", { makeMemberMethod(&RpcServer::on_get_currency_id), true } },
-      { "getstats", { makeMemberMethod(&RpcServer::on_get_stats_by_heights), true } },
+      { "getstatsbyheights", { makeMemberMethod(&RpcServer::on_get_stats_by_heights), false } },
+      { "getstatsinrange", { makeMemberMethod(&RpcServer::on_get_stats_by_heights_range), false } },
       { "checktransactionkey", { makeMemberMethod(&RpcServer::on_check_transaction_key), true } },
       { "checktransactionbyviewkey", { makeMemberMethod(&RpcServer::on_check_transaction_with_view_key), true } },
       { "checktransactionproof", { makeMemberMethod(&RpcServer::on_check_transaction_proof), true } },
@@ -685,6 +688,38 @@ bool RpcServer::on_get_stats_by_heights(const COMMAND_RPC_GET_STATS_BY_HEIGHTS::
         std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
     }
 
+    block_stats_entry entry;
+    entry.height = height;
+    uint64_t gen_txs = 0;
+    if (!m_core.getblockEntry(height, entry.block_size, entry.difficulty, entry.already_generated_coins, entry.reward, gen_txs)) {
+      throw JsonRpc::JsonRpcError{
+            CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get stats for height" + std::to_string(height) };
+    }
+    entry.already_generated_transactions = gen_txs - height; // exclude coinbase
+    //entry.min_fee = m_core.getMinimalFeeForHeight(height);
+    stats.push_back(entry);
+  }
+  res.stats = std::move(stats);
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::on_get_stats_by_heights_range(const COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE::request& req, COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE::response& res) {
+  uint32_t min = std::max<uint32_t>(req.start_height, 0);
+  uint32_t max = std::min<uint32_t>(req.end_height, m_core.getCurrentBlockchainHeight() - 1);
+  if (min >= max) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Wrong start and end heights" };
+  }
+  uint32_t count = std::min<uint32_t>(std::min<uint32_t>(MAX_NUMBER_OF_BLOCKS_PER_STATS_REQUEST, max - min), m_core.getCurrentBlockchainHeight() - 1);
+  
+  std::vector<uint32_t> selected_heights;
+  double delta = (max - min) / double(count - 1);
+  for (uint32_t i = 0; i < count; i++) {
+    selected_heights.push_back(static_cast<uint32_t>(min + i * delta));
+  }
+
+  std::vector<block_stats_entry> stats;
+  for (const uint32_t& height : selected_heights) {
     block_stats_entry entry;
     entry.height = height;
     uint64_t gen_txs = 0;

@@ -1116,23 +1116,45 @@ struct block_stats_entry {
 };
 
 struct COMMAND_RPC_GET_STATS_BY_HEIGHTS {
-	struct request {
-		std::vector<uint32_t> heights;
+  struct request {
+    std::vector<uint32_t> heights;
 
-		void serialize(ISerializer& s) {
-			KV_MEMBER(heights);
-		}
-	};
+    void serialize(ISerializer& s) {
+      KV_MEMBER(heights);
+    }
+  };
 
-	struct response {
-		std::vector<block_stats_entry> stats;
-		std::string status;
+  struct response {
+    std::vector<block_stats_entry> stats;
+    std::string status;
 
-		void serialize(ISerializer& s) {
-			KV_MEMBER(status)
-			KV_MEMBER(stats)
-		}
-	};
+    void serialize(ISerializer& s) {
+      KV_MEMBER(stats);
+      KV_MEMBER(status);
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE {
+  struct request {
+    uint32_t start_height;
+    uint32_t end_height;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(start_height);
+      KV_MEMBER(end_height);
+    }
+  };
+
+  struct response {
+    std::vector<block_stats_entry> stats;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(stats);
+      KV_MEMBER(status);
+    }
+  };
 };
 
 }
