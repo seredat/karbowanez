@@ -1094,4 +1094,45 @@ struct COMMAND_RPC_CHECK_RESERVE_PROOF {
 	};
 };
 
+
+struct block_stats_entry {
+  uint32_t height;
+  uint64_t already_generated_coins;
+  uint64_t already_generated_transactions;
+  uint64_t block_size;
+  uint64_t difficulty;
+  uint64_t reward;
+  //uint64_t min_fee;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(height)
+    KV_MEMBER(already_generated_coins)
+    KV_MEMBER(already_generated_transactions)
+    KV_MEMBER(block_size)
+    KV_MEMBER(difficulty)
+    KV_MEMBER(reward)
+    //KV_MEMBER(min_fee)
+  }
+};
+
+struct COMMAND_RPC_GET_STATS_BY_HEIGHTS {
+	struct request {
+		std::vector<uint32_t> heights;
+
+		void serialize(ISerializer& s) {
+			KV_MEMBER(heights);
+		}
+	};
+
+	struct response {
+		std::vector<block_stats_entry> stats;
+		std::string status;
+
+		void serialize(ISerializer& s) {
+			KV_MEMBER(status)
+			KV_MEMBER(stats)
+		}
+	};
+};
+
 }
