@@ -1102,6 +1102,7 @@ struct block_stats_entry {
   uint64_t block_size;
   uint64_t difficulty;
   uint64_t reward;
+  uint64_t timestamp;
   //uint64_t min_fee;
 
   void serialize(ISerializer &s) {
@@ -1111,6 +1112,7 @@ struct block_stats_entry {
     KV_MEMBER(block_size)
     KV_MEMBER(difficulty)
     KV_MEMBER(reward)
+    KV_MEMBER(timestamp)
     //KV_MEMBER(min_fee)
   }
 };

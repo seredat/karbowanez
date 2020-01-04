@@ -691,7 +691,7 @@ bool RpcServer::on_get_stats_by_heights(const COMMAND_RPC_GET_STATS_BY_HEIGHTS::
     block_stats_entry entry;
     entry.height = height;
     uint64_t gen_txs = 0;
-    if (!m_core.getblockEntry(height, entry.block_size, entry.difficulty, entry.already_generated_coins, entry.reward, gen_txs)) {
+    if (!m_core.getblockEntry(height, entry.block_size, entry.difficulty, entry.already_generated_coins, entry.reward, gen_txs, entry.timestamp)) {
       throw JsonRpc::JsonRpcError{
             CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get stats for height" + std::to_string(height) };
     }
@@ -723,7 +723,7 @@ bool RpcServer::on_get_stats_by_heights_range(const COMMAND_RPC_GET_STATS_BY_HEI
     block_stats_entry entry;
     entry.height = height;
     uint64_t gen_txs = 0;
-    if (!m_core.getblockEntry(height, entry.block_size, entry.difficulty, entry.already_generated_coins, entry.reward, gen_txs)) {
+    if (!m_core.getblockEntry(height, entry.block_size, entry.difficulty, entry.already_generated_coins, entry.reward, gen_txs, entry.timestamp)) {
       throw JsonRpc::JsonRpcError{
             CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get stats for height" + std::to_string(height) };
     }
