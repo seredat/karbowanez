@@ -137,6 +137,7 @@ namespace CryptoNote {
 
      void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);
+     virtual bool isInCheckpointZone(uint32_t height) const override;
 
      std::vector<Transaction> getPoolTransactions() override;
      virtual size_t getPoolTransactionsCount() override;

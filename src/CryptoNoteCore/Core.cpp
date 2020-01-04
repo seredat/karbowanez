@@ -1299,6 +1299,10 @@ bool Core::is_tx_spendtime_unlocked(uint64_t unlock_time, uint32_t height) {
   return m_blockchain.is_tx_spendtime_unlocked(unlock_time, height);
 }
 
+bool Core::isInCheckpointZone(uint32_t height) const {
+  return m_checkpoints.is_in_checkpoint_zone(height);
+}
+
 bool Core::addMessageQueue(MessageQueue<BlockchainMessage>& messageQueue) {
   return m_blockchain.addMessageQueue(messageQueue);
 }
