@@ -1098,7 +1098,7 @@ struct COMMAND_RPC_CHECK_RESERVE_PROOF {
 struct block_stats_entry {
   uint32_t height;
   uint64_t already_generated_coins;
-  uint64_t already_generated_transactions;
+  uint64_t transactions_count;
   uint64_t block_size;
   uint64_t difficulty;
   uint64_t reward;
@@ -1108,7 +1108,7 @@ struct block_stats_entry {
   void serialize(ISerializer &s) {
     KV_MEMBER(height)
     KV_MEMBER(already_generated_coins)
-    KV_MEMBER(already_generated_transactions)
+    KV_MEMBER(transactions_count)
     KV_MEMBER(block_size)
     KV_MEMBER(difficulty)
     KV_MEMBER(reward)
@@ -1128,10 +1128,12 @@ struct COMMAND_RPC_GET_STATS_BY_HEIGHTS {
 
   struct response {
     std::vector<block_stats_entry> stats;
+    double duration;
     std::string status;
 
     void serialize(ISerializer& s) {
       KV_MEMBER(stats);
+      KV_MEMBER(duration);
       KV_MEMBER(status);
     }
   };
@@ -1150,10 +1152,12 @@ struct COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE {
 
   struct response {
     std::vector<block_stats_entry> stats;
+    double duration;
     std::string status;
 
     void serialize(ISerializer& s) {
       KV_MEMBER(stats);
+      KV_MEMBER(duration);
       KV_MEMBER(status);
     }
   };
