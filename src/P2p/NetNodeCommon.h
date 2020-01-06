@@ -20,6 +20,9 @@
 
 #pragma once
 
+#include <list>
+#include <boost/uuid/uuid.hpp>
+
 #include "CryptoNote.h"
 #include "P2pProtocolTypes.h"
 #include "CryptoNoteConfig.h"
@@ -39,6 +42,7 @@ namespace CryptoNote {
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, PeerIdType)> f) = 0;
     // can be called from external threads
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) = 0;
+    virtual void externalRelayNotifyToList(int command, const BinaryArray &data_buff, const std::list<boost::uuids::uuid> relayList) = 0;
   };
 
   struct p2p_endpoint_stub: public IP2pEndpoint {
@@ -51,5 +55,6 @@ namespace CryptoNote {
     virtual void for_each_connection(std::function<void(CryptoNote::CryptoNoteConnectionContext&, PeerIdType)> f) override {}
     virtual uint64_t get_connections_count() override { return 0; }   
     virtual void externalRelayNotifyToAll(int command, const BinaryArray& data_buff, const net_connection_id* excludeConnection) override {}
+    virtual void externalRelayNotifyToList(int command, const BinaryArray &data_buff, const std::list<boost::uuids::uuid> relayList) override {}
   };
 }
