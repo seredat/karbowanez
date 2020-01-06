@@ -474,8 +474,8 @@ namespace CryptoNote
 
     if (command_line::has_arg(vm, arg_p2p_add_peer))
     {       
-      std::vector<std::string> perrs = command_line::get_arg(vm, arg_p2p_add_peer);
-      for(const std::string& pr_str: perrs)
+      std::vector<std::string> peers = command_line::get_arg(vm, arg_p2p_add_peer);
+      for(const std::string& pr_str: peers)
       {
         PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
         pe.id = Random::randomValue<size_t>();
@@ -1506,9 +1506,9 @@ namespace CryptoNote
   bool NodeServer::parse_peers_and_add_to_container(const boost::program_options::variables_map& vm, 
     const command_line::arg_descriptor<std::vector<std::string> > & arg, std::vector<NetworkAddress>& container)
   {
-    std::vector<std::string> perrs = command_line::get_arg(vm, arg);
+    std::vector<std::string> peers = command_line::get_arg(vm, arg);
 
-    for(const std::string& pr_str: perrs) {
+    for(const std::string& pr_str: peers) {
       NetworkAddress na;
       if (!parse_peer_from_string(na, pr_str)) { 
         logger(ERROR, BRIGHT_RED) << "Failed to parse address from string: " << pr_str; 
