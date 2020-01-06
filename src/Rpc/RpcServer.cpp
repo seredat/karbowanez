@@ -719,10 +719,12 @@ bool RpcServer::on_get_stats_by_heights_range(const COMMAND_RPC_GET_STATS_BY_HEI
 
   if (m_restricted_rpc) {
     uint32_t count = std::min<uint32_t>(std::min<uint32_t>(MAX_NUMBER_OF_BLOCKS_PER_STATS_REQUEST, max - min), m_core.getCurrentBlockchainHeight() - 1);
-    std::vector<uint32_t> selected_heights;
-    double delta = (max - min) / double(count - 1);
-    for (uint32_t i = 0; i < count; i++) {
-      selected_heights.push_back(static_cast<uint32_t>(min + i * delta));
+    std::vector<uint32_t> selected_heights(count);
+    double delta = (max - min) / static_cast<double>(count - 1);
+    std::vector<uint32_t>::iterator i;
+    double val;
+    for (i = selected_heights.begin(), val = min; i != selected_heights.end(); ++i, val += delta) {
+      *i = static_cast<uint32_t>(val);
     }
 
     for (const uint32_t& height : selected_heights) {
