@@ -2,7 +2,8 @@
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2017-2019, The Iridium developers
-// Copyright (c) 2016-2019, The Karbowanec developers
+// Copyright (c) 2018-2019, The TurtleCoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -688,6 +689,16 @@ namespace CryptoNote
       return false;
     }
 
+    if (rsp.node_data.version < CryptoNote::P2P_MINIMUM_VERSION) {
+      logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE Failed, peer is wrong version! ("
+        << std::to_string(rsp.node_data.version) << "), closing connection.";
+      return false;
+    } else if ((rsp.node_data.version - CryptoNote::P2P_CURRENT_VERSION) >= CryptoNote::P2P_UPGRADE_WINDOW) {
+      logger(Logging::WARNING) << context
+        << "COMMAND_HANDSHAKE Warning, your software may be out of date. Please visit: "
+        << "https://github.com/seredat/karbowanec/releases for the latest version.";
+    }
+
     if (!handle_remote_peerlist(rsp.local_peerlist, rsp.node_data.local_time, context)) {
       add_host_fail(context.m_remote_ip);
       logger(Logging::DEBUGGING) << context << "COMMAND_HANDSHAKE: failed to handle_remote_peerlist(...), closing connection.";
@@ -1062,7 +1073,7 @@ namespace CryptoNote
   
   bool NodeServer::get_local_node_data(basic_node_data& node_data)
   {
-    node_data.version = P2PProtocolVersion::CURRENT;
+    node_data.version = CryptoNote::P2P_CURRENT_VERSION;
     time_t local_time;
     time(&local_time);
     node_data.local_time = local_time;
