@@ -137,6 +137,22 @@ void Core::getTransactions(const std::vector<Crypto::Hash>& txs_ids, std::list<T
   m_blockchain.getTransactions(txs_ids, txs, missed_txs, checkTxPool);
 }
 
+bool Core::getTransaction(const Crypto::Hash& id, Transaction& tx, bool checkTxPool) {
+  std::vector<Crypto::Hash> txs_ids;
+  std::list<Transaction> txs;
+  std::list<Crypto::Hash> missed_txs;
+
+  txs_ids.push_back(id);
+  m_blockchain.getTransactions(txs_ids, txs, missed_txs, checkTxPool);
+
+  if (missed_txs.empty() && !txs.empty() && txs.size() == 1) {
+    tx = txs.front();
+    return true;
+  }
+
+  return false;
+}
+
 bool Core::get_alternative_blocks(std::list<Block>& blocks) {
   return m_blockchain.getAlternativeBlocks(blocks);
 }
