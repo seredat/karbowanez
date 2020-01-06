@@ -180,11 +180,13 @@ bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint3
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_full(std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
+bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
 {
+  const anchor_peers_indexed::index<by_time>::type& by_time_index_an = m_peers_anchor.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_gr = m_peers_gray.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_wt = m_peers_white.get<by_time>();
 
+  std::copy(by_time_index_an.rbegin(), by_time_index_an.rend(), std::back_inserter(pl_anchor));
   std::copy(by_time_index_gr.rbegin(), by_time_index_gr.rend(), std::back_inserter(pl_gray));
   std::copy(by_time_index_wt.rbegin(), by_time_index_wt.rend(), std::back_inserter(pl_white));
 
