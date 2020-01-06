@@ -753,7 +753,7 @@ std::vector<Transaction> Core::getPoolTransactions() {
   return result;
 }
 
-bool getPoolTransaction(const Crypto::Hash& tx_hash, Transaction& transaction) {
+bool Core::getPoolTransaction(const Crypto::Hash& tx_hash, Transaction& transaction) {
   if (!m_mempool.have_tx(tx_hash)) {
     return false;
   }
