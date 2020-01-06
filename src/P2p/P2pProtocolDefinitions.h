@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -50,12 +51,6 @@ namespace CryptoNote
     uint32_t packet_max_size;
     uint32_t config_id;
     uint32_t send_peerlist_sz;
-  };
-
-  enum P2PProtocolVersion : uint8_t {
-    V0 = 0,
-    V1 = 1,
-    CURRENT = V1
   };
 
   struct basic_node_data
