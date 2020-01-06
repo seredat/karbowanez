@@ -1,5 +1,5 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers, The Karbowanec developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -143,6 +143,10 @@ bool Core::get_alternative_blocks(std::list<Block>& blocks) {
 
 size_t Core::getAlternativeBlocksCount() {
   return m_blockchain.getAlternativeBlocksCount();
+}
+
+bool Core::getblockEntry(uint32_t height, uint64_t& block_cumulative_size, difficulty_type& difficulty, uint64_t& already_generated_coins, uint64_t& reward, uint64_t& transactions_count, uint64_t& timestamp) {
+  return m_blockchain.getblockEntry(static_cast<size_t>(height), block_cumulative_size, difficulty, already_generated_coins, reward, transactions_count, timestamp);
 }
 
 std::time_t Core::getStartTime() const {
