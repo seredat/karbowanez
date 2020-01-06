@@ -753,6 +753,14 @@ std::vector<Transaction> Core::getPoolTransactions() {
   return result;
 }
 
+bool getPoolTransaction(const Crypto::Hash& tx_hash, Transaction& transaction) {
+  if (!m_mempool.have_tx(tx_hash)) {
+    return false;
+  }
+
+  return m_mempool.getTransaction(tx_hash, transaction);
+}
+
 std::list<CryptoNote::tx_memory_pool::TransactionDetails> Core::getMemoryPool() const {
   //std::list<CryptoNote::tx_memory_pool::TransactionDetails> txs;
   //m_mempool.getMemoryPool(txs);
