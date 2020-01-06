@@ -395,7 +395,7 @@ namespace CryptoNote
     std::unique_lock<std::mutex> lock(mutex);
     uint64_t fails = ++m_host_fails_score[address_ip];
     logger(DEBUGGING) << "Host " << Common::ipAddressToString(address_ip) << " fail score=" << fails;
-	if (fails >= P2P_IP_FAILS_BEFORE_BLOCK)
+    if (fails >= P2P_IP_FAILS_BEFORE_BLOCK)
     {
       auto i = m_host_fails_score.find(address_ip);
       if (i != m_host_fails_score.end()) {
@@ -405,7 +405,7 @@ namespace CryptoNote
       }
       return false;
     }
-	return true;
+    return true;
   }
   //-----------------------------------------------------------------------------------
 
@@ -417,6 +417,17 @@ namespace CryptoNote
       return true;
     if (time(nullptr) >= i->second)
       return unblock_host(address_ip);
+    return false;
+  }
+  //-----------------------------------------------------------------------------------
+
+  bool NodeServer::is_addr_recently_failed(const uint32_t address_ip)
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    auto i = m_host_fails_score.find(address_ip);
+    if (i != m_host_fails_score.end())
+      return true;
+    
     return false;
   }
   //-----------------------------------------------------------------------------------
@@ -795,6 +806,20 @@ namespace CryptoNote
     }
     return false;
   }
+
+  //----------------------------------------------------------------------------------- 
+  bool NodeServer::is_peer_used(const AnchorPeerlistEntry& peer) {
+    if(m_config.m_peer_id == peer.id)
+      return true; //dont make connections to ourself
+
+    for (const auto& kv : m_connections) {
+      const auto& cntxt = kv.second;
+      if(cntxt.peerId == peer.id || (!cntxt.m_is_income && peer.adr.ip == cntxt.m_remote_ip && peer.adr.port == cntxt.m_remote_port)) {
+        return true;
+      }
+    }
+    return false;
+  }
   //-----------------------------------------------------------------------------------
   
   bool NodeServer::is_addr_connected(const NetworkAddress& peer) {
@@ -807,9 +832,9 @@ namespace CryptoNote
   }
 
 
-  bool NodeServer::try_to_connect_and_handshake_with_new_peer(const NetworkAddress& na, bool just_take_peerlist, uint64_t last_seen_stamp, bool white)  {
+  bool NodeServer::try_to_connect_and_handshake_with_new_peer(const NetworkAddress& na, bool just_take_peerlist, uint64_t last_seen_stamp, PeerType peer_type, uint64_t first_seen_stamp)  {
 
-    logger(DEBUGGING) << "Connecting to " << na << " (white=" << white << ", last_seen: "
+    logger(DEBUGGING) << "Connecting to " << na << " (peer_type=" << peer_type << ", last_seen: "
         << (last_seen_stamp ? Common::timeIntervalToString(time(NULL) - last_seen_stamp) : "never") << ")...";
 
     try {
@@ -875,6 +900,12 @@ namespace CryptoNote
       pe_local.last_seen = time(nullptr);
       m_peerlist.append_with_peer_white(pe_local);
 
+      AnchorPeerlistEntry ape = boost::value_initialized<AnchorPeerlistEntry>();
+      ape.adr = na;
+      ape.id = ctx.peerId;
+      ape.first_seen = first_seen_stamp ? first_seen_stamp : time(nullptr);
+      m_peerlist.append_with_peer_anchor(ape);
+
       if (m_stop) {
         throw System::InterruptedException();
       }
@@ -931,10 +962,10 @@ namespace CryptoNote
 		  continue;
 	  }
 
-      logger(DEBUGGING) << "Selected peer: " << pe.id << " " << pe.adr << " [white=" << use_white_list
+      logger(DEBUGGING) << "Selected peer: " << pe.id << " " << pe.adr << " [peer_list=" << (use_white_list ? white : gray)
                     << "] last_seen: " << (pe.last_seen ? Common::timeIntervalToString(time(NULL) - pe.last_seen) : "never");
       
-      if(!try_to_connect_and_handshake_with_new_peer(pe.adr, false, pe.last_seen, use_white_list))
+      if(!try_to_connect_and_handshake_with_new_peer(pe.adr, false, pe.last_seen, use_white_list ? white : gray))
         continue;
 
       return true;
@@ -943,6 +974,40 @@ namespace CryptoNote
   }
   //-----------------------------------------------------------------------------------
   
+ 
+  bool NodeServer::make_new_connection_from_anchor_peerlist(const std::vector<AnchorPeerlistEntry>& anchor_peerlist)
+  {
+    for (const auto& pe : anchor_peerlist) {
+      logger(DEBUGGING) << "Considering connecting (out) to peer: " << pe.id << " " << Common::ipAddressToString(pe.adr.ip) << ":" << boost::lexical_cast<std::string>(pe.adr.port);
+
+      if (is_peer_used(pe)) {
+        logger(DEBUGGING) << "Peer is used";
+        continue;
+      }
+
+      if (!is_remote_host_allowed(pe.adr.ip)) {
+        continue;
+      }
+
+      if (is_addr_recently_failed(pe.adr.ip)) {
+        continue;
+      }
+
+      logger(DEBUGGING) << "Selected peer: " << pe.id << " " << Common::ipAddressToString(pe.adr.ip)
+        << ":" << boost::lexical_cast<std::string>(pe.adr.port)
+        << "[peer_type=" << anchor
+        << "] first_seen: " << Common::timeIntervalToString(time(NULL) - pe.first_seen);
+
+      if (!try_to_connect_and_handshake_with_new_peer(pe.adr, false, 0, anchor, pe.first_seen)) {
+        logger(DEBUGGING) << "Handshake failed";
+        continue;
+      }
+
+      return true;
+    }
+  }
+  //-----------------------------------------------------------------------------------
+
   bool NodeServer::connections_maker()
   {
     if (!connect_to_peerlist(m_exclusive_peers)) {
@@ -979,19 +1044,22 @@ namespace CryptoNote
     {
       if(conn_count < expected_white_connections)
       {
+        //start from anchor list
+        if (!make_expected_connections_count(anchor, P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT))
+          return false;
         //start from white list
-        if(!make_expected_connections_count(true, expected_white_connections))
+        if(!make_expected_connections_count(white, expected_white_connections))
           return false;
         //and then do grey list
-        if(!make_expected_connections_count(false, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(gray, m_config.m_net_config.connections_count))
           return false;
-      }else
+      } else
       {
         //start from grey list
-        if(!make_expected_connections_count(false, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(gray, m_config.m_net_config.connections_count))
           return false;
         //and then do white list
-        if(!make_expected_connections_count(true, m_config.m_net_config.connections_count))
+        if(!make_expected_connections_count(white, m_config.m_net_config.connections_count))
           return false;
       }
     }
@@ -1000,8 +1068,14 @@ namespace CryptoNote
   }
   //-----------------------------------------------------------------------------------
   
-  bool NodeServer::make_expected_connections_count(bool white_list, size_t expected_connections)
+  bool NodeServer::make_expected_connections_count(PeerType peer_type, size_t expected_connections)
   {
+    std::vector<AnchorPeerlistEntry> apl;
+
+    if (peer_type == anchor) {
+      m_peerlist.get_and_empty_anchor_peerlist(apl);
+    }
+    
     size_t conn_count = get_outgoing_connections_count();
     //add new connections from white peers
     while(conn_count < expected_connections)
@@ -1009,8 +1083,18 @@ namespace CryptoNote
       if(m_stopEvent.get())
         return false;
 
-      if(!make_new_connection_from_peerlist(white_list))
+      if (peer_type == anchor && !make_new_connection_from_anchor_peerlist(apl)) {
         break;
+      }
+
+      if (peer_type == white && !make_new_connection_from_peerlist(true)) {
+        break;
+      }
+
+      if (peer_type == gray && !make_new_connection_from_peerlist(false)) {
+        break;
+      }
+
       conn_count = get_outgoing_connections_count();
     }
     return true;
@@ -1375,6 +1459,14 @@ namespace CryptoNote
   
   void NodeServer::on_connection_close(P2pConnectionContext& context)
   {
+    if (!m_stopEvent.get() && !context.m_is_income) {
+      NetworkAddress na;
+      na.ip = context.m_remote_ip;
+      na.port = context.m_remote_port;
+
+      m_peerlist.remove_from_peer_anchor(na);
+    }
+    
     logger(TRACE) << context << "CLOSE CONNECTION";
     m_payload_handler.onConnectionClosed(context);
   }
