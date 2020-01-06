@@ -147,7 +147,7 @@ const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 // and the minimum version for communication between nodes
 const uint8_t  P2P_VERSION_1                                 = 1;
 const uint8_t  P2P_VERSION_2                                 = 2;
-const uint8_t  P2P_CURRENT_VERSION                           = 1;
+const uint8_t  P2P_CURRENT_VERSION                           = 3;
 const uint8_t  P2P_MINIMUM_VERSION                           = 1;
 
 // This defines the number of versions ahead we must see peers before
