@@ -337,11 +337,15 @@ struct COMMAND_RPC_GET_PEER_LIST {
 	typedef EMPTY_STRUCT request;
 
 	struct response {
-		std::vector<std::string> peers;
+		std::vector<std::string> anchor_peers;
+		std::vector<std::string> white_peers;
+		std::vector<std::string> gray_peers;
 		std::string status;
 
 		void serialize(ISerializer &s) {
-			KV_MEMBER(peers)
+			KV_MEMBER(anchor_peers)
+			KV_MEMBER(white_peers)
+			KV_MEMBER(gray_peers)
 			KV_MEMBER(status)
 		}
 	};

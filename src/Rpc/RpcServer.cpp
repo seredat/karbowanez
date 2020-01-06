@@ -822,17 +822,27 @@ bool RpcServer::on_get_fee_address(const COMMAND_RPC_GET_FEE_ADDRESS::request& r
 }
 
 bool RpcServer::on_get_peer_list(const COMMAND_RPC_GET_PEER_LIST::request& req, COMMAND_RPC_GET_PEER_LIST::response& res) {
-	std::list<AnchorPeerlistEntry> pl_anchor;
-	std::list<PeerlistEntry> pl_wite;
-	std::list<PeerlistEntry> pl_gray;
-	m_p2p.getPeerlistManager().get_peerlist_full(pl_anchor, pl_gray, pl_wite);
-	for (const auto& pe : pl_wite) {
-		std::stringstream ss;
-		ss << pe.adr;
-		res.peers.push_back(ss.str());
-	}
-	res.status = CORE_RPC_STATUS_OK;
-	return true;
+  std::list<AnchorPeerlistEntry> pl_anchor;
+  std::list<PeerlistEntry> pl_wite;
+  std::list<PeerlistEntry> pl_gray;
+  m_p2p.getPeerlistManager().get_peerlist_full(pl_anchor, pl_gray, pl_wite);
+  for (const auto& pe : pl_anchor) {
+    std::stringstream ss;
+    ss << pe.adr;
+    res.anchor_peers.push_back(ss.str());
+  }
+  for (const auto& pe : pl_wite) {
+    std::stringstream ss;
+    ss << pe.adr;
+    res.white_peers.push_back(ss.str());
+  }
+  for (const auto& pe : pl_gray) {
+    std::stringstream ss;
+    ss << pe.adr;
+    res.gray_peers.push_back(ss.str());
+  }
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
 }
 
 bool RpcServer::on_get_connections(const COMMAND_RPC_GET_CONNECTIONS::request& req, COMMAND_RPC_GET_CONNECTIONS::response& res) {
