@@ -2,7 +2,8 @@
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, Ryo Currency Project
-// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2018-2019, The TurtleCoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -142,8 +143,20 @@ const int      RPC_DEFAULT_PORT                              =  32348;
 const size_t   P2P_LOCAL_WHITE_PEERLIST_LIMIT                =  1000;
 const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 
+// This defines our current P2P network version
+// and the minimum version for communication between nodes
+const uint8_t  P2P_VERSION_1                                 = 1;
+const uint8_t  P2P_VERSION_2                                 = 2;
+const uint8_t  P2P_CURRENT_VERSION                           = 1;
+const uint8_t  P2P_MINIMUM_VERSION                           = 1;
+
+// This defines the number of versions ahead we must see peers before
+// we start displaying warning messages that we need to upgrade our software
+const uint8_t  P2P_UPGRADE_WINDOW                            = 2;
+
 const size_t   P2P_CONNECTION_MAX_WRITE_BUFFER_SIZE          = 64 * 1024 * 1024; // 64 MB
 const uint32_t P2P_DEFAULT_CONNECTIONS_COUNT                 = 8;
+const size_t   P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT          = 2;
 const size_t   P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT     = 70;
 const uint32_t P2P_DEFAULT_HANDSHAKE_INTERVAL                = 60;            // seconds
 const uint32_t P2P_DEFAULT_PACKET_MAX_SIZE                   = 50000000;      // 50000000 bytes maximum packet size
