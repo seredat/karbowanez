@@ -670,7 +670,7 @@ int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request ar
       post_notify<NOTIFY_REQUEST_CHAIN>(*m_p2p, r, context);
     }
   } else {
-    if (context.m_pending_lite_block.has_value()) {
+    if (context.m_pending_lite_block) {
       context.m_pending_lite_block.reset();
       logger(Logging::DEBUGGING) << context
         << " Peer has a pending lite block but didn't provide all necessary "
