@@ -851,7 +851,7 @@ int CryptoNoteProtocolHandler::handle_request_tx_pool(int command, NOTIFY_REQUES
 
 int CryptoNoteProtocolHandler::handle_notify_new_lite_block(int command, NOTIFY_NEW_LITE_BLOCK::request &arg,
                                                            CryptoNoteConnectionContext &context) {
-  logger(Logging::TRACE) << context << "NOTIFY_NEW_LITE_BLOCK (hop " << arg.hop << ")";
+  logger(Logging::DEBUGGING) << context << "NOTIFY_NEW_LITE_BLOCK (hop " << arg.hop << ")";
   updateObservedHeight(arg.current_blockchain_height, context);
   context.m_remote_blockchain_height = arg.current_blockchain_height;
   if (context.m_state != CryptoNoteConnectionContext::state_normal) {
@@ -863,7 +863,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_lite_block(int command, NOTIFY_
 
 int CryptoNoteProtocolHandler::handle_notify_missing_txs(int command,  NOTIFY_MISSING_TXS::request &arg,
                                                         CryptoNoteConnectionContext &context) {
-  logger(Logging::TRACE) << context << "NOTIFY_MISSING_TXS";
+  logger(Logging::DEBUGGING) << context << "NOTIFY_MISSING_TXS";
 
   NOTIFY_NEW_TRANSACTIONS::request req;
 
