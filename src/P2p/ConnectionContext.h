@@ -28,7 +28,7 @@
 
 #include "Common/StringTools.h"
 #include "crypto/hash.h"
-#include "p2p/PendingLiteBlock.h"
+#include "P2p/PendingLiteBlock.h"
 
 namespace CryptoNote {
 
