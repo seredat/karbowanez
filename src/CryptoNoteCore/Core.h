@@ -128,6 +128,7 @@ namespace CryptoNote {
        uint32_t& resStartHeight, uint32_t& resCurrentHeight, uint32_t& resFullOffset, std::vector<BlockShortInfo>& entries) override;
      virtual Crypto::Hash getBlockIdByHeight(uint32_t height) override;
      void getTransactions(const std::vector<Crypto::Hash>& txs_ids, std::list<Transaction>& txs, std::list<Crypto::Hash>& missed_txs, bool checkTxPool = false) override;
+     virtual bool getTransaction(const Crypto::Hash& id, Transaction& tx, bool checkTxPool = false) override;
      virtual bool getBlockByHash(const Crypto::Hash &h, Block &blk) override;
      virtual bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) override;
      //void get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid);
@@ -140,6 +141,7 @@ namespace CryptoNote {
      virtual bool isInCheckpointZone(uint32_t height) const override;
 
      std::vector<Transaction> getPoolTransactions() override;
+     bool getPoolTransaction(const Crypto::Hash& tx_hash, Transaction& transaction) override;
      virtual size_t getPoolTransactionsCount() override;
      virtual size_t getBlockchainTotalTransactions() override;
      //bool get_outs(uint64_t amount, std::list<Crypto::PublicKey>& pkeys);
