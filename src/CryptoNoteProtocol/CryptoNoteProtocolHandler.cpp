@@ -600,7 +600,7 @@ int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request ar
         logger(Logging::DEBUGGING) << context
           << "Peer didn't provide a missing transaction, previously "
           "acquired for a lite block, dropping connection.";
-        context.m_pending_lite_block.reset();
+        context.m_pending_lite_block = boost::none;
         context.m_state = CryptoNoteConnectionContext::state_shutdown;
         return 1;
       }
@@ -633,7 +633,7 @@ int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request ar
    * of the lite-block request
    */
   if (need_txs.empty()) {
-    context.m_pending_lite_block.reset();
+    context.m_pending_lite_block = boost::none;
 
     for (auto transactionBinary : have_txs) {
       CryptoNote::tx_verification_context tvc = boost::value_initialized<decltype(tvc)>();
@@ -671,7 +671,7 @@ int CryptoNoteProtocolHandler::doPushLiteBlock(NOTIFY_NEW_LITE_BLOCK::request ar
     }
   } else {
     if (context.m_pending_lite_block) {
-      context.m_pending_lite_block.reset();
+      context.m_pending_lite_block = boost::none;
       logger(Logging::DEBUGGING) << context
         << " Peer has a pending lite block but didn't provide all necessary "
         "transactions, dropping the connection.";
