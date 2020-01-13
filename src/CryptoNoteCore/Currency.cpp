@@ -694,7 +694,7 @@ namespace CryptoNote {
     if (height == upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) + 1) {
       return 1000000; //return (cumulativeDifficulties[0] - cumulativeDifficulties[1]) / RESET_WORK_FACTOR;
     }
-    size_t count = difficultyBlocksCountByBlockVersion(blockMajorVersion);
+    uint32_t count = (uint32_t)difficultyBlocksCountByBlockVersion(blockMajorVersion);
     if (height > upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5) && height < CryptoNote::parameters::UPGRADE_HEIGHT_V5 + count) {
       uint32_t offset = count - (height - upgradeHeight(CryptoNote::BLOCK_MAJOR_VERSION_5));
       timestamps.erase(timestamps.begin(), timestamps.begin() + offset);
