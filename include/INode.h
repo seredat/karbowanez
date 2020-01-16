@@ -118,6 +118,8 @@ public:
   virtual void getPoolTransactions(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<TransactionDetails>& transactions, uint64_t& transactionsNumberWithinTimestamps, const Callback& callback) = 0;
   virtual void isSynchronized(bool& syncStatus, const Callback& callback) = 0;
   virtual std::string feeAddress() const = 0;
+  virtual void setRootCert(const std::string &path) = 0;
+  virtual void disableVerify() = 0;
 };
 
 }

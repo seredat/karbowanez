@@ -202,6 +202,7 @@ namespace CryptoNote
     std::string m_daemon_address;
     std::string m_daemon_host;
     std::string m_daemon_path;
+    std::string m_daemon_cert;
     std::string m_mnemonic_seed;
     std::string m_view_key;
     std::string m_spend_key;
@@ -209,6 +210,7 @@ namespace CryptoNote
     uint16_t m_daemon_port;
     uint32_t m_scan_height;
     bool m_daemon_ssl;
+    bool m_daemon_no_verify;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 

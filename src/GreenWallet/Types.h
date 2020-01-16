@@ -80,7 +80,13 @@ struct Config
 
     /* The daemon host */
     std::string host = "127.0.0.1";
-    
+
+    /* The cert of daemon */
+    std::string daemonCert = "";
+
+    /* Disable verify cert of domain */
+    bool disableVerify = false;
+
     /* The daemon port */
     uint16_t port = CryptoNote::RPC_DEFAULT_PORT;
 

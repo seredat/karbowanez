@@ -52,13 +52,16 @@ namespace CryptoNote {
     url = u;
   }
 
+  void HttpRequest::setHost(const std::string& host) {
+    m_host = host;
+  }
+
   std::ostream& HttpRequest::printHttpRequest(std::ostream& os) const {
     os << "POST " << url << " HTTP/1.1\r\n";
     auto host = headers.find("Host");
     if (host == headers.end()) {
-      os << "Host: " << "127.0.0.1" << "\r\n";
+      os << "Host: " << m_host << "\r\n";
     }
-
     for (auto pair : headers) {
       os << pair.first << ": " << pair.second << "\r\n";
     }
