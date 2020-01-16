@@ -20,6 +20,7 @@
 
 #include <list>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include "WalletRpcServer.h"
 #include "crypto/hash.h"
 #include "Common/CommandLine.h"
@@ -41,21 +42,43 @@ using namespace CryptoNote;
 
 namespace Tools {
 
-const command_line::arg_descriptor<uint16_t>    wallet_rpc_server::arg_rpc_bind_port = 
+	const std::string DEFAULT_RPC_IP = "127.0.0.1";
+	const uint16_t DEFAULT_RPC_PORT = WALLET_RPC_DEFAULT_PORT;
+	const uint16_t DEFAULT_RPC_SSL_PORT = WALLET_RPC_DEFAULT_SSL_PORT;
+	const std::string DEFAULT_RPC_CHAIN_FILE = std::string(RPC_DEFAULT_CHAIN_FILE);
+	const std::string DEFAULT_RPC_KEY_FILE = std::string(RPC_DEFAULT_KEY_FILE);
+	const std::string DEFAULT_RPC_DH_FILE = std::string(RPC_DEFAULT_DH_FILE);
+
+const command_line::arg_descriptor<uint16_t>    wallet_rpc_server::arg_rpc_bind_port =
 	{ "rpc-bind-port", "Starts wallet as RPC server for wallet operations, sets bind port for server.", 0, true };
+const command_line::arg_descriptor<uint16_t>    wallet_rpc_server::arg_rpc_bind_ssl_port =
+	{ "rpc-bind-ssl-port", "Starts wallet as RPC server for wallet operations, sets bind port ssl for server.", DEFAULT_RPC_SSL_PORT };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_bind_ip = 
 	{ "rpc-bind-ip"  , "Specify IP to bind RPC server to.", "127.0.0.1" };
+const command_line::arg_descriptor<bool>    wallet_rpc_server::arg_rpc_bind_ssl_enable =
+	{ "rpc-bind-ssl-enable", "Enable SSL for RPC service", false, true };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_user = 
 	{ "rpc-user"     , "Username to use with the RPC server. If empty, no server authorization will be done.", "" };
 const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_rpc_password = 
 	{ "rpc-password" , "Password to use with the RPC server. If empty, no server authorization will be done.", "" };
+const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_chain_file =
+	{ "rpc-chain-file" , "SSL chain file", DEFAULT_RPC_CHAIN_FILE };
+const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_key_file =
+	{ "rpc-key-file" , "SSL key file", DEFAULT_RPC_KEY_FILE };
+const command_line::arg_descriptor<std::string> wallet_rpc_server::arg_dh_file =
+	{ "rpc-dh-file" , "SSL DH file", DEFAULT_RPC_DH_FILE };
 
 void wallet_rpc_server::init_options(boost::program_options::options_description& desc)
 {
 	command_line::add_arg(desc, arg_rpc_bind_ip);
 	command_line::add_arg(desc, arg_rpc_bind_port);
+	command_line::add_arg(desc, arg_rpc_bind_ssl_port);
+	command_line::add_arg(desc, arg_rpc_bind_ssl_enable);
 	command_line::add_arg(desc, arg_rpc_user);
 	command_line::add_arg(desc, arg_rpc_password);
+	command_line::add_arg(desc, arg_chain_file);
+	command_line::add_arg(desc, arg_key_file);
+	command_line::add_arg(desc, arg_dh_file);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------
@@ -81,7 +104,7 @@ wallet_rpc_server::wallet_rpc_server(
 
 bool wallet_rpc_server::run()
 {
-	start(m_bind_ip, m_port, m_rpcUser, m_rpcPassword);
+	start(m_bind_ip, m_port, m_port_ssl, m_run_ssl, m_rpcUser, m_rpcPassword);
 	m_stopComplete.wait();
 	return true;
 }
@@ -102,20 +125,57 @@ bool wallet_rpc_server::handle_command_line(const boost::program_options::variab
 {
 	m_bind_ip	  = command_line::get_arg(vm, arg_rpc_bind_ip);
 	m_port		  = command_line::get_arg(vm, arg_rpc_bind_port);
+	m_port_ssl	  = command_line::get_arg(vm, arg_rpc_bind_ssl_port);
+	m_enable_ssl	  = command_line::get_arg(vm, arg_rpc_bind_ssl_enable);
 	m_rpcUser	  = command_line::get_arg(vm, arg_rpc_user);
-	m_rpcPassword = command_line::get_arg(vm, arg_rpc_password);
+	m_rpcPassword	  = command_line::get_arg(vm, arg_rpc_password);
+	m_chain_file	  = command_line::get_arg(vm, arg_chain_file);
+	m_key_file	  = command_line::get_arg(vm, arg_key_file);
+	m_dh_file	  = command_line::get_arg(vm, arg_dh_file);
 	return true;
 }
 //------------------------------------------------------------------------------------------------------------------------------
 
 bool wallet_rpc_server::init(const boost::program_options::variables_map& vm)
 {
+	m_run_ssl = false;
 	if (!handle_command_line(vm))
 	{
 		logger(Logging::ERROR) << "Failed to process command line in wallet_rpc_server";
 		return false;
 	}
-	return true;
+	else
+        {
+		boost::system::error_code ec;
+		boost::filesystem::path data_dir_path(boost::filesystem::current_path());
+		boost::filesystem::path chain_file_path(m_chain_file);
+		boost::filesystem::path key_file_path(m_key_file);
+		boost::filesystem::path dh_file_path(m_dh_file);
+		if (!chain_file_path.has_parent_path()) chain_file_path = data_dir_path / chain_file_path;
+		if (!key_file_path.has_parent_path()) key_file_path = data_dir_path / key_file_path;
+		if (!dh_file_path.has_parent_path()) dh_file_path = data_dir_path / dh_file_path;
+		if (m_enable_ssl) {
+			if (boost::filesystem::exists(chain_file_path, ec) &&
+			    boost::filesystem::exists(key_file_path, ec) &&
+			    boost::filesystem::exists(dh_file_path, ec)) {
+				setCerts(boost::filesystem::canonical(chain_file_path).string(),
+				         boost::filesystem::canonical(key_file_path).string(),
+				         boost::filesystem::canonical(dh_file_path).string());
+				m_run_ssl = true;
+			}
+			else
+			{
+				logger((Logging::Level) ERROR, BRIGHT_RED) << "Start RPC SSL server was canceled because certificate file(s) could not be found" << std::endl;
+			}
+		}
+		return true;
+	}
+}
+
+void wallet_rpc_server::getServerConf(std::string &bind_address, std::string &bind_address_ssl, bool &enable_ssl) {
+  bind_address = m_bind_ip + ":" + std::to_string(m_port);
+  bind_address_ssl = m_bind_ip + ":" + std::to_string(m_port_ssl);
+  enable_ssl = m_enable_ssl;
 }
 
 void wallet_rpc_server::processRequest(const CryptoNote::HttpRequest& request, CryptoNote::HttpResponse& response)

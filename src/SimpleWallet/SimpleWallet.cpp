@@ -2672,7 +2672,13 @@ int main(int argc, char* argv[]) {
       wrpc.send_stop_signal();
     });
 
-    logger(INFO) << "Starting wallet rpc server";
+    bool enable_ssl;
+    std::string bind_address;
+    std::string bind_address_ssl;
+    std::string ssl_info;
+    wrpc.getServerConf(bind_address, bind_address_ssl, enable_ssl);
+    if (enable_ssl) ssl_info += std::string(", SSL on address ") + bind_address_ssl;
+    logger(INFO) << "Starting wallet rpc server on address " << bind_address << ssl_info;
     wrpc.run();
     logger(INFO) << "Stopped wallet rpc server";
     

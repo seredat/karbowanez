@@ -22,17 +22,29 @@
 namespace CryptoNote {
 
 class RpcServerConfig {
-public:
 
-  RpcServerConfig();
+  public:
+    RpcServerConfig();
+    static void initOptions(boost::program_options::options_description& desc);
+    void init(const boost::program_options::variables_map& options);
+    bool isEnableSSL() const;
+    uint16_t getBindPort() const;
+    uint16_t getBindPortSSL() const;
+    std::string getBindIP() const;
+    std::string getBindAddress() const;
+    std::string getBindAddressSSL() const;
+    std::string getDhFile() const;
+    std::string getChainFile() const;
+    std::string getKeyFile() const;
 
-  static void initOptions(boost::program_options::options_description& desc);
-  void init(const boost::program_options::variables_map& options);
-
-  std::string getBindAddress() const;
-
-  std::string bindIp;
-  uint16_t bindPort;
+  private:
+    bool m_enable_ssl;
+    uint16_t m_bind_port;
+    uint16_t m_bind_port_ssl;
+    std::string m_bind_ip;
+    std::string m_dh_file;
+    std::string m_chain_file;
+    std::string m_key_file;
 };
 
 }
