@@ -243,7 +243,11 @@ void HttpServer::sslServerControl(tcp::acceptor &accept) {
     boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
   }
   if (accept.is_open()) {
-    accept.close();
+    boost::system::error_code ec;
+    accept.close(ec);
+    if (ec) {
+      logger(DEBUGGING) << "SSL server control error" << std::endl;
+    }
   }
   this->m_ssl_server_thread.interrupt();
   this->m_server_ssl_is_run = false;
