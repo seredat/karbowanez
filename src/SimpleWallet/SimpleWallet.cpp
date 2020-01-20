@@ -573,6 +573,23 @@ bool processServerAliasResponse(const std::string& s, std::string& address) {
 	return true;
 }
 
+bool comfirmPrompt() {
+  std::string answer;
+  do {
+    std::cout << "y/n: ";
+    std::getline(std::cin, answer);
+
+    if (std::cin.fail() || std::cin.eof()) {
+      std::cin.clear();
+
+      break;
+    }
+
+  } while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
+
+  return answer == "y" || answer == "Y";
+}
+
 bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<WalletLegacyTransfer>>& aliases, const Currency& currency) {
 	std::cout << "Would you like to send money to the following addresses?" << std::endl;
 
@@ -582,20 +599,7 @@ bool askAliasesTransfersConfirmation(const std::map<std::string, std::vector<Wal
 		}
 	}
 
-	std::string answer;
-	do {
-		std::cout << "y/n: ";
-		std::getline(std::cin, answer);
-
-		if (std::cin.fail() || std::cin.eof()) {
-			std::cin.clear();
-
-			break;
-		}
-
-	} while (answer != "y" && answer != "Y" && answer != "n" && answer != "N");
-
-	return answer == "y" || answer == "Y";
+  return comfirmPrompt();
 }
 #endif
 
@@ -2086,9 +2090,8 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
   }
 
   if (mixIn != 0 && unmixable_balance != 0) {
-    logger(WARNING, BRIGHT_YELLOW) << "You have unmixable coins " << m_currency.formatAmount(unmixable_balance) 
-                                   << ", sending them is only possible with zero <mixin_count>.";
-    return false;
+    logger(WARNING, BRIGHT_YELLOW) << "You have unmixable coins " << m_currency.formatAmount(unmixable_balance) << " in your wallet. "
+                                   << "If you encounter problems with sending, sweep them by making transaction with zero <mixin_count>.";
   }
 
   try {
