@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, The Monero Project
-// Copyright (c) 2016-2019, Karbo developers
+// Copyright (c) 2016-2020, Karbo developers
 //
 // All rights reserved.
 //
@@ -89,7 +89,7 @@ public:
 
   virtual uint64_t actualBalance() override;
   virtual uint64_t pendingBalance() override;
-  virtual uint64_t dustBalance() override;
+  virtual uint64_t unmixableBalance() override;
 
   virtual size_t getTransactionCount() override;
   virtual size_t getTransferCount() override;
@@ -109,7 +109,6 @@ public:
 
   virtual TransactionId sendTransaction(const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual TransactionId sendTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
-  virtual TransactionId sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual TransactionId sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra = "", uint64_t mixIn = 0, uint64_t unlockTimestamp = 0) override;
   virtual std::error_code cancelTransaction(size_t transactionId) override;
 

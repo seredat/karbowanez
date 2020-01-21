@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2018, The Monero Project
-// Copyright (c) 2016-2019, Karbo developers
+// Copyright (c) 2016-2020, Karbo developers
 // 
 // All rights reserved.
 // 
@@ -602,7 +602,7 @@ uint64_t WalletLegacy::pendingBalance() {
   return m_transferDetails->balance(ITransfersContainer::IncludeKeyNotUnlocked) + change;
 }
 
-uint64_t WalletLegacy::dustBalance() {
+uint64_t WalletLegacy::unmixableBalance() {
 	std::unique_lock<std::mutex> lock(m_cacheMutex);
 	throwIfNotInitialised();
 
@@ -614,7 +614,7 @@ uint64_t WalletLegacy::dustBalance() {
 	for (size_t i = 0; i < outputs.size(); ++i) {
 		const auto& out = outputs[i];
 		if (!m_transactionsCache.isUsed(out)) {
-			if (/*out.amount < m_currency.defaultDustThreshold() &&*/ !is_valid_decomposed_amount(out.amount)) {
+			if (!is_valid_decomposed_amount(out.amount)) {
 				money += out.amount;
 			}
 		}
@@ -783,27 +783,6 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
   return txId;
 }
 
-TransactionId WalletLegacy::sendDustTransaction(const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
-	TransactionId txId = 0;
-	std::shared_ptr<WalletRequest> request;
-	std::deque<std::shared_ptr<WalletLegacyEvent>> events;
-	throwIfNotInitialised();
-
-	{
-		std::unique_lock<std::mutex> lock(m_cacheMutex);
-		request = m_sender->makeSendDustRequest(txId, events, transfers, fee, extra, mixIn, unlockTimestamp);
-	}
-
-	notifyClients(events);
-
-	if (request) {
-		m_asyncContextCounter.addAsyncContext();
-		request->perform(m_node, std::bind(&WalletLegacy::sendTransactionCallback, this, std::placeholders::_1, std::placeholders::_2));
-	}
-
-	return txId;
-}
-
 TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 	TransactionId txId = 0;
 	std::shared_ptr<WalletRequest> request;
@@ -964,11 +943,11 @@ void WalletLegacy::notifyIfBalanceChanged() {
     m_observerManager.notify(&IWalletLegacyObserver::pendingBalanceUpdated, pending);
   }
 
-  auto dust = dustBalance();
-  auto prevDust = m_lastNotifiedUnmixableBalance.exchange(dust);
+  auto unmixable = unmixableBalance();
+  auto prevUnmixable = m_lastNotifiedUnmixableBalance.exchange(unmixable);
 
-  if (prevDust != dust) {
-    m_observerManager.notify(&IWalletLegacyObserver::unmixableBalanceUpdated, dust);
+  if (prevUnmixable != unmixable) {
+    m_observerManager.notify(&IWalletLegacyObserver::unmixableBalanceUpdated, unmixable);
   }
 
 }

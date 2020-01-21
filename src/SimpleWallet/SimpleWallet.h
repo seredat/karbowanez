@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2016, XDN developers
 // Copyright (c) 2014-2017, The Monero Project
-// Copyright (c) 2016-2018, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // All rights reserved.
 // 
@@ -121,7 +121,6 @@ namespace CryptoNote
     bool set_log(const std::vector<std::string> &args);
     bool payment_id(const std::vector<std::string> &args);
     bool change_password(const std::vector<std::string> &args);
-    bool sweep_dust(const std::vector<std::string> &args);
     bool estimate_fusion(const std::vector<std::string> &args);
     bool optimize(const std::vector<std::string> &args);
     bool get_tx_key(const std::vector<std::string> &args);
