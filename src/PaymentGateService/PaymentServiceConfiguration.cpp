@@ -50,7 +50,7 @@ Configuration::Configuration() {
   mnemonicSeed = "";
 }
 
-void Configuration::initOptions(boost::program_options::options_description& desc) {
+void Configuration::initOptions(po::options_description& desc) {
   desc.add_options()
       ("bind-address", po::value<std::string>()->default_value("127.0.0.1"), "payment service bind address")
       ("bind-port", po::value<uint16_t>()->default_value(8070), "payment service bind port")
@@ -74,7 +74,7 @@ void Configuration::initOptions(boost::program_options::options_description& des
       ("address", "print wallet addresses and exit");
 }
 
-void Configuration::init(const boost::program_options::variables_map& options) {
+void Configuration::init(const po::variables_map& options) {
   if (options.count("daemon") != 0) {
     daemonize = true;
   }
@@ -129,8 +129,6 @@ void Configuration::init(const boost::program_options::variables_map& options) {
 
   if (options.count("container-file") != 0) {
     containerFile = options["container-file"].as<std::string>();
-  } else {
-    throw ConfigurationError("Wallet file not set");
   }
 
   if (options.count("container-password") != 0) {

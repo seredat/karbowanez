@@ -2,6 +2,7 @@
 // Copyright (c) 2014-2018, The Monero project
 // Copyright (c) 2014-2018, The Forknote developers
 // Copyright (c) 2018, Ryo Currency Project
+// Copyright (c) 2018-2019, The TurtleCoin developers
 // Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
@@ -71,7 +72,6 @@ const uint64_t MAX_TX_MIXIN_SIZE                             = MAX_TX_MIXIN_SIZE
 const uint32_t MIN_TX_MIXIN_V1_HEIGHT                        = 216245;
 const uint32_t MIN_TX_MIXIN_V2_HEIGHT                        = 216394;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
-const size_t   DANDELION_TX_STEM                             = 10;
 
 const size_t   DIFFICULTY_WINDOW                             = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY; // blocks
 const size_t   DIFFICULTY_WINDOW_V2                          = 17;  // blocks
@@ -143,8 +143,23 @@ const int      RPC_DEFAULT_PORT                              =  32348;
 const size_t   P2P_LOCAL_WHITE_PEERLIST_LIMIT                =  1000;
 const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 
+// This defines our current P2P network version
+// and the minimum version for communication between nodes
+const uint8_t  P2P_VERSION_1                                 = 1;
+const uint8_t  P2P_VERSION_2                                 = 2;
+const uint8_t  P2P_CURRENT_VERSION                           = 3;
+const uint8_t  P2P_MINIMUM_VERSION                           = 1;
+
+// This defines the number of versions ahead we must see peers before
+// we start displaying warning messages that we need to upgrade our software
+const uint8_t  P2P_UPGRADE_WINDOW                            = 2;
+
+// This defines the minimum P2P version required for lite blocks propogation
+const uint8_t  P2P_LITE_BLOCKS_PROPOGATION_VERSION           = 3;
+
 const size_t   P2P_CONNECTION_MAX_WRITE_BUFFER_SIZE          = 64 * 1024 * 1024; // 64 MB
 const uint32_t P2P_DEFAULT_CONNECTIONS_COUNT                 = 8;
+const size_t   P2P_DEFAULT_ANCHOR_CONNECTIONS_COUNT          = 2;
 const size_t   P2P_DEFAULT_WHITELIST_CONNECTIONS_PERCENT     = 70;
 const uint32_t P2P_DEFAULT_HANDSHAKE_INTERVAL                = 60;            // seconds
 const uint32_t P2P_DEFAULT_PACKET_MAX_SIZE                   = 50000000;      // 50000000 bytes maximum packet size
@@ -157,8 +172,6 @@ const uint32_t P2P_FAILED_ADDR_FORGET_SECONDS                = (60 * 60);     //
 const uint32_t P2P_IP_BLOCKTIME                              = (60 * 60 * 24);//24 hour
 const uint32_t P2P_IP_FAILS_BEFORE_BLOCK                     = 10;
 const uint32_t P2P_IDLE_CONNECTION_KILL_INTERVAL             = (5 * 60);      //5 minutes
-const uint8_t  DANDELION_TX_STEM_PROPAGATION_PROBABILITY     = 90;
-
 
 const char     P2P_STAT_TRUSTED_PUB_KEY[]                    = "8f80f9a5a434a9f1510d13336228debfee9c918ce505efe225d8c94d045fa115";
 

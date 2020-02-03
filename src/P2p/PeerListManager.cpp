@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017, The Monero project
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -48,6 +50,12 @@ namespace CryptoNote {
     s(pe.last_seen, "last_seen");
   }
 
+  void serialize(AnchorPeerlistEntry& pe, ISerializer& s) {
+    s(pe.adr, "adr");
+    s(pe.id, "id");
+    s(pe.first_seen, "first_seen");
+  }
+
 }
 
 PeerlistManager::Peerlist::Peerlist(peers_indexed& peers, size_t maxSize) :
@@ -55,7 +63,7 @@ PeerlistManager::Peerlist::Peerlist(peers_indexed& peers, size_t maxSize) :
 }
 
 void PeerlistManager::serialize(ISerializer& s) {
-  const uint8_t currentVersion = 1;
+  const uint8_t currentVersion = 2;
   uint8_t version = currentVersion;
 
   s(version, "version");
@@ -66,6 +74,7 @@ void PeerlistManager::serialize(ISerializer& s) {
 
   s(m_peers_white, "whitelist");
   s(m_peers_gray, "graylist");
+  s(m_peers_anchor, "anchorlist");
 }
 
 size_t PeerlistManager::Peerlist::count() const {
@@ -171,11 +180,13 @@ bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint3
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_full(std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
+bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
 {
+  const anchor_peers_indexed::index<by_time>::type& by_time_index_an = m_peers_anchor.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_gr = m_peers_gray.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_wt = m_peers_white.get<by_time>();
 
+  std::copy(by_time_index_an.rbegin(), by_time_index_an.rend(), std::back_inserter(pl_anchor));
   std::copy(by_time_index_gr.rbegin(), by_time_index_gr.rend(), std::back_inserter(pl_gray));
   std::copy(by_time_index_wt.rbegin(), by_time_index_wt.rend(), std::back_inserter(pl_white));
 
@@ -204,6 +215,26 @@ bool PeerlistManager::set_peer_just_seen(PeerIdType peer, const NetworkAddress& 
   } catch (std::exception&) {
   }
 
+  return false;
+}
+//--------------------------------------------------------------------------------------------------
+
+bool PeerlistManager::append_with_peer_anchor(const AnchorPeerlistEntry& ple)
+{
+  try {
+    if (!is_ip_allowed(ple.adr.ip))
+      return true;
+
+    auto by_addr_it_anchor = m_peers_anchor.get<by_addr>().find(ple.adr);
+    if (by_addr_it_anchor == m_peers_anchor.get<by_addr>().end()) {
+      //put new record into white list
+      m_peers_anchor.insert(ple);
+    }
+
+    return true;
+  }
+  catch (std::exception&) {
+  }
   return false;
 }
 //--------------------------------------------------------------------------------------------------
@@ -261,6 +292,41 @@ bool PeerlistManager::append_with_peer_gray(const PeerlistEntry& ple)
     }
     return true;
   } catch (std::exception&) {
+  }
+  return false;
+}
+//--------------------------------------------------------------------------------------------------
+
+bool PeerlistManager::get_and_empty_anchor_peerlist(std::vector<AnchorPeerlistEntry>& apl)
+{
+  try {
+    auto begin = m_peers_anchor.get<by_time>().begin();
+    auto end = m_peers_anchor.get<by_time>().end();
+
+    std::for_each(begin, end, [&apl](const AnchorPeerlistEntry &a) {
+      apl.push_back(a);
+    });
+
+    m_peers_anchor.get<by_time>().clear();
+    return true;
+  }
+  catch (std::exception&) {
+  }
+  return false;
+}
+//--------------------------------------------------------------------------------------------------
+
+bool PeerlistManager::remove_from_peer_anchor(const NetworkAddress& addr)
+{
+  try {
+    anchor_peers_indexed::index_iterator<by_addr>::type iterator = m_peers_anchor.get<by_addr>().find(addr);
+
+    if (iterator != m_peers_anchor.get<by_addr>().end()) {
+      m_peers_anchor.erase(iterator);
+    }
+    return true;
+  }
+  catch (std::exception&) {
   }
   return false;
 }

@@ -64,7 +64,7 @@ bool parseAmount(std::string strAmount, uint64_t &amount)
         while (numDecimalPlaces < fractionSize && '0' == strAmount.back())
         {
             strAmount.erase(strAmount.size() - 1, 1);
-            fractionSize--;
+            --fractionSize;
         }
 
         if (numDecimalPlaces < fractionSize)

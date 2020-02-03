@@ -337,11 +337,15 @@ struct COMMAND_RPC_GET_PEER_LIST {
 	typedef EMPTY_STRUCT request;
 
 	struct response {
-		std::vector<std::string> peers;
+		std::vector<std::string> anchor_peers;
+		std::vector<std::string> white_peers;
+		std::vector<std::string> gray_peers;
 		std::string status;
 
 		void serialize(ISerializer &s) {
-			KV_MEMBER(peers)
+			KV_MEMBER(anchor_peers)
+			KV_MEMBER(white_peers)
+			KV_MEMBER(gray_peers)
 			KV_MEMBER(status)
 		}
 	};
@@ -1092,6 +1096,75 @@ struct COMMAND_RPC_CHECK_RESERVE_PROOF {
 			KV_MEMBER(locked)
 		}
 	};
+};
+
+
+struct block_stats_entry {
+  uint32_t height;
+  uint64_t already_generated_coins;
+  uint64_t transactions_count;
+  uint64_t block_size;
+  uint64_t difficulty;
+  uint64_t reward;
+  uint64_t timestamp;
+  //uint64_t min_fee;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(height)
+    KV_MEMBER(already_generated_coins)
+    KV_MEMBER(transactions_count)
+    KV_MEMBER(block_size)
+    KV_MEMBER(difficulty)
+    KV_MEMBER(reward)
+    KV_MEMBER(timestamp)
+    //KV_MEMBER(min_fee)
+  }
+};
+
+struct COMMAND_RPC_GET_STATS_BY_HEIGHTS {
+  struct request {
+    std::vector<uint32_t> heights;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(heights);
+    }
+  };
+
+  struct response {
+    std::vector<block_stats_entry> stats;
+    double duration;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(stats);
+      KV_MEMBER(duration);
+      KV_MEMBER(status);
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE {
+  struct request {
+    uint32_t start_height;
+    uint32_t end_height;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(start_height);
+      KV_MEMBER(end_height);
+    }
+  };
+
+  struct response {
+    std::vector<block_stats_entry> stats;
+    double duration;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(stats);
+      KV_MEMBER(duration);
+      KV_MEMBER(status);
+    }
+  };
 };
 
 }

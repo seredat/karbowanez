@@ -616,7 +616,7 @@ std::error_code NodeRpcProxy::doGetConnections(std::vector<p2pConnection>& conne
   COMMAND_RPC_GET_CONNECTIONS::request req = AUTO_VAL_INIT(req);
   COMMAND_RPC_GET_CONNECTIONS::response rsp = AUTO_VAL_INIT(rsp);
 
-  std::error_code ec = jsonCommand("/connections", req, rsp);
+  std::error_code ec = jsonCommand("/getconnections", req, rsp);
 
   if (ec || rsp.status != CORE_RPC_STATUS_OK) {
     return ec;

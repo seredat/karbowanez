@@ -104,13 +104,22 @@ struct p2pConnection {
 };
 
 inline p2pConnection::state get_protocol_state_from_string(std::string s) {
-  if (s == "state_befor_handshake") return p2pConnection::state_befor_handshake;
-  if (s == "state_synchronizing") return p2pConnection::state_synchronizing;
-  if (s == "state_idle") return p2pConnection::state_idle;
-  if (s == "state_normal") return p2pConnection::state_normal;
-  if (s == "state_sync_required") return p2pConnection::state_sync_required;
-  if (s == "state_pool_sync_required") return p2pConnection::state_pool_sync_required;
-  if (s == "state_shutdown") return p2pConnection::state_shutdown;
+  if (s == "state_befor_handshake")
+    return p2pConnection::state_befor_handshake;
+  if (s == "state_synchronizing")
+    return p2pConnection::state_synchronizing;
+  if (s == "state_idle")
+    return p2pConnection::state_idle;
+  if (s == "state_normal")
+    return p2pConnection::state_normal;
+  if (s == "state_sync_required")
+    return p2pConnection::state_sync_required;
+  if (s == "state_pool_sync_required")
+    return p2pConnection::state_pool_sync_required;
+  if (s == "state_shutdown")
+    return p2pConnection::state_shutdown;
+  else
+    return p2pConnection::state_befor_handshake;
 }
 
 class INode {

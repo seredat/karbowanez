@@ -1,4 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2014-2017, The Monero project
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -48,6 +50,16 @@ class PeerlistManager {
     >
   > peers_indexed;
 
+  typedef boost::multi_index_container<
+    AnchorPeerlistEntry,
+    boost::multi_index::indexed_by<
+    // access by anchor_peerlist_entry::net_adress
+    boost::multi_index::ordered_unique<boost::multi_index::tag<by_addr>, boost::multi_index::member<AnchorPeerlistEntry, NetworkAddress, &AnchorPeerlistEntry::adr> >,
+    // sort by anchor_peerlist_entry::first_seen
+    boost::multi_index::ordered_non_unique<boost::multi_index::tag<by_time>, boost::multi_index::member<AnchorPeerlistEntry, int64_t, &AnchorPeerlistEntry::first_seen> >
+    >
+  > anchor_peers_indexed;
+
 public:
 
   class Peerlist {
@@ -69,9 +81,10 @@ public:
   size_t get_gray_peers_count() const { return m_peers_gray.size(); }
   bool merge_peerlist(const std::list<PeerlistEntry>& outer_bs);
   bool get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth = CryptoNote::P2P_DEFAULT_PEERS_IN_HANDSHAKE) const;
-  bool get_peerlist_full(std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const;
+  bool get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const;
   bool get_white_peer_by_index(PeerlistEntry& p, size_t i) const;
   bool get_gray_peer_by_index(PeerlistEntry& p, size_t i) const;
+  bool append_with_peer_anchor(const AnchorPeerlistEntry& pr);
   bool append_with_peer_white(const PeerlistEntry& pr);
   bool append_with_peer_gray(const PeerlistEntry& pr);
   bool set_peer_just_seen(PeerIdType peer, uint32_t ip, uint32_t port);
@@ -86,11 +99,15 @@ public:
   Peerlist& getWhite();
   Peerlist& getGray();
 
+  bool get_and_empty_anchor_peerlist(std::vector<AnchorPeerlistEntry>& apl);
+  bool remove_from_peer_anchor(const NetworkAddress& addr);
+
 private:
   std::string m_config_folder;
   bool m_allow_local_ip;
   peers_indexed m_peers_gray;
   peers_indexed m_peers_white;
+  anchor_peers_indexed m_peers_anchor;
   Peerlist m_whitePeerlist;
   Peerlist m_grayPeerlist;
 };

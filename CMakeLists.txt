@@ -214,7 +214,7 @@ add_subdirectory(external)
 # Final setup for miniupnpc
 if(STATIC OR IOS)
  #if(UPNP_STATIC OR IOS)
-  add_definitions("-DUPNP_STATIC")
+  add_definitions("-DUPNP_STATIC -DMINIUPNP_STATICLIB -DUPNPC_BUILD_STATIC")
  else()
   add_definitions("-DUPNP_DYNAMIC")
   include_directories(${UPNP_INCLUDE})
