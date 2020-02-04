@@ -29,6 +29,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <System/Dispatcher.h>
 
+#include "Common/ShuffleGenerator.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
@@ -348,6 +349,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
         tx_blob_it = arg.txs.erase(tx_blob_it);
       }
     }
+  }
 
   if (arg.txs.size()) {
     //TODO: add announce usage here
@@ -598,15 +600,26 @@ bool CryptoNoteProtocolHandler::select_dandelion_stem() {
     }
   });
 
-  if (alive_peers.size() >= 2) {
-    std::mt19937 rng = Random::generator();
-    std::uniform_int_distribution<> dis(0, std::distance(alive_peers.begin(), alive_peers.end()) - 1);
-    auto it = alive_peers.begin();
-    std::advance(it, dis(rng));
-    m_dandelion_stem.push_back(*it);
-    it = alive_peers.begin();
-    std::advance(it, dis(rng));
-    m_dandelion_stem.push_back(*it);
+  if (alive_peers.size() > 0 && alive_peers.size() < 3) {
+    m_dandelion_stem = std::move(alive_peers);
+
+    logger(Logging::DEBUGGING) << "Selected dandelion_stem peers: ";
+    for (const auto& dp : m_dandelion_stem) {
+      logger(Logging::DEBUGGING) << Common::ipAddressToString(dp.m_remote_ip) + ":" + std::to_string(dp.m_remote_port);
+    }
+    logger(Logging::DEBUGGING) << "out of";
+    for (const auto& ap : alive_peers) {
+      logger(Logging::DEBUGGING) << Common::ipAddressToString(ap.m_remote_ip) + ":" + std::to_string(ap.m_remote_port);
+    }
+
+    return true;
+
+  } else if (alive_peers.size() > 2) {
+    ShuffleGenerator<size_t> peersGenerator(alive_peers.size());
+    while (m_dandelion_stem.size() < CryptoNote::parameters::DANDELION_TX_STEM_PEERS && !peersGenerator.empty()) {
+      auto& it = alive_peers[peersGenerator()];
+      m_dandelion_stem.push_back(it);
+    }
 
     logger(Logging::DEBUGGING) << "Selected dandelion_stem peers: ";
     for (const auto& dp : m_dandelion_stem) {
@@ -994,7 +1007,7 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
     std::mt19937 rng = Random::generator();
     std::uniform_int_distribution<> dis(0, 100);
     auto coin_flip = dis(rng);
-    if (coin_flip < CryptoNote::DANDELION_TX_STEM_PROPAGATION_PROBABILITY) {
+    if (coin_flip < CryptoNote::parameters::DANDELION_TX_STEM_PROPAGATION_PROBABILITY) {
       // Stem propagation
       logger(Logging::DEBUGGING) << "Relaying tx in dandelion stem mode";
       for (const auto& dandelion_peer : m_dandelion_stem) {
