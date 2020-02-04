@@ -73,6 +73,10 @@ const uint32_t MIN_TX_MIXIN_V1_HEIGHT                        = 216245;
 const uint32_t MIN_TX_MIXIN_V2_HEIGHT                        = 216394;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
 
+const size_t   DANDELION_TX_STEM                             = 10;
+const size_t   DANDELION_TX_STEM_PEERS                       = 2;
+const uint8_t  DANDELION_TX_STEM_PROPAGATION_PROBABILITY     = 90;
+
 const size_t   DIFFICULTY_WINDOW                             = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY; // blocks
 const size_t   DIFFICULTY_WINDOW_V2                          = 17;  // blocks
 const size_t   DIFFICULTY_WINDOW_V3                          = 60;  // blocks
