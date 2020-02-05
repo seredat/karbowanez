@@ -111,7 +111,7 @@ public:
   virtual void getConnections(std::vector<CryptoNote::p2pConnection>& connections, const Callback& callback) override { }
 
   virtual std::string feeAddress() const override { return std::string(); }
-
+  virtual uint64_t feeAmount() const override { return 0; }
 };
 
 

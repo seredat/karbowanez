@@ -25,6 +25,7 @@
 
 #include "DaemonCommandsHandler.h"
 
+#include "Common/FormatTools.h"
 #include "Common/SignalHandler.h"
 #include "Common/StringTools.h"
 #include "Common/PathTools.h"
@@ -67,7 +68,8 @@ namespace
   const command_line::arg_descriptor<bool>        arg_enable_blockchain_indexes = { "enable-blockchain-indexes", "Enable blockchain indexes", false };
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx          = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
   const command_line::arg_descriptor<std::string> arg_enable_cors               = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all", "" };
-  const command_line::arg_descriptor<std::string> arg_set_fee_address           = { "fee-address", "Sets fee address for light wallets to the daemon's RPC responses.", "" };
+  const command_line::arg_descriptor<std::string> arg_set_fee_address           = { "fee-address", "Sets fee address for light wallets.", "" };
+  const command_line::arg_descriptor<std::string> arg_set_fee_amount            = { "fee-amount", "Sets flat rate fee for light wallets.", "" };
   const command_line::arg_descriptor<std::string> arg_set_contact               = { "contact", "Sets node admin contact", "" };
   const command_line::arg_descriptor<std::string> arg_set_view_key              = { "view-key", "Sets private view key to check for masternode's fee.", "" };
   const command_line::arg_descriptor<bool>        arg_testnet_on                = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
@@ -153,6 +155,7 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
     command_line::add_arg(desc_cmd_sett, arg_enable_cors);
     command_line::add_arg(desc_cmd_sett, arg_set_fee_address);
+    command_line::add_arg(desc_cmd_sett, arg_set_fee_amount);
     command_line::add_arg(desc_cmd_sett, arg_set_view_key);
     command_line::add_arg(desc_cmd_sett, arg_enable_blockchain_indexes);
     command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
@@ -356,9 +359,9 @@ int main(int argc, char* argv[])
     rpcServer.start(rpcConfig.bindIp, rpcConfig.bindPort);
     rpcServer.restrictRpc(command_line::get_arg(vm, arg_restricted_rpc));
     rpcServer.enableCors(command_line::get_arg(vm, arg_enable_cors));
-	if (command_line::has_arg(vm, arg_set_fee_address)) {
-	  std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
-	  if (!addr_str.empty()) {
+    if (command_line::has_arg(vm, arg_set_fee_address)) {
+      std::string addr_str = command_line::get_arg(vm, arg_set_fee_address);
+      if (!addr_str.empty()) {
         AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
         if (!currency.parseAccountAddressString(addr_str, acc)) {
           logger(ERROR, BRIGHT_RED) << "Bad fee address: " << addr_str;
@@ -366,7 +369,15 @@ int main(int argc, char* argv[])
         }
         rpcServer.setFeeAddress(addr_str, acc);
       }
-	}
+    }
+    if (command_line::has_arg(vm, arg_set_fee_amount)) {
+      uint64_t fee;
+      if (!Common::Format::parseAmount(command_line::get_arg(vm, arg_set_fee_amount), fee)) {
+        logger(ERROR, BRIGHT_RED) << "Couldn't parse fee amount";
+        return 1;
+      }
+      rpcServer.setFeeAmount(fee);
+    }
     if (command_line::has_arg(vm, arg_set_view_key)) {
       std::string vk_str = command_line::get_arg(vm, arg_set_view_key);
 	  if (!vk_str.empty()) {

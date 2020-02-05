@@ -438,10 +438,6 @@ void InProcessNode::getFeeAddress() {
   return;
 }
 
-std::string InProcessNode::feeAddress() const { 
-  return std::string();
-}
-
 uint64_t InProcessNode::getNextDifficulty() const {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {

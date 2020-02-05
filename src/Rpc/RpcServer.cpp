@@ -262,6 +262,11 @@ bool RpcServer::setFeeAddress(const std::string& fee_address, const AccountPubli
   return true;
 }
 
+bool RpcServer::setFeeAmount(const uint64_t fee_amount) {
+  m_fee_amount = fee_amount;
+  return true;
+}
+
 bool RpcServer::setViewKey(const std::string& view_key) {
   Crypto::Hash private_view_key_hash;
   size_t size;
@@ -646,7 +651,6 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   Crypto::Hash last_block_hash = m_core.getBlockIdByHeight(res.height - 1);
   res.top_block_hash = Common::podToHex(last_block_hash);
   res.version = PROJECT_VERSION_LONG;
-  res.fee_address = m_fee_address.empty() ? std::string() : m_fee_address;
   res.contact = m_contact_info.empty() ? std::string() : m_contact_info;
   res.min_fee = m_core.getMinimalFee();
   res.start_time = (uint64_t)m_core.getStartTime();
@@ -902,6 +906,7 @@ bool RpcServer::on_get_fee_address(const COMMAND_RPC_GET_FEE_ADDRESS::request& r
 	return false; 
   }
   res.fee_address = m_fee_address;
+  res.fee_amount = m_fee_amount;
   res.status = CORE_RPC_STATUS_OK;
   return true;
 }

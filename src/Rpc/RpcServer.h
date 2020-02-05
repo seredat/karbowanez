@@ -46,6 +46,7 @@ public:
   bool restrictRpc(const bool is_resctricted);
   bool enableCors(const std::string domain);
   bool setFeeAddress(const std::string& fee_address, const AccountPublicAddress& fee_acc);
+  bool setFeeAmount(const uint64_t fee_amount);
   bool setViewKey(const std::string& view_key);
   bool setContactInfo(const std::string& contact);
   bool checkIncomingTransactionForFee(const BinaryArray& tx_blob);
@@ -129,6 +130,7 @@ private:
   bool m_restricted_rpc;
   std::string m_cors_domain;
   std::string m_fee_address;
+  uint64_t    m_fee_amount;
   std::string m_contact_info;
   Crypto::SecretKey m_view_key = NULL_SECRET_KEY;
   CryptoNote::AccountPublicAddress m_fee_acc;

@@ -67,6 +67,7 @@ std::error_code interpretResponseStatus(const std::string& status) {
 
 NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort) :
     m_rpcTimeout(10000),
+    m_initTimeout(10000),
     m_pullInterval(5000),
     m_nodeHost(nodeHost),
     m_nodePort(nodePort),
@@ -178,6 +179,19 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
+    std::future<void> init = std::async(std::launch::async, [this] { updateNodeStatus(); });
+
+    // Init succeeded
+    if (init.wait_for(std::chrono::seconds(m_initTimeout)) == std::future_status::ready) {
+      initialized_callback(std::error_code());
+    } else { // Timed out
+      initialized_callback(make_error_code(error::TIMEOUT));
+    }
+
+    // Wait for the init to actually complete
+    init.get();
+
+    // Get public node's fee info
     getFeeAddress();
 
     initialized_callback(std::error_code());
@@ -288,7 +302,6 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
 
-    m_fee_address = getInfoResp.fee_address;
     m_minimalFee.store(getInfoResp.min_fee, std::memory_order_relaxed);
     m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
     m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
@@ -342,12 +355,17 @@ void NodeRpcProxy::getFeeAddress() {
     return;
   }
   m_fee_address = iresp.fee_address;
+  m_fee_amount = iresp.fee_amount;
 
   return;
 }
 
 std::string NodeRpcProxy::feeAddress() const {
   return m_fee_address;
+}
+
+uint64_t NodeRpcProxy::feeAmount() const {
+  return m_fee_amount;
 }
 
 std::vector<Crypto::Hash> NodeRpcProxy::getKnownTxsVector() const {

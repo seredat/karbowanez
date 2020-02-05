@@ -103,6 +103,7 @@ public:
   virtual void getConnections(std::vector<p2pConnection>& connections, const Callback& callback) override;
 
   virtual std::string feeAddress() const override;
+  virtual uint64_t feeAmount() const override;
 
   unsigned int rpcTimeout() const { return m_rpcTimeout; }
   void rpcTimeout(unsigned int val) { m_rpcTimeout = val; }
@@ -166,6 +167,7 @@ private:
   Tools::ObserverManager<CryptoNote::INodeRpcProxyObserver> m_rpcProxyObserverManager;
 
   unsigned int m_rpcTimeout;
+  unsigned int m_initTimeout;
   HttpClient* m_httpClient = nullptr;
   System::Event* m_httpEvent = nullptr;
 
@@ -196,6 +198,8 @@ private:
 
   bool m_connected;
   std::string m_fee_address;
+  uint64_t m_fee_amount = 0;
+
 };
 
 }

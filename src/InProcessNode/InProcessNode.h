@@ -75,7 +75,8 @@ public:
   virtual std::string getNodeVersion() const override;
 
   virtual void getFeeAddress() override;
-  virtual std::string feeAddress() const override;
+  virtual std::string feeAddress() const override { return std::string(); }
+  virtual uint64_t feeAmount() const override { return 0; }
 
   virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override;
