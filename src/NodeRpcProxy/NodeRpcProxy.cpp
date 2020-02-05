@@ -178,7 +178,7 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
-	getFeeAddress();
+    getFeeAddress();
 
     initialized_callback(std::error_code());
 
@@ -288,6 +288,7 @@ void NodeRpcProxy::updateBlockchainStatus() {
 
     updatePeerCount(getInfoResp.incoming_connections_count + getInfoResp.outgoing_connections_count);
 
+    m_fee_address = getInfoResp.fee_address;
     m_minimalFee.store(getInfoResp.min_fee, std::memory_order_relaxed);
     m_nodeHeight.store(getInfoResp.height, std::memory_order_relaxed);
     m_nextDifficulty.store(getInfoResp.difficulty, std::memory_order_relaxed);
