@@ -600,23 +600,9 @@ bool CryptoNoteProtocolHandler::select_dandelion_stem() {
     }
   });
 
-  if (alive_peers.size() > 0 && alive_peers.size() < 3) {
-    m_dandelion_stem = std::move(alive_peers);
-
-    logger(Logging::DEBUGGING) << "Selected dandelion_stem peers: ";
-    for (const auto& dp : m_dandelion_stem) {
-      logger(Logging::DEBUGGING) << Common::ipAddressToString(dp.m_remote_ip) + ":" + std::to_string(dp.m_remote_port);
-    }
-    logger(Logging::DEBUGGING) << "out of";
-    for (const auto& ap : alive_peers) {
-      logger(Logging::DEBUGGING) << Common::ipAddressToString(ap.m_remote_ip) + ":" + std::to_string(ap.m_remote_port);
-    }
-
-    return true;
-
-  } else if (alive_peers.size() > 2) {
+  if (alive_peers.size() > 0) {
     ShuffleGenerator<size_t> peersGenerator(alive_peers.size());
-    while (m_dandelion_stem.size() < CryptoNote::parameters::DANDELION_TX_STEM_PEERS && !peersGenerator.empty()) {
+    while (m_dandelion_stem.size() < std::min<size_t>(CryptoNote::parameters::DANDELION_TX_STEM_PEERS, alive_peers.size()) && !peersGenerator.empty()) {
       auto& it = alive_peers[peersGenerator()];
       m_dandelion_stem.push_back(it);
     }
