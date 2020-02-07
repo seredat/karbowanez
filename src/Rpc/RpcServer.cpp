@@ -838,6 +838,9 @@ bool RpcServer::on_send_raw_transaction(const COMMAND_RPC_SEND_RAW_TRANSACTION::
   }
 
   NOTIFY_NEW_TRANSACTIONS::request r;
+  std::mt19937 rng = Random::generator();
+  std::uniform_int_distribution<size_t> dis(0, CryptoNote::parameters::DANDELION_TX_STEM_LENGTH);
+  r.stem = dis(rng);
   r.txs.push_back(Common::asString(tx_blob));
   m_core.get_protocol()->relay_transactions(r);
   //TODO: make sure that tx has reached other nodes here, probably wait to receive reflections from other nodes
