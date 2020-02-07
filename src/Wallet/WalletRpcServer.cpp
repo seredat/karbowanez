@@ -37,6 +37,10 @@
 
 #include "ITransfersContainer.h"
 
+#if defined(WIN32)
+#undef ERROR
+#endif
+
 using namespace Logging;
 using namespace CryptoNote;
 
