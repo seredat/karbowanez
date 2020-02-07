@@ -67,7 +67,7 @@ CryptoNoteProtocolHandler::CryptoNoteProtocolHandler(const Currency& currency, S
   m_stop(false),
   m_observedHeight(0),
   m_peersCount(0),
-  m_dandelionStemSelectInterval(120),
+  m_dandelionStemSelectInterval(CryptoNote::parameters::DANDELION_EPOCH),
   logger(log, "protocol") {
   
   if (!m_p2p) {
@@ -357,7 +357,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
       std::mt19937 rng = Random::generator();
       std::uniform_int_distribution<> dis(0, 100);
       auto coin_flip = dis(rng);
-      if (coin_flip < CryptoNote::parameters::DANDELION_TX_STEM_PROPAGATION_PROBABILITY) { // Stem propagation
+      if (coin_flip < CryptoNote::parameters::DANDELION_STEM_TX_PROPAGATION_PROBABILITY) { // Stem propagation
         for (const auto& dandelion_peer : m_dandelion_stem) {
           arg.stem--;
           if (dandelion_peer.m_state == CryptoNoteConnectionContext::state_normal || dandelion_peer.m_state == CryptoNoteConnectionContext::state_synchronizing) {
@@ -598,8 +598,6 @@ int CryptoNoteProtocolHandler::processObjects(CryptoNoteConnectionContext& conte
 }
 
 bool CryptoNoteProtocolHandler::select_dandelion_stem() {
-  logger(Logging::DEBUGGING) << "Choosing dandelion stem peers...";
-
   m_dandelion_stem.clear();
 
   std::vector<CryptoNoteConnectionContext> alive_peers;
@@ -611,16 +609,16 @@ bool CryptoNoteProtocolHandler::select_dandelion_stem() {
 
   if (alive_peers.size() > 0) {
     ShuffleGenerator<size_t> peersGenerator(alive_peers.size());
-    while (m_dandelion_stem.size() < std::min<size_t>(CryptoNote::parameters::DANDELION_TX_STEM_PEERS, alive_peers.size()) && !peersGenerator.empty()) {
+    while (m_dandelion_stem.size() < std::min<size_t>(CryptoNote::parameters::DANDELION_STEMS, alive_peers.size()) && !peersGenerator.empty()) {
       auto& it = alive_peers[peersGenerator()];
       m_dandelion_stem.push_back(it);
     }
 
-    logger(Logging::DEBUGGING) << "Selected dandelion_stem peers: ";
+    logger(Logging::DEBUGGING) << "Selected dandelion_stem peers:";
     for (const auto& dp : m_dandelion_stem) {
       logger(Logging::DEBUGGING) << Common::ipAddressToString(dp.m_remote_ip) + ":" + std::to_string(dp.m_remote_port);
     }
-    logger(Logging::DEBUGGING) << "out of";
+    logger(Logging::DEBUGGING) << "out of:";
     for (const auto& ap : alive_peers) {
       logger(Logging::DEBUGGING) << Common::ipAddressToString(ap.m_remote_ip) + ":" + std::to_string(ap.m_remote_port);
     }
@@ -1001,7 +999,7 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
     std::mt19937 rng = Random::generator();
     std::uniform_int_distribution<> dis(0, 100);
     auto coin_flip = dis(rng);
-    if (coin_flip < CryptoNote::parameters::DANDELION_TX_STEM_PROPAGATION_PROBABILITY) { // Stem propagation
+    if (coin_flip < CryptoNote::parameters::DANDELION_STEM_TX_PROPAGATION_PROBABILITY) { // Stem propagation
       for (const auto& dandelion_peer : m_dandelion_stem) {
         arg.stem--;
         if (dandelion_peer.m_state == CryptoNoteConnectionContext::state_normal || dandelion_peer.m_state == CryptoNoteConnectionContext::state_synchronizing) {
