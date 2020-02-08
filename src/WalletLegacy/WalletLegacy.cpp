@@ -1021,26 +1021,7 @@ bool WalletLegacy::get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey
 }
 
 bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) {
-  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&address.viewPublicKey);
-  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&tx_key);
-  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
-  Crypto::PublicKey R;
-  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
-  Crypto::secret_key_to_public_key(tx_key, R);
-  Crypto::Signature sig;
-  try {
-    Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
-  }
-  catch (const std::runtime_error &e) {
-    m_logger(Logging::ERROR) << "Proof generation error: " << *e.what();
-    return false;
-  }
-
-  sig_str = std::string("ProofV1") +
-    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
-    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
-
-  return true;
+  return get_tx_proof(txid, address, tx_key, sig_str, m_logger.getLogger());
 }
 
 bool compareTransactionOutputInformationByAmount(const TransactionOutputInformation &a, const TransactionOutputInformation &b) {
