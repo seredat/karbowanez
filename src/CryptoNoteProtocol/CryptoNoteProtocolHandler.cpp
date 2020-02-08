@@ -335,7 +335,8 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
     for (auto tx_blob_it = arg.txs.begin(); tx_blob_it != arg.txs.end();) {
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
-      logger(DEBUGGING) << "transaction " << transactionHash << " came in NOTIFY_NEW_TRANSACTIONS";
+      logger(DEBUGGING) << "Transaction " << transactionHash << " came in NOTIFY_NEW_TRANSACTIONS"
+                        << " in " << (arg.stem == 0 ? "fluff" : "stem") << " mode (stem=" << arg.stem << ")";
 
       CryptoNote::tx_verification_context tvc = boost::value_initialized<decltype(tvc)>();
       m_core.handle_incoming_tx(transactionBinary, tvc, false);
