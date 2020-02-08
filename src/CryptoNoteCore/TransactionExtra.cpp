@@ -17,9 +17,11 @@
 
 #include "TransactionExtra.h"
 
+#include "Common/int-util.h"
 #include "Common/MemoryInputStream.h"
 #include "Common/StreamTools.h"
 #include "Common/StringTools.h"
+#include "Common/Varint.h"
 #include "CryptoNoteTools.h"
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
@@ -85,6 +87,14 @@ bool parseTransactionExtra(const std::vector<uint8_t> &transactionExtra, std::ve
         transactionExtraFields.push_back(mmTag);
         break;
       }
+
+      case TX_EXTRA_OVERT_TAG: {
+        TransactionExtraDisclosure pp;
+        ar(pp.declarations, "declarations");
+        ar(pp.senderSignature, "sender_signature");
+        transactionExtraFields.push_back(pp);
+        break;
+      }
       }
     }
   } catch (std::exception &) {
@@ -118,6 +128,10 @@ struct ExtraSerializerVisitor : public boost::static_visitor<bool> {
 
   bool operator()(const TransactionExtraMergeMiningTag& t) {
     return appendMergeMiningTagToExtra(extra, t);
+  }
+
+  bool operator()(const TransactionExtraDisclosure& t) {
+    return appendTransactionDisclosureToExtra(extra, t);
   }
 };
 
@@ -188,6 +202,34 @@ bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, Transactio
   return findTransactionExtraFieldByType(tx_extra_fields, mm_tag);
 }
 
+bool appendTransactionDisclosureToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraDisclosure& pp) {
+  BinaryArray blob;
+  if (!toBinaryArray(pp, blob)) {
+    return false;
+  }
+
+  tx_extra.reserve(tx_extra.size() + 1 + blob.size());
+  tx_extra.push_back(TX_EXTRA_OVERT_TAG);
+  std::copy(reinterpret_cast<const uint8_t*>(blob.data()), reinterpret_cast<const uint8_t*>(blob.data() + blob.size()), std::back_inserter(tx_extra));
+
+  return true;
+}
+
+bool getTransactionDisclosureFromExtra(const std::vector<uint8_t> &extra, TransactionExtraDisclosure& pp) {
+  std::vector<TransactionExtraField> tx_extra_fields;
+  if (!parseTransactionExtra(extra, tx_extra_fields)) {
+    return false;
+  }
+
+  TransactionExtraDisclosure _pp;
+  if (findTransactionExtraFieldByType(tx_extra_fields, _pp)) {
+    pp = std::move(_pp);
+    return true;
+  }
+  
+  return false;
+}
+
 void setPaymentIdToTransactionExtraNonce(std::vector<uint8_t>& extra_nonce, const Hash& payment_id) {
   extra_nonce.clear();
   extra_nonce.push_back(TX_EXTRA_NONCE_PAYMENT_ID);
@@ -243,5 +285,11 @@ bool getPaymentIdFromTxExtra(const std::vector<uint8_t>& extra, Hash& paymentId)
   return true;
 }
 
+bool TransactionExtraDisclosure::serialize(ISerializer& s) {
+  s(declarations, "declarations");
+  s(senderSignature, "sender_signature");
+
+  return true;
+}
 
 }
