@@ -38,7 +38,7 @@ bool parseUrlAddress(const std::string& url, std::string& host, uint16_t& port, 
   port = 0;
   ssl = false;
 
-  boost::regex uri_exp("^(https://|http://|)(([a-z|A-Z|0-9]|[a-z|A-Z|0-9]-[a-z|A-Z|0-9]|[a-z|A-Z|0-9]\\.)+)(:[0-9]{1,5}|)(/([\\w|-]+/)+|/|)$");
+  boost::regex uri_exp("^(https://|http://|)(([a-z|A-Z|0-9]|[a-z|A-Z|0-9]-[a-z|A-Z|0-9]|[a-z|A-Z|0-9]-[a-z|A-Z|0-9]\\.|[a-z|A-Z|0-9]\\.)+)(:[0-9]{1,5}|)(/([\\w|-]+/)+|/|)$");
   boost::cmatch reg_res;
   if (boost::regex_match(url.c_str(), reg_res, uri_exp)) {
     if (reg_res.length(4) > 0) {
