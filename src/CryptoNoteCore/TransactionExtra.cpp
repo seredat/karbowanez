@@ -286,10 +286,14 @@ bool getPaymentIdFromTxExtra(const std::vector<uint8_t>& extra, Hash& paymentId)
 }
 
 bool TransactionExtraDisclosure::serialize(ISerializer& s) {
-  s(declarations, "declarations");
-  s(senderSignature, "sender_signature");
+  if (!declarations.empty()) {
+    s(declarations, "declarations");
+    s(senderSignature, "sender_signature");
 
-  return true;
+    return true;
+  }
+
+  return false;
 }
 
 }
