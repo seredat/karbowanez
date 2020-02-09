@@ -204,6 +204,7 @@ struct TransferCommand {
 #ifndef __ANDROID__
   std::map<std::string, std::vector<WalletLegacyTransfer>> aliases;
 #endif
+  bool overt = false;
 
   TransferCommand(const CryptoNote::Currency& currency, const CryptoNote::NodeRpcProxy& node) :
     m_currency(currency), m_node(node), fake_outs_count(0), 
@@ -224,14 +225,14 @@ struct TransferCommand {
         return false;
       }
 
-	  if (fake_outs_count < m_currency.minMixin() && fake_outs_count != 0) {
-          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or bigger than " << m_currency.minMixin();
-          return false;
+      if (fake_outs_count < m_currency.minMixin() && fake_outs_count != 0) {
+        logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or bigger than " << m_currency.minMixin();
+        return false;
       }
 
       if (fake_outs_count > m_currency.maxMixin()) {
-          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or less than " << m_currency.maxMixin();
-          return false;
+        logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or less than " << m_currency.maxMixin();
+        return false;
       }
 
       while (!ar.eof()) {
@@ -259,12 +260,14 @@ struct TransferCommand {
                 << (m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : m_node.getMinimalFee());
               return false;
             }
+          } else if (arg == "-o") {
+            overt = true;
           }
         } else {
           WalletLegacyTransfer destination;
           CryptoNote::TransactionDestinationEntry de;
 #ifndef __ANDROID__		  
-	  std::string aliasUrl;
+          std::string aliasUrl;
 #endif
 
           if (!m_currency.parseAccountAddressString(arg, de.addr)) {
@@ -273,41 +276,39 @@ struct TransferCommand {
               logger(ERROR, BRIGHT_RED) << "Invalid payment ID usage. Please, use -p <payment_id>. See help for details.";
             } else {
 #ifndef __ANDROID__
-			  // if string doesn't contain a dot, we won't consider it a url for now.
-			  if (strchr(arg.c_str(), '.') == NULL) {
-				logger(ERROR, BRIGHT_RED) << "Wrong address or alias: " << arg;
-				return false;
-			  }             
-			  aliasUrl = arg;
+              // if string doesn't contain a dot, we won't consider it a url for now.
+              if (strchr(arg.c_str(), '.') == NULL) {
+                logger(ERROR, BRIGHT_RED) << "Wrong address or alias: " << arg;
+                return false;
+              }
+              aliasUrl = arg;
 #endif
             }
           }
 
-		  auto value = ar.next();
-		  bool ok = m_currency.parseAmount(value, de.amount);
-		  if (!ok || 0 == de.amount) {
+          auto value = ar.next();
+          bool ok = m_currency.parseAmount(value, de.amount);
+          if (!ok || 0 == de.amount) {
 #if defined(WIN32)
 #undef max
 #undef min
 #endif 
-			  logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
-				  ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
-			  return false;
-		  }
+            logger(ERROR, BRIGHT_RED) << "amount is wrong: " << arg << ' ' << value <<
+              ", expected number from 0 to " << m_currency.formatAmount(std::numeric_limits<uint64_t>::max());
+            return false;
+          }
 
 #ifndef __ANDROID__
-		  if (aliasUrl.empty()) {
+          if (aliasUrl.empty()) {
 #endif
-			  destination.address = arg;
-			  destination.amount = de.amount;
-			  dsts.push_back(destination);
+            destination.address = arg;
+            destination.amount = de.amount;
+            dsts.push_back(destination);
 #ifndef __ANDROID__
-		  }
-		  else {
-			  aliases[aliasUrl].emplace_back(WalletLegacyTransfer{ "", static_cast<int64_t>(de.amount) });
-		  }
+          } else {
+            aliases[aliasUrl].emplace_back(WalletLegacyTransfer{ "", static_cast<int64_t>(de.amount) });
+          }
 #endif
-
           if (!remote_fee_address.empty()) {
             destination.address = remote_fee_address;
             int64_t remote_node_fee = static_cast<int64_t>(de.amount * 0.0025);
@@ -320,15 +321,16 @@ struct TransferCommand {
         }
       }
 
-	  if (dsts.empty()
+      if (dsts.empty()
 #ifndef __ANDROID__
-		&& aliases.empty()
+        && aliases.empty()
 #endif
-){
+        ) {
         logger(ERROR, BRIGHT_RED) << "At least one destination address is required";
         return false;
       }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
       logger(ERROR, BRIGHT_RED) << e.what();
       return false;
     }
@@ -688,7 +690,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("outputs", boost::bind(&simple_wallet::show_unlocked_outputs_count, this, _1), "Show the number of unlocked outputs available for a transaction");
   m_consoleHandler.setHandler("bc_height", boost::bind(&simple_wallet::show_blockchain_height, this, _1), "Show blockchain height");
   m_consoleHandler.setHandler("transfer", boost::bind(&simple_wallet::transfer, this, _1),
-    "transfer <mixin_count> <addr_1> <amount_1> [<addr_2> <amount_2> ... <addr_N> <amount_N>] [-p payment_id] [-f fee]"
+    "transfer <mixin_count> <addr_1> <amount_1> [<addr_2> <amount_2> ... <addr_N> <amount_N>] [-p payment_id] [-f fee] [-o]"
     " - Transfer <amount_1>,... <amount_N> to <address_1>,... <address_N>, respectively. "
     "<mixin_count> is the number of transactions yours is indistinguishable from (from 0 to maximum available)");
   m_consoleHandler.setHandler("set_log", boost::bind(&simple_wallet::set_log, this, _1), "set_log <level> - Change current log level, <level> is a number 0-4");
@@ -2142,7 +2144,7 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
 
     WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
 
-    CryptoNote::TransactionId tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
+    CryptoNote::TransactionId tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0, cmd.overt);
     if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
       fail_msg_writer() << "Can't send money";
       return true;

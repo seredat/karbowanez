@@ -56,13 +56,13 @@ void createChangeDestinations(const AccountPublicAddress& address, uint64_t need
 }
 
 void constructTx(const AccountKeys keys, const std::vector<TransactionSourceEntry>& sources, const std::vector<TransactionDestinationEntry>& splittedDests,
-    const std::string& extra, uint64_t unlockTimestamp, uint64_t sizeLimit, Transaction& tx, Crypto::SecretKey& tx_key) {
+    const std::string& extra, uint64_t unlockTimestamp, uint64_t sizeLimit, Transaction& tx, Crypto::SecretKey& tx_key, bool overt) {
   std::vector<uint8_t> extraVec;
   extraVec.reserve(extra.size());
   std::for_each(extra.begin(), extra.end(), [&extraVec] (const char el) { extraVec.push_back(el);});
 
   Logging::LoggerGroup nullLog;
-  bool r = constructTransaction(keys, sources, splittedDests, extraVec, tx, unlockTimestamp, tx_key, nullLog);
+  bool r = constructTransaction(keys, sources, splittedDests, extraVec, tx, unlockTimestamp, tx_key, nullLog, overt);
 
   throwIf(!r, error::INTERNAL_WALLET_ERROR);
   throwIf(getObjectBinarySize(tx) >= sizeLimit, error::TRANSACTION_SIZE_TOO_BIG);
@@ -104,7 +104,7 @@ void WalletTransactionSender::validateTransfersAddresses(const std::vector<Walle
 }
 
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-    const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+    const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp, bool overt) {
 
   using namespace CryptoNote;
 
@@ -120,6 +120,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
   context->transactionId = transactionId;
   context->mixIn = mixIn;
+  context->overt = overt;
 
   if(context->mixIn) {
     std::shared_ptr<WalletRequest> request = makeGetRandomOutsRequest(context);
@@ -217,7 +218,7 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::doSendTransaction(std::s
     splitDestinations(transaction.firstTransferId, transaction.transferCount, changeDts, context->dustPolicy, splittedDests);
 
     Transaction tx;
-    constructTx(m_keys, sources, splittedDests, transaction.extra, transaction.unlockTime, m_upperTransactionSizeLimit, tx, context->tx_key);
+    constructTx(m_keys, sources, splittedDests, transaction.extra, transaction.unlockTime, m_upperTransactionSizeLimit, tx, context->tx_key, context->overt);
 
     getObjectHash(tx, transaction.hash);
 
