@@ -68,6 +68,8 @@ bool BlockchainExplorerDataBuilder::fillTxExtra(const std::vector<uint8_t>& rawE
       extraDetails.publicKey = std::move(boost::get<TransactionExtraPublicKey>(field).publicKey);
     } else if (typeid(TransactionExtraNonce) == field.type()) {
       extraDetails.nonce = boost::get<TransactionExtraNonce>(field).nonce;
+    } else if (typeid(TransactionExtraDisclosure) == field.type()) {
+      extraDetails.disclosure = std::move(boost::get<TransactionExtraDisclosure>(field));
     }
   }
   return true;
