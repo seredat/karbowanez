@@ -124,7 +124,8 @@ bool constructTransaction(
   Transaction& tx,
   uint64_t unlock_time,
   Crypto::SecretKey &tx_key,
-  Logging::ILogger& log) {
+  Logging::ILogger& log, 
+  bool overt) {
   LoggerRef logger(log, "construct_tx");
 
   tx.inputs.clear();
@@ -231,6 +232,55 @@ bool constructTransaction(
   if (summary_outs_money > summary_inputs_money) {
     logger(ERROR) << "Transaction inputs money (" << summary_inputs_money << ") less than outputs money (" << summary_outs_money << ")";
     return false;
+  }
+
+  if (overt) {
+    TransactionExtraDisclosure disclosure;
+
+    /* We need hash of something for proofs, we don't have tx/prefix hash yet
+     * so why don't we hash money transfered?
+     */
+    Crypto::Hash money_hash;
+    CryptoNote::BinaryArray v;
+    std::memcpy(v.data(), &summary_outs_money, sizeof(summary_outs_money));
+    Crypto::cn_fast_hash(v.data(), v.size(), money_hash);
+
+    /* Signature to provably distinguish sender. To check we cycle through
+     * declarations until signature matches address in declaration.
+     */
+    Crypto::generate_signature(money_hash, sender_account_keys.address.spendPublicKey, sender_account_keys.spendSecretKey, disclosure.senderSignature);
+
+    /* Generate declarations for each destination.
+     * In edge case when signature doesn't match any of the addresses it means 
+     * that everything was sent to destination without change. In this case 
+     * add another dummy disclosure with sender's address and proof that proves
+     * nothing in order to store sender's address.
+     */
+    bool foundSender = false;
+    for (TransactionDestinationEntry d : destinations) {
+      std::string proof;
+      if (!get_tx_proof(money_hash, d.addr, tx_key, proof, log)) {
+        return false;
+      }
+      disclosure.declarations.push_back(std::make_pair(d.addr, proof));
+
+      if (d.addr.spendPublicKey == sender_account_keys.address.spendPublicKey &&
+        d.addr.viewPublicKey == sender_account_keys.address.viewPublicKey) {
+        foundSender = true;
+      }
+    }
+    if (!foundSender) {
+      std::string proof;
+      AccountPublicAddress address = sender_account_keys.address;
+      if (!get_tx_proof(money_hash, address, tx_key, proof, log)) {
+        return false;
+      }
+      disclosure.declarations.push_back(std::make_pair(address, proof));
+    }
+
+    if (!appendTransactionDisclosureToExtra(tx.extra, disclosure)) {
+      logger(ERROR) << "Couldn't append overt transaction disclosure";
+    }
   }
 
   //generate ring signatures
