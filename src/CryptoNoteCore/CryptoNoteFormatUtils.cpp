@@ -241,7 +241,7 @@ bool constructTransaction(
      * so why don't we hash money transfered?
      */
     Crypto::Hash money_hash;
-    CryptoNote::BinaryArray v;
+    CryptoNote::BinaryArray v(8);
     std::memcpy(v.data(), &summary_outs_money, sizeof(summary_outs_money));
     Crypto::cn_fast_hash(v.data(), v.size(), money_hash);
 
