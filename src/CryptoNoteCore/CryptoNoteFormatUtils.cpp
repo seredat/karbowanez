@@ -247,20 +247,26 @@ bool constructTransaction(
      */
     Crypto::generate_signature(keyHash, sender_account_keys.address.spendPublicKey, sender_account_keys.spendSecretKey, disclosure.senderSignature);
 
-    /* Generate declarations for each destination.
-     * In edge case when signature doesn't match any of the addresses it means 
-     * that everything was sent to destination without change. In this case 
-     * add another dummy disclosure with sender's address and proof that proves
-     * nothing in order to store sender's address.
+    /* Generate declarations for each unique destination (remove duplicates
+     * because we need address - proof pair only once).
      */
+    std::vector<TransactionDestinationEntry> dsts(destinations);
+    sort(dsts.begin(), dsts.end());
+    dsts.erase(unique(dsts.begin(), dsts.end()), dsts.end());
+
     bool foundSender = false;
-    for (TransactionDestinationEntry d : destinations) {
+    for (TransactionDestinationEntry d : dsts) {
       std::string proof;
       if (!get_tx_proof(keyHash, d.addr, tx_key, proof, log)) {
         return false;
       }
       disclosure.declarations.push_back(std::make_pair(d.addr, proof));
 
+      /* In edge case when signature doesn't match any of the addresses it means 
+       * that everything was sent to destination without change. In this case
+       * add another dummy disclosure with sender's address and proof that proves
+       * nothing in order to store sender's address.
+       */
       if (d.addr.spendPublicKey == sender_account_keys.address.spendPublicKey &&
         d.addr.viewPublicKey == sender_account_keys.address.viewPublicKey) {
         foundSender = true;

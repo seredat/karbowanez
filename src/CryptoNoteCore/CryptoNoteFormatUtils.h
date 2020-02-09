@@ -50,8 +50,15 @@ struct TransactionDestinationEntry {
 
   TransactionDestinationEntry() : amount(0), addr(boost::value_initialized<AccountPublicAddress>()) {}
   TransactionDestinationEntry(uint64_t amount, const AccountPublicAddress &addr) : amount(amount), addr(addr) {}
-};
 
+  bool operator<(const TransactionDestinationEntry& a) const {
+    return a.addr.spendPublicKey.data < addr.spendPublicKey.data && a.addr.viewPublicKey.data < addr.viewPublicKey.data;
+  }
+
+  bool operator==(const TransactionDestinationEntry& a) const {
+    return a.addr.spendPublicKey == addr.spendPublicKey && a.addr.viewPublicKey == addr.viewPublicKey;
+  }
+};
 
 bool constructTransaction(
   const AccountKeys& senderAccountKeys,
