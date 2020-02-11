@@ -754,6 +754,18 @@ bool Core::have_block(const Crypto::Hash& id) {
   return m_blockchain.haveBlock(id);
 }
 
+bool Core::haveTransaction(const Crypto::Hash& id) {
+  if (m_blockchain.haveTransaction(id)) {
+    return true;
+  }
+
+  if (m_mempool.have_tx(id)) {
+    return true;
+  }
+
+  return false;
+}
+
 bool Core::parse_tx_from_blob(Transaction& tx, Crypto::Hash& tx_hash, Crypto::Hash& tx_prefix_hash, const BinaryArray& blob) {
   return parseAndValidateTransactionFromBinaryArray(blob, tx, tx_hash, tx_prefix_hash);
 }
