@@ -48,8 +48,9 @@ jobs:
       - name: Dependencies
         if: matrix.build_name != 'aarch64'
         run: |
+          sudo apt-get purge '*boost*'
           sudo apt update
-          sudo apt install -y libboost-all-dev libssl-dev ${{ matrix.package_name }}
+          sudo apt install -y libboost1.62-all-dev libssl-dev ${{ matrix.package_name }}
 
       - name: Setup ccache
         run: |
@@ -69,7 +70,7 @@ jobs:
           CXX: ${{ matrix.cxx }}
         run: |
           mkdir build && cd build
-          cmake -DARCH=default -DCMAKE_BUILD_TYPE=Release -DSTATIC=true ..
+          cmake -D ARCH=default -D CMAKE_BUILD_TYPE=Release -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -D BOOST_IGNORE_SYSTEM_PATHS_DEFAULT=ON -D BOOST_ROOT=/usr ..
 
       # Build for linux
       - name: Build
