@@ -1,14 +1,17 @@
-name: Ubuntu 18.04
+name: Check Ubuntu 16.04
 
 on:
   push:
-    tags:
-    - '*'
+    branches:
+      - '**'
+    tags-ignore:
+      - '*'            # We don't want this to run on release
+  pull_request:
 
 jobs:
   build-ubuntu16:
-    name: Ubuntu 18.04
-    runs-on: ubuntu-18.04
+    name: Ubuntu 16.04
+    runs-on: ubuntu-16.04
     steps:
       - uses: actions/checkout@master
 
@@ -18,9 +21,9 @@ jobs:
           BOOST_ROOT=
           sudo apt install -y libboost-all-dev
           build_folder="build/release"
-          krb_ver=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
+          krb_ver=${GITHUB_SHA::7}
           krb_ver_folder=$(echo $krb_ver | sed 's/\.//g')
-          release_name=Karbo-cli-ubuntu18.04-v"$krb_ver"
+          release_name=Karbo-cli-ubuntu16.04-"$krb_ver"
           mkdir -p "$build_folder"
           cd "$build_folder"
           cmake -D CMAKE_BUILD_TYPE=Release ../..
@@ -38,19 +41,10 @@ jobs:
           echo "::set-output name=asset_path::${asset_path}"
           echo "::set-output name=krb_ver::${krb_ver}"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ${{ steps.build.outputs.asset_path }}
-          name: Karbo CLI Suite v${{ steps.build.outputs.krb_ver }}
-          body: |
-            **${{ steps.build.outputs.release_name }}**
-            ${{ steps.build.outputs.sha256 }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
           name: ${{ steps.build.outputs.release_name }}
           path: ${{ steps.build.outputs.asset_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

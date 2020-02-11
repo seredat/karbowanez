@@ -1,9 +1,12 @@
-name: macOS
+name: Check macOS
 
 on:
   push:
-    tags:
-    - '*'
+    branches:
+      - '**'
+    tags-ignore:
+      - '*'            # We don't want this to run on release
+  pull_request:
 
 jobs:
   build-macos:
@@ -16,8 +19,8 @@ jobs:
         id: build
         run: |
           build_folder="build/"
-          krb_ver=$(echo ${{ github.ref }} | sed 's|refs/tags/||')
-          release_name="Karbo-cli-macOS-v$krb_ver"
+          krb_ver=${GITHUB_SHA::7}
+          release_name="Karbo-cli-macOS-$krb_ver"
           brew install gcc boost@1.60
           brew link boost@1.60 --force
           mkdir "$build_folder"
@@ -36,19 +39,10 @@ jobs:
           echo "::set-output name=asset_path::${asset_path}"
           echo "::set-output name=krb_ver::${krb_ver}"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ${{ steps.build.outputs.asset_path }}
-          name: Karbo CLI Suite v${{ steps.build.outputs.krb_ver }}
-          body: |
-            **${{ steps.build.outputs.release_name }}**
-            ${{ steps.build.outputs.sha256 }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
           name: ${{ steps.build.outputs.release_name }}
           path: ${{ steps.build.outputs.asset_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

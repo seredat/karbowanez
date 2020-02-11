@@ -1,9 +1,12 @@
-name: Windows
+name: Check Windows
 
 on:
   push:
-    tags:
-    - '*'
+    branches:
+      - '**'
+    tags-ignore:
+      - '*'            # We don't want this to run on release
+  pull_request:
 
 jobs:
   build-windows:
@@ -20,8 +23,9 @@ jobs:
         id: build
         run: |
           $build_folder = "build"
-          $krb_ver = "${{ github.ref }}" -replace 'refs/tags/'
-          $release_name = "karbo-cli-win64-v$krb_ver"
+          $sha = "${{ github.sha }}"
+          $krb_ver = $sha.SubString(0,7)
+          $release_name = "karbo-cli-win64-$krb_ver"
           mkdir "$build_folder"
           cd "$build_folder"
           cmake -G "Visual Studio 16 2019" -A x64 ..
@@ -35,19 +39,10 @@ jobs:
           echo "::set-output name=asset_path::${asset_path}"
           echo "::set-output name=krb_ver::${krb_ver}"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ${{ steps.build.outputs.asset_path }}
-          name: Karbo CLI Suite v${{ steps.build.outputs.krb_ver }}
-          body: |
-            **${{ steps.build.outputs.release_name }}**
-            ${{ steps.build.outputs.sha256 }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload To GH Artifacts
         uses: actions/upload-artifact@v1.0.0
         with:
           name: ${{ steps.build.outputs.release_name }}
           path: ${{ steps.build.outputs.asset_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
