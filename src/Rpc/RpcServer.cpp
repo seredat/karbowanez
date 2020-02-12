@@ -1648,6 +1648,9 @@ bool RpcServer::on_check_overt_transaction(const COMMAND_RPC_CHECK_OVERT_TRANSAC
     decl.signature_valid = r;
     decl.address = m_core.currency().accountAddressAsString(address);
 
+    uint64_t received(0);
+    size_t keyIndex(0);
+
     if (r) {
       // obtain key derivation by multiplying scalar 1 to the pubkey r*A included in the signature
       Crypto::KeyDerivation derivation;
@@ -1656,8 +1659,6 @@ bool RpcServer::on_check_overt_transaction(const COMMAND_RPC_CHECK_OVERT_TRANSAC
       }
 
       // look for outputs
-      uint64_t received(0);
-      size_t keyIndex(0);
       std::vector<TransactionOutput> outputs;
       try {
         for (const TransactionOutput& o : transaction.outputs) {
@@ -1677,9 +1678,9 @@ bool RpcServer::on_check_overt_transaction(const COMMAND_RPC_CHECK_OVERT_TRANSAC
       {
         throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Unknown error" };
       }
-      decl.received_amount = received;
       decl.outputs = outputs;
     }
+    decl.received_amount = received;
 
     declarations.push_back(decl);
 
