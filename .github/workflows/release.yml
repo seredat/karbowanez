@@ -67,6 +67,7 @@ jobs:
           mkdir "$release_name"
           exeFiles=()
           for f in src/*; do [[ -x $f && -f $f ]] && strip "$f" && exeFiles+=( "$f" ); done
+          strip "${exeFiles[@]}"
           cp "${exeFiles[@]}" "$release_name/"
           zip -r "$release_name".zip "$release_name"
           sha256=$(shasum -a 256 "$release_name".zip | awk '{print toupper($1)}')
@@ -109,6 +110,7 @@ jobs:
           mkdir -p "$release_name/$krb_ver_folder"
           exeFiles=()
           for f in src/*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
+          strip "${exeFiles[@]}"
           cp "${exeFiles[@]}" "$release_name/$krb_ver_folder"
           cd "$release_name"
           tar -czf "$release_name".tar.gz "$krb_ver_folder"
@@ -152,6 +154,7 @@ jobs:
           mkdir -p "$release_name/$krb_ver_folder"
           exeFiles=()
           for f in src/*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
+          strip "${exeFiles[@]}"
           cp "${exeFiles[@]}" "$release_name/$krb_ver_folder"
           cd "$release_name"
           tar -czf "$release_name".tar.gz "$krb_ver_folder"
