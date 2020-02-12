@@ -606,7 +606,9 @@ void Blockchain::rebuildCache() {
       TransactionExtraDisclosure pp;
       if (getTransactionDisclosureFromExtra(transaction.tx.extra, pp)) {
         for (auto d : pp.declarations) {
-          m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
+          if (std::find(m_overt_transactions[transactionHash].begin(), m_overt_transactions[transactionHash].end(), m_currency.accountAddressAsString(d.first)) == m_overt_transactions[transactionHash].end()) {
+            m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
+          }
         }
       }
     }
@@ -2362,7 +2364,9 @@ bool Blockchain::pushTransaction(BlockEntry& block, const Crypto::Hash& transact
   TransactionExtraDisclosure pp;
   if (getTransactionDisclosureFromExtra(transaction.tx.extra, pp)) {
     for (auto d : pp.declarations) {
-      m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
+      if (std::find(m_overt_transactions[transactionHash].begin(), m_overt_transactions[transactionHash].end(), m_currency.accountAddressAsString(d.first)) == m_overt_transactions[transactionHash].end()) {
+        m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
+      }
     }
   }
 
