@@ -117,6 +117,7 @@ public:
   virtual bool getBlocksByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<Block>& blocks, uint32_t& blocksNumberWithinTimestamps) = 0;
   virtual bool getPoolTransactionsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Transaction>& transactions, uint64_t& transactionsNumberWithinTimestamps) = 0;
   virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) = 0;
+  virtual bool getOvertTransactionIdsForAddress(const std::string& address, std::vector<Crypto::Hash>& tx_ids) = 0;
   virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) = 0;
   virtual uint64_t getMinimalFeeForHeight(uint32_t height) = 0;
   virtual uint64_t getMinimalFee() = 0;
@@ -129,6 +130,7 @@ public:
   virtual uint8_t getBlockMajorVersionForHeight(uint32_t height) = 0;
   virtual uint8_t getCurrentBlockMajorVersion() = 0;
   virtual size_t getAlternativeBlocksCount() = 0;
+  virtual size_t getOvertTransactionsCount() = 0;
   virtual bool getblockEntry(uint32_t height, uint64_t& block_cumulative_size, difficulty_type& difficulty, uint64_t& already_generated_coins, uint64_t& reward, uint64_t& transactions_count, uint64_t& timestamp) = 0;
 
   virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) = 0;

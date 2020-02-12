@@ -205,6 +205,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "gettransaction", { makeMemberMethod(&RpcServer::on_get_transaction_details_by_hash), true } },
       { "gettransactionspool", { makeMemberMethod(&RpcServer::on_get_transactions_pool), true } },
       { "gettransactionsbypaymentid", { makeMemberMethod(&RpcServer::on_get_transactions_by_payment_id), true } },
+      { "getoverttransactionhashesbyaddress", { makeMemberMethod(&RpcServer::on_get_overt_transaction_hashes_by_address), true } },
       { "gettransactionhashesbypaymentid", { makeMemberMethod(&RpcServer::on_get_transaction_hashes_by_paymentid), true } },
       { "gettransactionsbyhashes", { makeMemberMethod(&RpcServer::on_get_transactions_details_by_hashes), true } },
       { "getcurrencyid", { makeMemberMethod(&RpcServer::on_get_currency_id), true } },
@@ -627,6 +628,17 @@ bool RpcServer::on_get_transaction_hashes_by_paymentid(const COMMAND_RPC_GET_TRA
   return true;
 }
 
+bool RpcServer::on_get_overt_transaction_hashes_by_address(const COMMAND_RPC_GET_OVERT_TRANSACTION_HASHES_BY_ADDRESS::request& req, COMMAND_RPC_GET_OVERT_TRANSACTION_HASHES_BY_ADDRESS::response& rsp) {
+  std::vector<Crypto::Hash> found_ids;
+  if (m_core.getOvertTransactionIdsForAddress(req.address, found_ids)) {
+    rsp.transactionHashes = std::move(found_ids);
+  }
+
+  rsp.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+
 //
 // JSON handlers
 //
@@ -635,6 +647,7 @@ bool RpcServer::on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RP
   res.height = m_core.getCurrentBlockchainHeight();
   res.difficulty = m_core.getNextBlockDifficulty();
   res.transactions_count = m_core.getBlockchainTotalTransactions() - res.height; //without coinbase
+  res.overt_transactions_count = m_core.getOvertTransactionsCount();
   res.transactions_pool_size = m_core.getPoolTransactionsCount();
   res.alt_blocks_count = m_core.getAlternativeBlocksCount();
   uint64_t total_conn = m_p2p.get_connections_count();

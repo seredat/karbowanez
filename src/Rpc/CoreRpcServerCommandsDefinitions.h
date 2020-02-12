@@ -279,6 +279,7 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t next_reward;
     uint64_t min_fee;
     uint64_t transactions_count;
+    uint64_t overt_transactions_count;
     uint64_t transactions_pool_size;
     uint64_t alt_blocks_count;
     uint64_t outgoing_connections_count;
@@ -303,6 +304,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(next_reward)
       KV_MEMBER(min_fee)
       KV_MEMBER(transactions_count)
+      KV_MEMBER(overt_transactions_count)
       KV_MEMBER(transactions_pool_size)
       KV_MEMBER(alt_blocks_count)
       KV_MEMBER(outgoing_connections_count)
@@ -953,6 +955,26 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
 
     void serialize(ISerializer &s) {
       KV_MEMBER(paymentId)
+    }
+  };
+
+  struct response {
+    std::vector<Crypto::Hash> transactionHashes;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status)
+      KV_MEMBER(transactionHashes);
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_OVERT_TRANSACTION_HASHES_BY_ADDRESS {
+  struct request {
+    std::string address;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(address)
     }
   };
 

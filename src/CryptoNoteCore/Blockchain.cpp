@@ -61,7 +61,7 @@ bool operator<(const Crypto::KeyImage& keyImage1, const Crypto::KeyImage& keyIma
 }
 }
 
-#define CURRENT_BLOCKCACHE_STORAGE_ARCHIVE_VER 1
+#define CURRENT_BLOCKCACHE_STORAGE_ARCHIVE_VER 2
 #define CURRENT_BLOCKCHAININDICES_STORAGE_ARCHIVE_VER 1
 
 namespace CryptoNote {
@@ -203,6 +203,9 @@ public:
 
     logger(INFO) << operation << "transaction map...";
     s(m_bs.m_transactionMap, "transactions");
+
+    logger(INFO) << operation << "overt transactions...";
+    s(m_bs.m_overt_transactions, "overt_transactions");
 
     logger(INFO) << operation << "spent keys...";
     if (s.type() == ISerializer::OUTPUT) {
@@ -564,6 +567,7 @@ void Blockchain::rebuildCache() {
   spentKeyImages.clear();
   m_outputs.clear();
   m_multisignatureOutputs.clear();
+  m_overt_transactions.clear();
   for (uint32_t b = 0; b < m_blocks.size(); ++b) {
     if (b % 1000 == 0) {
       logger(INFO, BRIGHT_WHITE) << "Height " << b << " of " << m_blocks.size();
@@ -595,6 +599,14 @@ void Blockchain::rebuildCache() {
         } else if (out.target.type() == typeid(MultisignatureOutput)) {
           MultisignatureOutputUsage usage = { transactionIndex, o, false };
           m_multisignatureOutputs[out.amount].push_back(usage);
+        }
+      }
+
+      // process overt txs
+      TransactionExtraDisclosure pp;
+      if (getTransactionDisclosureFromExtra(transaction.tx.extra, pp)) {
+        for (auto d : pp.declarations) {
+          m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
         }
       }
     }
@@ -640,6 +652,7 @@ bool Blockchain::resetAndSetGenesisBlock(const Block& b) {
   m_timestampIndex.clear();
   m_generatedTransactionsIndex.clear();
   m_orphanBlocksIndex.clear();
+  m_overt_transactions.clear();
 
   block_verification_context bvc = boost::value_initialized<block_verification_context>();
   addNewBlock(b, bvc);
@@ -2346,6 +2359,13 @@ bool Blockchain::pushTransaction(BlockEntry& block, const Crypto::Hash& transact
 
   m_paymentIdIndex.add(transaction.tx);
 
+  TransactionExtraDisclosure pp;
+  if (getTransactionDisclosureFromExtra(transaction.tx.extra, pp)) {
+    for (auto d : pp.declarations) {
+      m_overt_transactions[transactionHash].push_back(m_currency.accountAddressAsString(d.first));
+    }
+  }
+
   return true;
 }
 
@@ -2444,6 +2464,14 @@ void Blockchain::popTransaction(const Transaction& transaction, const Crypto::Ha
   }
 
   m_paymentIdIndex.remove(transaction);
+
+  if (m_overt_transactions.find(transactionHash) != m_overt_transactions.end()) {
+    size_t count = m_overt_transactions.erase(transactionHash);
+    if (count != 1) {
+      logger(ERROR, BRIGHT_RED) <<
+        "Blockchain consistency broken - cannot find transaction by hash.";
+    }
+  }
 
   size_t count = m_transactionMap.erase(transactionHash);
   if (count != 1) {
@@ -2719,6 +2747,11 @@ bool Blockchain::getGeneratedTransactionsNumber(uint32_t height, uint64_t& gener
   return m_generatedTransactionsIndex.find(height, generatedTransactions);
 }
 
+size_t Blockchain::getOvertTransactionsCount() {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  return m_overt_transactions.size();
+}
+
 bool Blockchain::getOrphanBlockIdsByHeight(uint32_t height, std::vector<Crypto::Hash>& blockHashes) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   return m_orphanBlocksIndex.find(height, blockHashes);
@@ -2732,6 +2765,24 @@ bool Blockchain::getBlockIdsByTimestamp(uint64_t timestampBegin, uint64_t timest
 bool Blockchain::getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   return m_paymentIdIndex.find(paymentId, transactionHashes);
+}
+
+bool Blockchain::getOvertTransactionIdsForAddress(const std::string& address, std::vector<Crypto::Hash>& tx_ids) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+
+  std::vector<Crypto::Hash> found_ids;
+  for (const auto& o : m_overt_transactions) {
+    if (std::find(o.second.begin(), o.second.end(), address) != o.second.end()) {
+      found_ids.push_back(o.first);
+    }
+  }
+
+  if (!found_ids.empty()) {
+    tx_ids = std::move(found_ids);
+    return true;
+  }
+
+  return false;
 }
 
 bool Blockchain::loadTransactions(const Block& block, std::vector<Transaction>& transactions) {
