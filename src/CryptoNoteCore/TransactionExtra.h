@@ -96,7 +96,7 @@ bool appendMergeMiningTagToExtra(std::vector<uint8_t>& tx_extra, const Transacti
 bool getMergeMiningTagFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraMergeMiningTag& mm_tag);
 
 bool appendTransactionDisclosureToExtra(std::vector<uint8_t>& tx_extra, const TransactionExtraDisclosure& pp);
-bool getTransactionDisclosureFromExtra(std::vector<uint8_t>& tx_extra, TransactionExtraDisclosure& pp);
+bool getTransactionDisclosureFromExtra(const std::vector<uint8_t>& tx_extra, TransactionExtraDisclosure& pp);
 
 bool createTxExtraWithPaymentId(const std::string& paymentIdString, std::vector<uint8_t>& extra);
 //returns false if payment id is not found or parse error
