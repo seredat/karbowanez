@@ -2756,6 +2756,19 @@ size_t Blockchain::getOvertTransactionsCount() {
   return m_overt_transactions.size();
 }
 
+size_t Blockchain::getOvertTransactionsAddressesCount() {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  size_t count = 0;
+
+  for (const auto& o : m_overt_transactions) {
+    for (const auto& a : o.second) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
 bool Blockchain::getOrphanBlockIdsByHeight(uint32_t height, std::vector<Crypto::Hash>& blockHashes) {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   return m_orphanBlocksIndex.find(height, blockHashes);

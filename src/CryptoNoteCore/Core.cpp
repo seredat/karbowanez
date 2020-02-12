@@ -165,6 +165,10 @@ size_t Core::getOvertTransactionsCount() {
   return m_blockchain.getOvertTransactionsCount();
 }
 
+size_t Core::getOvertTransactionsAddressesCount() {
+  return m_blockchain.getOvertTransactionsAddressesCount();
+}
+
 bool Core::getblockEntry(uint32_t height, uint64_t& block_cumulative_size, difficulty_type& difficulty, uint64_t& already_generated_coins, uint64_t& reward, uint64_t& transactions_count, uint64_t& timestamp) {
   return m_blockchain.getblockEntry(static_cast<size_t>(height), block_cumulative_size, difficulty, already_generated_coins, reward, transactions_count, timestamp);
 }

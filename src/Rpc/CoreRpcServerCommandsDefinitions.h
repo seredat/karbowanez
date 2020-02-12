@@ -280,6 +280,7 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t min_fee;
     uint64_t transactions_count;
     uint64_t overt_transactions_count;
+    uint64_t overt_searchable_addresses_count;
     uint64_t transactions_pool_size;
     uint64_t alt_blocks_count;
     uint64_t outgoing_connections_count;
@@ -305,6 +306,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(min_fee)
       KV_MEMBER(transactions_count)
       KV_MEMBER(overt_transactions_count)
+      KV_MEMBER(overt_searchable_addresses_count)
       KV_MEMBER(transactions_pool_size)
       KV_MEMBER(alt_blocks_count)
       KV_MEMBER(outgoing_connections_count)

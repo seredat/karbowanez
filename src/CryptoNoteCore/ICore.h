@@ -131,6 +131,7 @@ public:
   virtual uint8_t getCurrentBlockMajorVersion() = 0;
   virtual size_t getAlternativeBlocksCount() = 0;
   virtual size_t getOvertTransactionsCount() = 0;
+  virtual size_t getOvertTransactionsAddressesCount() = 0;
   virtual bool getblockEntry(uint32_t height, uint64_t& block_cumulative_size, difficulty_type& difficulty, uint64_t& already_generated_coins, uint64_t& reward, uint64_t& transactions_count, uint64_t& timestamp) = 0;
 
   virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) = 0;

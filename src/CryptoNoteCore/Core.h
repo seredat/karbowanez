@@ -137,6 +137,7 @@ namespace CryptoNote {
      bool get_alternative_blocks(std::list<Block>& blocks);
      virtual size_t getAlternativeBlocksCount() override;
      virtual size_t getOvertTransactionsCount() override;
+     virtual size_t getOvertTransactionsAddressesCount() override;
 
      void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);

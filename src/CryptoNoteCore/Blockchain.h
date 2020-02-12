@@ -135,6 +135,7 @@ namespace CryptoNote {
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
     bool getOvertTransactionIdsForAddress(const std::string& address, std::vector<Crypto::Hash>& tx_ids);
     size_t getOvertTransactionsCount();
+    size_t getOvertTransactionsAddressesCount();
     bool isBlockInMainChain(const Crypto::Hash& blockId);
     bool isInCheckpointZone(const uint32_t height);
 
