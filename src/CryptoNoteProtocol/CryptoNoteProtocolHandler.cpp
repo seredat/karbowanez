@@ -177,7 +177,7 @@ bool CryptoNoteProtocolHandler::process_payload_sync_data(const CORE_SYNC_DATA& 
       context.m_state = CryptoNoteConnectionContext::state_normal;
     }
   } else {
-    int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(get_current_blockchain_height());
+    int64_t diff = static_cast<int64_t>(hshd.current_height - 1) - static_cast<int64_t>(get_current_blockchain_height());
 
     // drop and eventually ban if peer is on fork too deep behind us 
     if (diff < 0 && std::abs(diff) > CryptoNote::parameters::CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW && m_core.isInCheckpointZone(hshd.current_height)) {
@@ -190,7 +190,7 @@ bool CryptoNoteProtocolHandler::process_payload_sync_data(const CORE_SYNC_DATA& 
     logger(diff >= 0 ? (is_initial ? Logging::INFO : Logging::DEBUGGING) : Logging::TRACE, Logging::BRIGHT_YELLOW) << context <<
       "Sync data returned a new top block candidate: " << get_current_blockchain_height() << " -> " << hshd.current_height - 1
       << " [Your node is " << std::abs(diff) << " blocks (" << std::abs(diff) / (24 * 60 * 60 / m_currency.difficultyTarget()) << " days) "
-      << (diff >= 0 ? std::string("behind") : std::string("ahead")) << "] " << std::endl << "SYNCHRONIZATION started";
+      << (diff >= 0 ? std::string("behind") : std::string("ahead")) << "] " << std::endl << "Synchronization started";
 
     logger(Logging::DEBUGGING) << "Remote top block height: " << hshd.current_height - 1 << ", id: " << hshd.top_id;
     //let the socket to send response to handshake, but request callback, to let send request data after response
