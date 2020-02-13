@@ -167,6 +167,7 @@ private:
   Tools::ObserverManager<CryptoNote::INodeRpcProxyObserver> m_rpcProxyObserverManager;
 
   unsigned int m_rpcTimeout;
+  unsigned int m_initTimeout;
   HttpClient* m_httpClient = nullptr;
   System::Event* m_httpEvent = nullptr;
 

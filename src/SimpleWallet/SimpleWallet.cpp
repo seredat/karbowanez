@@ -161,10 +161,12 @@ inline std::string interpret_rpc_response(bool ok, const std::string& status) {
   if (ok) {
     if (status == CORE_RPC_STATUS_BUSY) {
       err = "daemon is busy. Please try later";
-    } else if (status != CORE_RPC_STATUS_OK) {
+    }
+    else if (status != CORE_RPC_STATUS_OK) {
       err = status;
     }
-  } else {
+  }
+  else {
     err = "possible lost connection to daemon";
   }
   return err;
@@ -209,9 +211,9 @@ struct TransferCommand {
 #endif
 
   TransferCommand(const CryptoNote::Currency& currency, const CryptoNote::NodeRpcProxy& node) :
-    m_currency(currency), m_node(node), fake_outs_count(0), 
+    m_currency(currency), m_node(node), fake_outs_count(0),
     fee(m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ?
-    m_currency.minimumFee() : m_currency.roundUpMinFee(m_node.getMinimalFee(), 1)) { // Round up minimal fee to 1 digit after last leading zero by default
+      m_currency.minimumFee() : m_currency.roundUpMinFee(m_node.getMinimalFee(), 1)) { // Round up minimal fee to 1 digit after last leading zero by default
   }
 
   bool parseArguments(LoggerRef& logger, const std::vector<std::string> &args) {
@@ -228,13 +230,13 @@ struct TransferCommand {
       }
 
       if (fake_outs_count < m_currency.minMixin() && fake_outs_count != 0) {
-          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or bigger than " << m_currency.minMixin();
-          return false;
+        logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or bigger than " << m_currency.minMixin();
+        return false;
       }
 
       if (fake_outs_count > m_currency.maxMixin()) {
-          logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or less than " << m_currency.maxMixin();
-          return false;
+        logger(ERROR, BRIGHT_RED) << "mixIn should be equal to or less than " << m_currency.maxMixin();
+        return false;
       }
 
       while (!ar.eof()) {
@@ -250,7 +252,8 @@ struct TransferCommand {
               logger(ERROR, BRIGHT_RED) << "payment ID has invalid format: \"" << value << "\", expected 64-character string";
               return false;
             }
-          } else if (arg == "-f") {
+          }
+          else if (arg == "-f") {
             bool ok = m_currency.parseAmount(value, fee);
             if (!ok) {
               logger(ERROR, BRIGHT_RED) << "Fee value is invalid: " << value;
@@ -258,23 +261,25 @@ struct TransferCommand {
             }
 
             if (m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() : fee < m_node.getMinimalFee()) {
-              logger(ERROR, BRIGHT_RED) << "Fee value is less than minimum: " 
+              logger(ERROR, BRIGHT_RED) << "Fee value is less than minimum: "
                 << (m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : m_node.getMinimalFee());
               return false;
             }
           }
-        } else {
+        }
+        else {
           WalletLegacyTransfer destination;
           CryptoNote::TransactionDestinationEntry de;
 #ifndef __ANDROID__		  
-	  std::string aliasUrl;
+          std::string aliasUrl;
 #endif
 
           if (!m_currency.parseAccountAddressString(arg, de.addr)) {
             Crypto::Hash paymentId;
             if (CryptoNote::parsePaymentId(arg, paymentId)) {
               logger(ERROR, BRIGHT_RED) << "Invalid payment ID usage. Please, use -p <payment_id>. See help for details.";
-            } else {
+            }
+            else {
 #ifndef __ANDROID__
               // if string doesn't contain a dot, we won't consider it a url for now.
               if (strchr(arg.c_str(), '.') == NULL) {
@@ -315,7 +320,7 @@ struct TransferCommand {
             destination.address = m_remote_node_fee_address;
             int64_t remote_node_fee = m_remote_node_fee_amount == 0 ? static_cast<int64_t>(de.amount * 0.0025) : m_remote_node_fee_amount;
             if (remote_node_fee > (int64_t)CryptoNote::parameters::COIN)
-                remote_node_fee = (int64_t)CryptoNote::parameters::COIN;
+              remote_node_fee = (int64_t)CryptoNote::parameters::COIN;
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
@@ -323,15 +328,16 @@ struct TransferCommand {
         }
       }
 
-	  if (dsts.empty()
+      if (dsts.empty()
 #ifndef __ANDROID__
-		&& aliases.empty()
+        && aliases.empty()
 #endif
-){
+        ) {
         logger(ERROR, BRIGHT_RED) << "At least one destination address is required";
         return false;
       }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
       logger(ERROR, BRIGHT_RED) << e.what();
       return false;
     }
