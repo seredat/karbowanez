@@ -67,7 +67,6 @@ std::error_code interpretResponseStatus(const std::string& status) {
 
 NodeRpcProxy::NodeRpcProxy(const std::string& nodeHost, unsigned short nodePort) :
     m_rpcTimeout(10000),
-    m_initTimeout(10000),
     m_pullInterval(5000),
     m_nodeHost(nodeHost),
     m_nodePort(nodePort),
@@ -178,18 +177,6 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_state = STATE_INITIALIZED;
       m_cv_initialized.notify_all();
     }
-
-    std::future<void> init = std::async(std::launch::async, [this] { updateNodeStatus(); });
-
-    // Init succeeded
-    if (init.wait_for(std::chrono::seconds(m_initTimeout)) == std::future_status::ready) {
-      initialized_callback(std::error_code());
-    } else { // Timed out
-      initialized_callback(make_error_code(error::TIMEOUT));
-    }
-
-    // Wait for the init to actually complete
-    init.get();
 
     // Get public node's fee info
     getFeeAddress();
