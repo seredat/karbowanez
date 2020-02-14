@@ -1010,15 +1010,14 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	m_node->addObserver(static_cast<INodeRpcProxyObserver*>(this));
 	m_node->init(callback);
 	auto error = f_error.get();
-	if (error)
-	{
+	if (error) {
 		fail_msg_writer() << "failed to init NodeRPCProxy: " << error.message();
 		return false;
-  }
+	}
 
   m_remote_node_fee_address = m_node->feeAddress();
   m_remote_node_fee_amount = m_node->feeAmount();
-  success_msg_writer() << "Remote node fee: " << m_currency.formatAmount(m_remote_node_fee_amount) << " KRB";
+  success_msg_writer() << "Connected to remote node which has fee: " << m_currency.formatAmount(m_remote_node_fee_amount) << " KRB";
 
   if (command_line::has_arg(vm, arg_restore_wallet) && m_wallet_file_arg.empty()) {
     fail_msg_writer() << "Specify a wallet file name with the '--wallet-file <filename>' parameter";
