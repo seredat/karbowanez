@@ -288,40 +288,38 @@ bool RpcServer::isCoreReady() {
 }
 
 bool RpcServer::checkIncomingTransactionForFee(const BinaryArray& tx_blob) {
-	Crypto::Hash tx_hash = NULL_HASH;
-	Crypto::Hash tx_prefixt_hash = NULL_HASH;
-	Transaction tx;
-	if (!parseAndValidateTransactionFromBinaryArray(tx_blob, tx, tx_hash, tx_prefixt_hash)) {
-		logger(Logging::INFO) << "Could not parse tx from blob";
-		return false;
-	}
-	
-	// always relay fusion transactions
-	uint64_t inputs_amount = 0;
-	get_inputs_money_amount(tx, inputs_amount);
-	uint64_t outputs_amount = get_outs_money_amount(tx);
+  Crypto::Hash tx_hash = NULL_HASH;
+  Crypto::Hash tx_prefixt_hash = NULL_HASH;
+  Transaction tx;
+  if (!parseAndValidateTransactionFromBinaryArray(tx_blob, tx, tx_hash, tx_prefixt_hash)) {
+    logger(Logging::INFO) << "Could not parse tx from blob";
+    return false;
+  }
 
-	const uint64_t fee = inputs_amount - outputs_amount;
-	if (fee == 0 && m_core.currency().isFusionTransaction(tx, tx_blob.size(), m_core.getCurrentBlockchainHeight() - 1)) {
-		logger(Logging::DEBUGGING) << "Masternode received fusion transaction, relaying with no fee check";
-		return true;
-	}
+  // always relay fusion transactions
+  uint64_t inputs_amount = 0;
+  get_inputs_money_amount(tx, inputs_amount);
+  uint64_t outputs_amount = get_outs_money_amount(tx);
 
-	CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
+  const uint64_t fee = inputs_amount - outputs_amount;
+  if (fee == 0 && m_core.currency().isFusionTransaction(tx, tx_blob.size(), m_core.getCurrentBlockchainHeight() - 1)) {
+    logger(Logging::DEBUGGING) << "Masternode received fusion transaction, relaying with no fee check";
+    return true;
+  }
 
-	std::vector<uint32_t> out;
-	uint64_t amount;
+  CryptoNote::TransactionPrefix transaction = *static_cast<const TransactionPrefix*>(&tx);
 
-	if (!CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount)) {
-		logger(Logging::INFO) << "Could not find outputs to masternode fee address";
-		return false;
-	}
+  std::vector<uint32_t> out;
+  uint64_t amount;
 
-	if (amount != 0) {
-		logger(Logging::INFO) << "Masternode received relayed transaction fee: " << m_core.currency().formatAmount(amount) << " KRB";
-		return true;
-	}
-	return false;
+  CryptoNote::findOutputsToAccount(transaction, m_fee_acc, m_view_key, out, amount);
+
+  if (amount < m_fee_amount)
+    return false;
+
+  logger(Logging::INFO) << "Masternode received relayed transaction fee: " << m_core.currency().formatAmount(amount) << " KRB";
+
+  return true;
 }
 
 //
@@ -834,11 +832,11 @@ bool RpcServer::on_send_raw_transaction(const COMMAND_RPC_SEND_RAW_TRANSACTION::
   }
 
   if (!m_fee_address.empty() && m_view_key != NULL_SECRET_KEY) {
-	if (!checkIncomingTransactionForFee(tx_blob)) {
-	  logger(Logging::INFO) << "Transaction not relayed due to lack of node fee";		
+    if (!checkIncomingTransactionForFee(tx_blob)) {
+      logger(Logging::INFO) << "Transaction not relayed due to lack of node fee";
       res.status = "Not relayed due to lack of node fee";
       return true;
-	}
+    }
   }
 
   NOTIFY_NEW_TRANSACTIONS::request r;
