@@ -89,6 +89,7 @@ namespace CryptoNote
     virtual uint32_t getObservedHeight() const override;
     void requestMissingPoolTransactions(const CryptoNoteConnectionContext& context);
     bool select_dandelion_stem();
+    bool fluffStemPool();
 
   private:
     //----------------- commands handlers ----------------------------------------------
@@ -135,6 +136,7 @@ namespace CryptoNote
     Tools::ObserverManager<ICryptoNoteProtocolObserver> m_observerManager;
 
     OnceInInterval m_dandelionStemSelectInterval;
+    OnceInInterval m_dandelionStemFluffInterval;
     std::vector<CryptoNoteConnectionContext> m_dandelion_stem;
   };
 }
