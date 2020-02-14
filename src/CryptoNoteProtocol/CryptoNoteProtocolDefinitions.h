@@ -108,7 +108,7 @@ namespace CryptoNote
   /************************************************************************/
   struct NOTIFY_NEW_TRANSACTIONS_request
   {
-    size_t stem = 0;
+    bool stem = false;
     std::vector<std::string> txs;
 
     void serialize(ISerializer& s) {

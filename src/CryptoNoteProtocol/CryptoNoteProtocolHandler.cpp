@@ -336,7 +336,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       logger(DEBUGGING) << "Transaction " << transactionHash << " came in NOTIFY_NEW_TRANSACTIONS"
-                        << " in " << (arg.stem == 0 ? "fluff" : "stem") << " mode (stem=" << arg.stem << ")";
+                        << " in " << (arg.stem ? "stem" : "fluff") << " mode (stem=" << arg.stem << ")";
 
       CryptoNote::tx_verification_context tvc = boost::value_initialized<decltype(tvc)>();
       m_core.handle_incoming_tx(transactionBinary, tvc, false);
@@ -354,27 +354,26 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
 
   if (arg.txs.size()) {
     //TODO: add announce usage here
-    if (arg.stem > 0 && !m_dandelion_stem.empty()) {
+    if (arg.stem && !m_dandelion_stem.empty()) {
       std::mt19937 rng = Random::generator();
       std::uniform_int_distribution<> dis(0, 100);
       auto coin_flip = dis(rng);
       if (coin_flip < CryptoNote::parameters::DANDELION_STEM_TX_PROPAGATION_PROBABILITY) { // Stem propagation
         for (const auto& dandelion_peer : m_dandelion_stem) {
-          arg.stem--;
           if (dandelion_peer.m_state == CryptoNoteConnectionContext::state_normal || dandelion_peer.m_state == CryptoNoteConnectionContext::state_synchronizing) {
             if (!post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, dandelion_peer)) {
-              arg.stem = 0;
+              arg.stem = false;
               relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, &context.m_connection_id); // Fluff broadcast
               break;
             }
           }
         }
       } else { // Switch to fluff broadcast
-        arg.stem = 0;
+        arg.stem = false;
         relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, &context.m_connection_id);
       }
     } else { // Fluff broadcast
-      arg.stem = 0;
+      arg.stem = false;
       relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, &context.m_connection_id);
     }
   }
@@ -897,7 +896,7 @@ int CryptoNoteProtocolHandler::handle_request_tx_pool(int command, NOTIFY_REQUES
 
   if (!addedTransactions.empty()) {
     NOTIFY_NEW_TRANSACTIONS::request notification;
-    notification.stem = 0;
+    notification.stem = false;
     for (auto& tx : addedTransactions) {
       notification.txs.push_back(asString(toBinaryArray(tx)));
     }
@@ -996,17 +995,16 @@ void CryptoNoteProtocolHandler::relay_block(NOTIFY_NEW_BLOCK::request& arg) {
 }
 
 void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) { 
-  if (arg.stem > 0 && !m_dandelion_stem.empty()) { // Dandelion broadcast
+  if (arg.stem && !m_dandelion_stem.empty()) { // Dandelion broadcast
     std::mt19937 rng = Random::generator();
     std::uniform_int_distribution<> dis(0, 100);
     auto coin_flip = dis(rng);
     if (coin_flip < CryptoNote::parameters::DANDELION_STEM_TX_PROPAGATION_PROBABILITY) { // Stem propagation
       for (const auto& dandelion_peer : m_dandelion_stem) {
-        arg.stem--;
         if (dandelion_peer.m_state == CryptoNoteConnectionContext::state_normal || dandelion_peer.m_state == CryptoNoteConnectionContext::state_synchronizing) {
           if (!post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, dandelion_peer)) {
             logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to post notification NOTIFY_NEW_TRANSACTIONS to Dandelion peer " << dandelion_peer.m_connection_id << ", relaying in dandelion fluff mode";
-            arg.stem = 0;
+            arg.stem = false;
             auto buf = LevinProtocol::encode(arg);
             m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
             break;
@@ -1014,12 +1012,12 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
         }
       }
     } else { // Switch to fluff broadcast
-      arg.stem = 0;
+      arg.stem = false;
       auto buf = LevinProtocol::encode(arg);
       m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
     }
   } else { // Fluff broadcast
-    arg.stem = 0;
+    arg.stem = false;
     auto buf = LevinProtocol::encode(arg);
     m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
   }
