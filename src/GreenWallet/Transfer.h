@@ -12,7 +12,7 @@
 
 enum BalanceInfo { NotEnoughBalance, EnoughBalance, SetMixinToZero };
 void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height,
-	bool sendAll = false, std::string nodeAddress = std::string());
+	bool sendAll = false, std::string nodeAddress = std::string(), uint64_t nodeFee = 0);
 
 void doTransfer(std::string address, uint64_t amount, uint64_t fee,
                 std::string extra, std::shared_ptr<WalletInfo> walletInfo,
