@@ -69,7 +69,7 @@ namespace
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx          = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
   const command_line::arg_descriptor<std::string> arg_enable_cors               = { "enable-cors", "Adds header 'Access-Control-Allow-Origin' to the daemon's RPC responses. Uses the value as domain. Use * for all", "" };
   const command_line::arg_descriptor<std::string> arg_set_fee_address           = { "fee-address", "Sets fee address for light wallets.", "" };
-  const command_line::arg_descriptor<std::string> arg_set_fee_amount            = { "fee-amount", "Sets flat rate fee for light wallets.", "" };
+  const command_line::arg_descriptor<std::string> arg_set_fee_amount            = { "fee-amount", "Sets flat rate fee for light wallets.", "", true };
   const command_line::arg_descriptor<std::string> arg_set_contact               = { "contact", "Sets node admin contact", "" };
   const command_line::arg_descriptor<std::string> arg_set_view_key              = { "view-key", "Sets private view key to check for masternode's fee.", "" };
   const command_line::arg_descriptor<bool>        arg_testnet_on                = {"testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
@@ -252,6 +252,12 @@ int main(int argc, char* argv[])
       logger(INFO) << "Starting in testnet mode!";
     }
 
+    // check this early
+    if (command_line::has_arg(vm, arg_set_fee_address) && !command_line::has_arg(vm, arg_set_fee_amount)) {
+      logger(ERROR, BRIGHT_RED) << "If fee-address is set it is mandatory to also set the fee-amount";
+      return 1;
+    }
+
     //create objects and link them
     CryptoNote::CurrencyBuilder currencyBuilder(logManager);
     currencyBuilder.testnet(testnet_mode);
@@ -369,8 +375,7 @@ int main(int argc, char* argv[])
         }
         rpcServer.setFeeAddress(addr_str, acc);
       }
-    }
-    if (command_line::has_arg(vm, arg_set_fee_amount)) {
+    
       uint64_t fee;
       if (!Common::Format::parseAmount(command_line::get_arg(vm, arg_set_fee_amount), fee)) {
         logger(ERROR, BRIGHT_RED) << "Couldn't parse fee amount";
@@ -378,6 +383,7 @@ int main(int argc, char* argv[])
       }
       rpcServer.setFeeAmount(fee);
     }
+    
     if (command_line::has_arg(vm, arg_set_view_key)) {
       std::string vk_str = command_line::get_arg(vm, arg_set_view_key);
 	  if (!vk_str.empty()) {
