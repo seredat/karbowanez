@@ -156,7 +156,6 @@ public:
   virtual uint64_t getGreyPeerlistSize() const = 0;
   virtual std::string getNodeVersion() const = 0;
 
-  virtual void getFeeAddress() = 0;
   virtual std::string feeAddress() const = 0;
   virtual uint64_t feeAmount() const = 0;
 

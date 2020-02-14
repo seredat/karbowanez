@@ -433,11 +433,6 @@ uint64_t InProcessNode::getMinimalFee() const {
   return core.getMinimalFee();
 }
 
-void InProcessNode::getFeeAddress() {
-  // Do nothing
-  return;
-}
-
 uint64_t InProcessNode::getNextDifficulty() const {
   std::unique_lock<std::mutex> lock(mutex);
   if (state != INITIALIZED) {

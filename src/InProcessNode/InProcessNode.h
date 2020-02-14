@@ -73,8 +73,6 @@ public:
   virtual uint64_t getWhitePeerlistSize() const override;
   virtual uint64_t getGreyPeerlistSize() const override;
   virtual std::string getNodeVersion() const override;
-
-  virtual void getFeeAddress() override;
   virtual std::string feeAddress() const override { return std::string(); }
   virtual uint64_t feeAmount() const override { return 0; }
 

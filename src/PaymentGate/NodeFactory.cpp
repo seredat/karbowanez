@@ -54,8 +54,6 @@ public:
   virtual uint64_t getGreyPeerlistSize() const { return 0; }
   virtual std::string getNodeVersion() const { return ""; }
 
-  virtual void getFeeAddress() override { }
-
   virtual CryptoNote::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return CryptoNote::BlockHeaderInfo(); }
 
   virtual void relayTransaction(const CryptoNote::Transaction& transaction, const Callback& callback) override { callback(std::error_code()); }

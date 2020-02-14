@@ -1016,7 +1016,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 		return false;
   }
 
-  m_node->getFeeAddress();
   m_remote_node_fee_address = m_node->feeAddress();
   m_remote_node_fee_amount = m_node->feeAmount();
   success_msg_writer() << "Remote node fee: " << m_currency.formatAmount(m_remote_node_fee_amount) << " KRB";
