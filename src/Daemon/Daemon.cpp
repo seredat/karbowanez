@@ -59,15 +59,14 @@ namespace po = boost::program_options;
 
 namespace
 {
-  const command_line::arg_descriptor<std::string> arg_config_file               = {"config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf"};
-  const command_line::arg_descriptor<bool>        arg_os_version                = {"os-version", ""};
-  const command_line::arg_descriptor<std::string> arg_log_file                  = {"log-file", "", ""};
-  const command_line::arg_descriptor<int>         arg_log_level                 = {"log-level", "", 2}; // info level
-  const command_line::arg_descriptor<bool>        arg_no_console                = {"no-console", "Disable daemon console commands"};
-  const command_line::arg_descriptor<bool>        arg_enable_blockchain_indexes = { "enable-blockchain-indexes", "Enable blockchain indexes", false };
+  const command_line::arg_descriptor<std::string> arg_config_file               = { "config-file", "Specify configuration file", std::string(CryptoNote::CRYPTONOTE_NAME) + ".conf" };
+  const command_line::arg_descriptor<bool>        arg_os_version                = { "os-version", "" };
+  const command_line::arg_descriptor<std::string> arg_log_file                  = { "log-file", "", "" };
+  const command_line::arg_descriptor<int>         arg_log_level                 = { "log-level", "", 2 }; // info level
+  const command_line::arg_descriptor<bool>        arg_no_console                = { "no-console", "Disable daemon console commands" };
   const command_line::arg_descriptor<bool>        arg_print_genesis_tx          = { "print-genesis-tx", "Prints genesis' block tx hex to insert it to config and exits" };
   const command_line::arg_descriptor<bool>        arg_testnet_on                = { "testnet", "Used to deploy test nets. Checkpoints and hardcoded seeds are ignored, "
-    "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false};
+    "network id is changed. Use it with --data-dir flag. The wallet must be launched with --testnet flag.", false };
   const command_line::arg_descriptor<std::string> arg_load_checkpoints          = { "load-checkpoints", "<filename> Load checkpoints from csv file.", "" };
   const command_line::arg_descriptor<bool>        arg_disable_checkpoints       = { "without-checkpoints", "Synchronize without checkpoints" };
   const command_line::arg_descriptor<std::string> arg_rollback                  = { "rollback", "Rollback blockchain to <height>", "", true };
@@ -135,6 +134,9 @@ int main(int argc, char* argv[])
     po::options_description desc_cmd_only("Command line options");
     po::options_description desc_cmd_sett("Command line options and settings options");
 
+    desc_cmd_sett.add_options() 
+      ("enable-blockchain-indexes,i", po::bool_switch()->default_value(false), "Enable blockchain indexes");
+
     command_line::add_arg(desc_cmd_only, command_line::arg_help);
     command_line::add_arg(desc_cmd_only, command_line::arg_version);
     command_line::add_arg(desc_cmd_only, arg_os_version);
@@ -146,7 +148,6 @@ int main(int argc, char* argv[])
     command_line::add_arg(desc_cmd_sett, arg_log_level);
     command_line::add_arg(desc_cmd_sett, arg_no_console);
     command_line::add_arg(desc_cmd_sett, arg_testnet_on);
-    command_line::add_arg(desc_cmd_sett, arg_enable_blockchain_indexes);
     command_line::add_arg(desc_cmd_sett, arg_print_genesis_tx);
     command_line::add_arg(desc_cmd_sett, arg_load_checkpoints);
     command_line::add_arg(desc_cmd_sett, arg_disable_checkpoints);
@@ -269,7 +270,7 @@ int main(int argc, char* argv[])
     }
     CryptoNote::Currency currency = currencyBuilder.currency();
     System::Dispatcher dispatcher;
-    CryptoNote::Core m_core(currency, nullptr, logManager, dispatcher, command_line::get_arg(vm, arg_enable_blockchain_indexes));
+    CryptoNote::Core m_core(currency, nullptr, logManager, dispatcher, vm["enable-blockchain-indexes"].as<bool>());
 
     bool disable_checkpoints = command_line::get_arg(vm, arg_disable_checkpoints);
     if (!disable_checkpoints) {
