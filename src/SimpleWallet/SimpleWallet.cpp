@@ -69,6 +69,7 @@
 #include "Common/DnsTools.h"
 #include "Common/UrlTools.h"
 #include "Common/Util.h"
+#include "Common/ColouredMsg.h"
 #include "CryptoNoteCore/Account.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteProtocol/CryptoNoteProtocolHandler.h"
@@ -1017,7 +1018,21 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 
   m_remote_node_fee_address = m_node->feeAddress();
   m_remote_node_fee_amount = m_node->feeAmount();
-  success_msg_writer() << "Connected to remote node which has fee: " << m_currency.formatAmount(m_remote_node_fee_amount) << " KRB";
+
+  if (!m_remote_node_fee_address.empty()) {
+    std::stringstream feemsg;
+
+    feemsg << std::endl << "You have connected to a node that charges " <<
+      "a fee to send transactions." << std::endl << std::endl
+      << "The node's fee for sending transactions is " <<
+      (m_remote_node_fee_amount == 0 ? "0.25% of transaction amount, but no more than " +
+        m_currency.formatAmount(CryptoNote::parameters::COIN) : m_currency.formatAmount(m_remote_node_fee_amount)) <<
+      " KRB" <<  std::endl << std::endl <<
+      "If you don't want to pay the node fee, please run your own node." <<
+      std::endl;
+
+    std::cout << WarningMsg(feemsg.str()) << std::endl;
+  }
 
   if (command_line::has_arg(vm, arg_restore_wallet) && m_wallet_file_arg.empty()) {
     fail_msg_writer() << "Specify a wallet file name with the '--wallet-file <filename>' parameter";
