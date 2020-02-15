@@ -319,8 +319,6 @@ int CryptoNoteProtocolHandler::handle_notify_new_block(int command, NOTIFY_NEW_B
 }
 
 int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIFY_NEW_TRANSACTIONS::request& arg, CryptoNoteConnectionContext& context) {
-  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
-
   logger(Logging::TRACE) << context << "NOTIFY_NEW_TRANSACTIONS";
   
   if (context.m_state != CryptoNoteConnectionContext::state_normal)
@@ -354,13 +352,13 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
         if (arg.stem) {
           if (context.version >= P2P_VERSION_4) {
             txHashes.push_back(transactionHash);
-            if (m_stem_cache.find(transactionHash) == m_stem_cache.end()) {
+            if (m_stempool.find(transactionHash) == m_stempool.end()) {
               logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
-              m_stem_cache.insert(transactionHash);
+              m_stempool.insert(std::make_pair(transactionHash, *tx_blob_it));
             }
             else { // tx made roundtrip as stem, fluff it
               logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool and fluff";
-              m_stem_cache.erase(transactionHash);
+              m_stempool.erase(transactionHash);
               arg.stem = false;
             }
           }
@@ -369,9 +367,9 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
             arg.stem = false;
           }
         } else {
-          if (m_stem_cache.find(transactionHash) != m_stem_cache.end()) {
+          if (m_stempool.find(transactionHash) != m_stempool.end()) {
             logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool as already broadcasted";
-            m_stem_cache.erase(transactionHash);
+            m_stempool.erase(transactionHash);
           }
         }
       }
@@ -393,9 +391,9 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
             if (!post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, dandelion_peer)) {
               arg.stem = false;
               logger(Logging::DEBUGGING) << "Failed to relay transactions to Dandelion peer " << dandelion_peer.m_connection_id << ", remove from stempool and broadcast as fluff:";
-              for (const auto& t : txHashes) {
-                m_stem_cache.erase(t);
-                logger(Logging::DEBUGGING) << t;
+              for (const auto& h : txHashes) {
+                m_stempool.erase(h);
+                logger(Logging::DEBUGGING) << h;
               }
               relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, &context.m_connection_id); // Fluff broadcast
               break;
@@ -405,9 +403,9 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
       } else { // Switch to fluff broadcast
         arg.stem = false;
         logger(Logging::DEBUGGING) << "Switching to fluff broadcast of stem transactions:";
-        for (const auto& t : txHashes) {
-          m_stem_cache.erase(t);
-          logger(Logging::DEBUGGING) << t;
+        for (const auto& h : txHashes) {
+          m_stempool.erase(h);
+          logger(Logging::DEBUGGING) << h;
         }
         relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, &context.m_connection_id);
       }
@@ -674,21 +672,13 @@ bool CryptoNoteProtocolHandler::select_dandelion_stem() {
 
 // Fail-safe to ensure stem txs are broadcasted
 bool CryptoNoteProtocolHandler::fluffStemPool() {
-  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
-
-  if (!m_stem_cache.empty()) {
+  if (!m_stempool.empty()) {
     NOTIFY_NEW_TRANSACTIONS::request notification;
     notification.stem = false;
-    logger(Logging::DEBUGGING) << "Broadcasting as fluff " << m_stem_cache.size() << " timeout stem transactions:";
-    for (const auto & h : m_stem_cache) {
-      Transaction tx;
-      if (!m_core.getPoolTransaction(h, tx)) {
-        m_stem_cache.erase(h);
-      }
-      else {
-        notification.txs.push_back(asString(toBinaryArray(tx)));
-      }
-      logger(Logging::DEBUGGING) << h;
+    logger(Logging::DEBUGGING) << "Broadcasting as fluff " << m_stempool.size() << " timeout stem transactions:";
+    for (const auto & s : m_stempool) {
+        notification.txs.push_back(s.second);
+      logger(Logging::DEBUGGING) << s.first;
     }
     auto buf = LevinProtocol::encode(notification);
     m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
@@ -1065,16 +1055,14 @@ void CryptoNoteProtocolHandler::relay_block(NOTIFY_NEW_BLOCK::request& arg) {
 }
 
 void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) { 
-  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
-
   if (arg.stem && !m_dandelion_stem.empty()) { // Dandelion broadcast
     std::vector<Crypto::Hash> txHashes;
     for (auto tx_blob_it = arg.txs.begin(); tx_blob_it != arg.txs.end();) {
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
-      if (m_stem_cache.find(transactionHash) == m_stem_cache.end()) {
+      if (m_stempool.find(transactionHash) == m_stempool.end()) {
         logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
-        m_stem_cache.insert(transactionHash); // fail-safe mechanism
+        m_stempool.insert(std::make_pair(transactionHash, *tx_blob_it)); // fail-safe mechanism
         txHashes.push_back(transactionHash);
       }
     }
@@ -1088,9 +1076,9 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
           if (!post_notify<NOTIFY_NEW_TRANSACTIONS>(*m_p2p, arg, dandelion_peer)) {
             logger(Logging::WARNING, Logging::BRIGHT_YELLOW) << "Failed to relay transactions to Dandelion peer " << dandelion_peer.m_connection_id << ", broadcasting in dandelion fluff mode";
             arg.stem = false;
-            for (const auto& t : txHashes) {
-              m_stem_cache.erase(t);
-              logger(Logging::DEBUGGING) << t;
+            for (const auto& h : txHashes) {
+              m_stempool.erase(h);
+              logger(Logging::DEBUGGING) << h;
             }
 
             auto buf = LevinProtocol::encode(arg);
@@ -1102,9 +1090,9 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
     } else { // Switch to fluff broadcast
       arg.stem = false;
       logger(Logging::DEBUGGING) << "Switching to fluff broadcast of stem transactions:";
-      for (const auto& t : txHashes) {
-        m_stem_cache.erase(t);
-        logger(Logging::DEBUGGING) << t;
+      for (const auto& h : txHashes) {
+        m_stempool.erase(h);
+        logger(Logging::DEBUGGING) << h;
       }
       auto buf = LevinProtocol::encode(arg);
       m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
