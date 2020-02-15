@@ -351,21 +351,28 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
       if (!tvc.m_verification_failed && tvc.m_should_be_relayed) {
         ++tx_blob_it;
 
-        if (arg.stem && context.version >= P2P_VERSION_4) {
-          txHashes.push_back(transactionHash);
-          if (m_stem_cache.find(transactionHash) == m_stem_cache.end()) {
-            logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
-            m_stem_cache.insert(transactionHash);
+        if (arg.stem) {
+          if (context.version >= P2P_VERSION_4) {
+            txHashes.push_back(transactionHash);
+            if (m_stem_cache.find(transactionHash) == m_stem_cache.end()) {
+              logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
+              m_stem_cache.insert(transactionHash);
+            }
+            else { // tx made roundtrip as stem, fluff it
+              logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool and fluff";
+              m_stem_cache.erase(transactionHash);
+              arg.stem = false;
+            }
           }
-          else { // tx made roundtrip as stem, fluff it
-            logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool and fluff";
-            m_stem_cache.erase(transactionHash);
+          else {
+            logger(Logging::DEBUGGING) << "Stem transaction " << transactionHash << " came from peer not supporting Dandelion protocol, switching to fluff";
             arg.stem = false;
           }
-        }
-        else {
-          logger(Logging::DEBUGGING) << "Stem transaction " << transactionHash << " came from peer not supporting Dandelion protocol, switching to fluff";
-          arg.stem = false;
+        } else {
+          if (m_stem_cache.find(transactionHash) != m_stem_cache.end()) {
+            logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool as already broadcasted";
+            m_stem_cache.erase(transactionHash);
+          }
         }
       }
       else {
