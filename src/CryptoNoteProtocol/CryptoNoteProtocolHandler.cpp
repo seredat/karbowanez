@@ -42,8 +42,6 @@
 using namespace Logging;
 using namespace Common;
 
-std::unordered_set<Crypto::Hash> m_stem_cache; // TODO: it would've been called stempool if in blockchain storage
-
 namespace CryptoNote {
 
 namespace {
@@ -321,8 +319,10 @@ int CryptoNoteProtocolHandler::handle_notify_new_block(int command, NOTIFY_NEW_B
 }
 
 int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIFY_NEW_TRANSACTIONS::request& arg, CryptoNoteConnectionContext& context) {
-  logger(Logging::TRACE) << context << "NOTIFY_NEW_TRANSACTIONS";
+  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
 
+  logger(Logging::TRACE) << context << "NOTIFY_NEW_TRANSACTIONS";
+  
   if (context.m_state != CryptoNoteConnectionContext::state_normal)
     return 1;
 
@@ -674,6 +674,8 @@ bool CryptoNoteProtocolHandler::select_dandelion_stem() {
 
 // Fail-safe to ensure stem txs are broadcasted
 bool CryptoNoteProtocolHandler::fluffStemPool() {
+  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
+
   if (!m_stem_cache.empty()) {
     NOTIFY_NEW_TRANSACTIONS::request notification;
     notification.stem = false;
@@ -1063,13 +1065,16 @@ void CryptoNoteProtocolHandler::relay_block(NOTIFY_NEW_BLOCK::request& arg) {
 }
 
 void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) { 
+  std::lock_guard<decltype(m_stemcache_lock)> lk(m_stemcache_lock);
+
   if (arg.stem && !m_dandelion_stem.empty()) { // Dandelion broadcast
     std::vector<Crypto::Hash> txHashes;
     for (auto tx_blob_it = arg.txs.begin(); tx_blob_it != arg.txs.end();) {
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       if (m_stem_cache.find(transactionHash) == m_stem_cache.end()) {
-        m_stem_cache.insert(transactionHash);
+        logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
+        m_stem_cache.insert(transactionHash); // fail-safe mechanism
         txHashes.push_back(transactionHash);
       }
     }

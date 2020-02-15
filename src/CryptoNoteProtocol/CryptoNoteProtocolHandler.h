@@ -138,5 +138,8 @@ namespace CryptoNote
     OnceInInterval m_dandelionStemSelectInterval;
     OnceInInterval m_dandelionStemFluffInterval;
     std::vector<CryptoNoteConnectionContext> m_dandelion_stem;
+
+    std::recursive_mutex m_stemcache_lock;
+    std::unordered_set<Crypto::Hash> m_stem_cache;
   };
 }
