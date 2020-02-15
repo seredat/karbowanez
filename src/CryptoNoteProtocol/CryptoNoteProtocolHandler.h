@@ -61,10 +61,7 @@ namespace CryptoNote
 
     bool hasTransaction(const Crypto::Hash& txid) {
       std::lock_guard<std::recursive_mutex> lk(m_stempool_mutex);
-      if (m_stempool.find(txid) != m_stempool.end())
-        return true;
-
-      return false;
+      return m_stempool.find(txid) != m_stempool.end();
     }
 
     bool addTransaction(const Crypto::Hash& txid, std::string tx_blob) {

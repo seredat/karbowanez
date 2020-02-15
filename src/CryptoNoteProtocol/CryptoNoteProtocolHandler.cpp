@@ -340,7 +340,6 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       logger(DEBUGGING) << "Transaction " << transactionHash << " came in NOTIFY_NEW_TRANSACTIONS"
                         << " as " << (arg.stem ? "stem" : "fluff");
-
       CryptoNote::tx_verification_context tvc = boost::value_initialized<decltype(tvc)>();
       m_core.handle_incoming_tx(transactionBinary, tvc, false);
       if (tvc.m_verification_failed) {
@@ -350,20 +349,15 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
         ++tx_blob_it;
 
         if (arg.stem) {
-          if (context.version >= P2P_VERSION_4) {
-            txHashes.push_back(transactionHash);
-            if (!m_stemPool.hasTransaction(transactionHash)) {
-              logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
-              m_stemPool.addTransaction(transactionHash, *tx_blob_it);
-            }
-            else { // tx made roundtrip as stem, fluff it
-              logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool and fluff";
-              m_stemPool.removeTransaction(transactionHash);
-              arg.stem = false;
-            }
+          txHashes.push_back(transactionHash);
+          if (!m_stemPool.hasTransaction(transactionHash)) {
+            logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
+            m_stemPool.addTransaction(transactionHash, *tx_blob_it);
           }
-          else {
-            logger(Logging::DEBUGGING) << "Stem transaction " << transactionHash << " came from peer not supporting Dandelion protocol, switching to fluff";
+          else { // tx made roundtrip as stem, fluff it
+            logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool and fluff";
+            m_stemPool.removeTransaction(transactionHash);
+            txHashes.erase(std::remove(txHashes.begin(), txHashes.end(), transactionHash), txHashes.end());
             arg.stem = false;
           }
         } else {
@@ -1064,7 +1058,7 @@ void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::requ
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       if (!m_stemPool.hasTransaction(transactionHash)) {
-        logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";      
+        logger(Logging::DEBUGGING) << "Adding relayed transaction " << transactionHash << " to stempool";      
         auto txblob = *tx_blob_it;
         m_dispatcher.remoteSpawn([this, transactionHash, txblob] {
           m_stemPool.addTransaction(transactionHash, txblob);
