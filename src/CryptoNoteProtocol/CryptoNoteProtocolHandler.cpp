@@ -346,9 +346,13 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
         logger(Logging::DEBUGGING) << context << "Transaction verification failed";
       }
       if (!tvc.m_verification_failed && tvc.m_should_be_relayed) {
-        ++tx_blob_it;
-
-        if (arg.stem) {
+        if (!arg.stem) {
+          if (m_stemPool.hasTransaction(transactionHash)) {
+            logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool as already broadcasted";
+            m_stemPool.removeTransaction(transactionHash);
+          }
+        }
+        else {
           txHashes.push_back(transactionHash);
           if (!m_stemPool.hasTransaction(transactionHash)) {
             logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
@@ -360,14 +364,14 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
             txHashes.erase(std::remove(txHashes.begin(), txHashes.end(), transactionHash), txHashes.end());
             arg.stem = false;
           }
-        } else {
-          if (m_stemPool.hasTransaction(transactionHash)) {
-            logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool as already broadcasted";
-            m_stemPool.removeTransaction(transactionHash);
-          }
         }
+        ++tx_blob_it;
       }
       else {
+        if (m_stemPool.hasTransaction(transactionHash)) {
+          logger(Logging::DEBUGGING) << "Removing transaction " << transactionHash << " from stempool as already broadcasted";
+          m_stemPool.removeTransaction(transactionHash);
+        }
         tx_blob_it = arg.txs.erase(tx_blob_it);
       }
     }
