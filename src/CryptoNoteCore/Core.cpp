@@ -1279,7 +1279,7 @@ bool Core::handleIncomingTransaction(const Transaction& tx, const Crypto::Hash& 
   }
 
   if (tvc.m_added_to_pool) {
-    logger(DEBUGGING) << "tx added: " << txHash;
+    logger(DEBUGGING) << "Transaction added to pool: " << txHash;
     poolUpdated();
   }
 
