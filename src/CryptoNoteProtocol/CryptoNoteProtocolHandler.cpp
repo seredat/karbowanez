@@ -675,7 +675,7 @@ bool CryptoNoteProtocolHandler::fluffStemPool() {
   if (!m_stemPool.hasTransactions()) {
     NOTIFY_NEW_TRANSACTIONS::request notification;
     notification.stem = false;
-    logger(Logging::DEBUGGING) << "Broadcasting as fluff " << m_stemPool.getTransactionsCount() << " timeout stem transactions:";
+    logger(Logging::DEBUGGING) << "Broadcasting as fluff " << m_stemPool.getTransactionsCount() << " timeout stem transaction(s):";
     std::vector<std::pair<Crypto::Hash, std::string>> stemTxs = m_stemPool.getTransactions();
     for (const auto & s : stemTxs) {
         notification.txs.push_back(s.second);
@@ -683,6 +683,8 @@ bool CryptoNoteProtocolHandler::fluffStemPool() {
     }
     auto buf = LevinProtocol::encode(notification);
     m_p2p->externalRelayNotifyToAll(NOTIFY_NEW_TRANSACTIONS::ID, buf, nullptr);
+
+    m_stemPool.clearStemPool();
   }
   else {
     logger(Logging::DEBUGGING) << "Nothing to broadcast in fluff mode...";
@@ -1058,12 +1060,15 @@ void CryptoNoteProtocolHandler::relay_block(NOTIFY_NEW_BLOCK::request& arg) {
 void CryptoNoteProtocolHandler::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg) {
   if (arg.stem && !m_dandelion_stem.empty()) { // Dandelion broadcast
     std::vector<Crypto::Hash> txHashes;
-    for (auto tx_blob_it = arg.txs.begin(); tx_blob_it != arg.txs.end();) {
+    for (auto tx_blob_it = arg.txs.begin(); tx_blob_it != arg.txs.end(); tx_blob_it++) {
       auto transactionBinary = asBinaryArray(*tx_blob_it);
       Crypto::Hash transactionHash = Crypto::cn_fast_hash(transactionBinary.data(), transactionBinary.size());
       if (!m_stemPool.hasTransaction(transactionHash)) {
-        logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";
-        m_stemPool.addTransaction(transactionHash, *tx_blob_it);
+        logger(Logging::DEBUGGING) << "Adding transaction " << transactionHash << " to stempool";      
+        auto txblob = *tx_blob_it;
+        m_dispatcher.remoteSpawn([this, transactionHash, txblob] {
+          m_stemPool.addTransaction(transactionHash, txblob);
+        });
         txHashes.push_back(transactionHash);
       }
     }

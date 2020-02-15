@@ -95,6 +95,12 @@ namespace CryptoNote
       return txs;
     }
 
+    void clearStemPool() {
+      std::lock_guard<std::recursive_mutex> lk(m_stempool_mutex);
+
+      m_stempool.clear();
+    }
+
   private:
     typedef std::unordered_map<Crypto::Hash, std::string> tx_blob_by_hash;
     tx_blob_by_hash m_stempool;
