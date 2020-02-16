@@ -162,12 +162,10 @@ inline std::string interpret_rpc_response(bool ok, const std::string& status) {
   if (ok) {
     if (status == CORE_RPC_STATUS_BUSY) {
       err = "daemon is busy. Please try later";
-    }
-    else if (status != CORE_RPC_STATUS_OK) {
+    } else if (status != CORE_RPC_STATUS_OK) {
       err = status;
     }
-  }
-  else {
+  } else {
     err = "possible lost connection to daemon";
   }
   return err;
@@ -214,7 +212,7 @@ struct TransferCommand {
   TransferCommand(const CryptoNote::Currency& currency, const CryptoNote::NodeRpcProxy& node) :
     m_currency(currency), m_node(node), fake_outs_count(0),
     fee(m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ?
-      m_currency.minimumFee() : m_currency.roundUpMinFee(m_node.getMinimalFee(), 1)) { // Round up minimal fee to 1 digit after last leading zero by default
+    m_currency.minimumFee() : m_currency.roundUpMinFee(m_node.getMinimalFee(), 1)) { // Round up minimal fee to 1 digit after last leading zero by default
   }
 
   bool parseArguments(LoggerRef& logger, const std::vector<std::string> &args) {
@@ -253,8 +251,7 @@ struct TransferCommand {
               logger(ERROR, BRIGHT_RED) << "payment ID has invalid format: \"" << value << "\", expected 64-character string";
               return false;
             }
-          }
-          else if (arg == "-f") {
+          } else if (arg == "-f") {
             bool ok = m_currency.parseAmount(value, fee);
             if (!ok) {
               logger(ERROR, BRIGHT_RED) << "Fee value is invalid: " << value;
@@ -267,20 +264,17 @@ struct TransferCommand {
               return false;
             }
           }
-        }
-        else {
+        } else {
           WalletLegacyTransfer destination;
           CryptoNote::TransactionDestinationEntry de;
 #ifndef __ANDROID__		  
           std::string aliasUrl;
 #endif
-
           if (!m_currency.parseAccountAddressString(arg, de.addr)) {
             Crypto::Hash paymentId;
             if (CryptoNote::parsePaymentId(arg, paymentId)) {
               logger(ERROR, BRIGHT_RED) << "Invalid payment ID usage. Please, use -p <payment_id>. See help for details.";
-            }
-            else {
+            } else {
 #ifndef __ANDROID__
               // if string doesn't contain a dot, we won't consider it a url for now.
               if (strchr(arg.c_str(), '.') == NULL) {
@@ -311,12 +305,10 @@ struct TransferCommand {
             destination.amount = de.amount;
             dsts.push_back(destination);
 #ifndef __ANDROID__
-          }
-          else {
+          } else {
             aliases[aliasUrl].emplace_back(WalletLegacyTransfer{ "", static_cast<int64_t>(de.amount) });
           }
 #endif
-
           if (!m_remote_node_fee_address.empty()) {
             destination.address = m_remote_node_fee_address;
             int64_t remote_node_fee = m_remote_node_fee_amount == 0 ? static_cast<int64_t>(de.amount * 0.0025) : m_remote_node_fee_amount;
@@ -325,7 +317,6 @@ struct TransferCommand {
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
-
         }
       }
 
