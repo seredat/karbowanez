@@ -207,7 +207,7 @@ struct TransferCommand {
   bool overt = false;
 
   TransferCommand(const CryptoNote::Currency& currency, const CryptoNote::NodeRpcProxy& node) :
-    m_currency(currency), m_node(node), fake_outs_count(0), 
+    m_currency(currency), m_node(node), fake_outs_count(0),
     fee(m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ?
     m_currency.minimumFee() : m_currency.roundUpMinFee(m_node.getMinimalFee(), 1)) { // Round up minimal fee to 1 digit after last leading zero by default
   }
@@ -256,7 +256,7 @@ struct TransferCommand {
             }
 
             if (m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ? fee < m_currency.minimumFee() : fee < m_node.getMinimalFee()) {
-              logger(ERROR, BRIGHT_RED) << "Fee value is less than minimum: " 
+              logger(ERROR, BRIGHT_RED) << "Fee value is less than minimum: "
                 << (m_node.getLastLocalBlockHeaderInfo().majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_4 ? m_currency.minimumFee() : m_node.getMinimalFee());
               return false;
             }
@@ -269,7 +269,6 @@ struct TransferCommand {
 #ifndef __ANDROID__		  
           std::string aliasUrl;
 #endif
-
           if (!m_currency.parseAccountAddressString(arg, de.addr)) {
             Crypto::Hash paymentId;
             if (CryptoNote::parsePaymentId(arg, paymentId)) {
@@ -317,7 +316,6 @@ struct TransferCommand {
             destination.amount = remote_node_fee;
             dsts.push_back(destination);
           }
-
         }
       }
 
