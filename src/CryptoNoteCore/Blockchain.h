@@ -126,6 +126,9 @@ namespace CryptoNote {
     bool getOrphanBlockIdsByHeight(uint32_t height, std::vector<Crypto::Hash>& blockHashes);
     bool getBlockIdsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<Crypto::Hash>& hashes, uint32_t& blocksNumberWithinTimestamps);
     bool getTransactionIdsByPaymentId(const Crypto::Hash& paymentId, std::vector<Crypto::Hash>& transactionHashes);
+    bool getOvertTransactionIdsForAddress(const std::string& address, std::vector<Crypto::Hash>& tx_ids);
+    size_t getOvertTransactionsCount();
+    size_t getOvertTransactionsAddressesCount();
     bool isBlockInMainChain(const Crypto::Hash& blockId);
     bool isInCheckpointZone(const uint32_t height);
 
@@ -256,6 +259,7 @@ namespace CryptoNote {
 
     typedef std::unordered_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
     typedef std::unordered_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
+    typedef std::unordered_map<Crypto::Hash, std::vector<std::string>> overtTransactionsContainer;
     typedef google::sparse_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
     typedef google::sparse_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
 
@@ -269,6 +273,7 @@ namespace CryptoNote {
     size_t m_current_block_cumul_sz_limit;
     blocks_ext_by_hash m_alternative_chains; // Crypto::Hash -> block_extended_info
     outputs_container m_outputs;
+    overtTransactionsContainer m_overt_transactions;
 
     std::string m_config_folder;
     Checkpoints m_checkpoints;

@@ -279,6 +279,8 @@ struct COMMAND_RPC_GET_INFO {
     uint64_t next_reward;
     uint64_t min_fee;
     uint64_t transactions_count;
+    uint64_t overt_transactions_count;
+    uint64_t overt_searchable_addresses_count;
     uint64_t transactions_pool_size;
     uint64_t alt_blocks_count;
     uint64_t outgoing_connections_count;
@@ -303,6 +305,8 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(next_reward)
       KV_MEMBER(min_fee)
       KV_MEMBER(transactions_count)
+      KV_MEMBER(overt_transactions_count)
+      KV_MEMBER(overt_searchable_addresses_count)
       KV_MEMBER(transactions_pool_size)
       KV_MEMBER(alt_blocks_count)
       KV_MEMBER(outgoing_connections_count)
@@ -967,6 +971,26 @@ struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
   };
 };
 
+struct COMMAND_RPC_GET_OVERT_TRANSACTION_HASHES_BY_ADDRESS {
+  struct request {
+    std::string address;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(address)
+    }
+  };
+
+  struct response {
+    std::vector<Crypto::Hash> transactionHashes;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(status)
+      KV_MEMBER(transactionHashes);
+    }
+  };
+};
+
 struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES {
   struct request {
     std::vector<Crypto::Hash> transactionHashes;
@@ -1039,33 +1063,33 @@ struct reserve_proof {
 };
 
 struct COMMAND_RPC_CHECK_TRANSACTION_PROOF {
-    struct request {
-        std::string transaction_id;
-        std::string destination_address;
-        std::string signature;
+  struct request {
+    std::string transaction_id;
+    std::string destination_address;
+    std::string signature;
 
-        void serialize(ISerializer &s) {
-            KV_MEMBER(transaction_id)
-            KV_MEMBER(destination_address)
-            KV_MEMBER(signature)
-        }
-    };
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transaction_id)
+      KV_MEMBER(destination_address)
+      KV_MEMBER(signature)
+    }
+  };
 
-    struct response {
-        bool signature_valid;
-        uint64_t received_amount;
-		std::vector<TransactionOutput> outputs;
-		uint32_t confirmations = 0;
-        std::string status;
+  struct response {
+    bool signature_valid;
+    uint64_t received_amount;
+    std::vector<TransactionOutput> outputs;
+    uint32_t confirmations = 0;
+    std::string status;
 
-        void serialize(ISerializer &s) {
-            KV_MEMBER(signature_valid)
-            KV_MEMBER(received_amount)
-            KV_MEMBER(outputs)
-            KV_MEMBER(confirmations)
-            KV_MEMBER(status)
-        }
-    };
+    void serialize(ISerializer &s) {
+      KV_MEMBER(signature_valid)
+      KV_MEMBER(received_amount)
+      KV_MEMBER(outputs)
+      KV_MEMBER(confirmations)
+      KV_MEMBER(status)
+    }
+  };
 };
 
 struct COMMAND_RPC_CHECK_RESERVE_PROOF {
@@ -1098,6 +1122,41 @@ struct COMMAND_RPC_CHECK_RESERVE_PROOF {
 	};
 };
 
+struct overt_tx_declaration {
+  bool signature_valid;
+  std::string address;
+  uint64_t received_amount;
+  std::vector<TransactionOutput> outputs;
+
+  void serialize(ISerializer &s) {
+    KV_MEMBER(signature_valid)
+    KV_MEMBER(address)
+    KV_MEMBER(received_amount)
+    KV_MEMBER(outputs)
+  }
+};
+
+struct COMMAND_RPC_CHECK_OVERT_TRANSACTION {
+  struct request {
+    std::string transaction_id;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transaction_id)
+    }
+  };
+
+  struct response {
+    std::vector<overt_tx_declaration> declarations;
+    std::string sender;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(declarations)
+      KV_MEMBER(sender)
+      KV_MEMBER(status)
+    }
+  };
+};
 
 struct block_stats_entry {
   uint32_t height;

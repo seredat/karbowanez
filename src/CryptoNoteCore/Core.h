@@ -90,6 +90,7 @@ namespace CryptoNote {
      virtual bool getBlocksByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t blocksNumberLimit, std::vector<Block>& blocks, uint32_t& blocksNumberWithinTimestamps) override;
      virtual bool getPoolTransactionsByTimestamp(uint64_t timestampBegin, uint64_t timestampEnd, uint32_t transactionsNumberLimit, std::vector<Transaction>& transactions, uint64_t& transactionsNumberWithinTimestamps) override;
      virtual bool getTransactionsByPaymentId(const Crypto::Hash& paymentId, std::vector<Transaction>& transactions) override;
+     virtual bool getOvertTransactionIdsForAddress(const std::string& address, std::vector<Crypto::Hash>& tx_ids) override;
      virtual std::vector<Crypto::Hash> getTransactionHashesByPaymentId(const Crypto::Hash& paymentId) override;
      virtual bool getOutByMSigGIndex(uint64_t amount, uint64_t gindex, MultisignatureOutput& out) override;
      virtual std::unique_ptr<IBlock> getBlock(const Crypto::Hash& blocksId) override;
@@ -135,6 +136,8 @@ namespace CryptoNote {
 
      bool get_alternative_blocks(std::list<Block>& blocks);
      virtual size_t getAlternativeBlocksCount() override;
+     virtual size_t getOvertTransactionsCount() override;
+     virtual size_t getOvertTransactionsAddressesCount() override;
 
      void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
      void set_checkpoints(Checkpoints&& chk_pts);

@@ -46,6 +46,7 @@ struct SendTransactionContext
   TxDustPolicy dustPolicy;
   uint64_t mixIn;
   Crypto::SecretKey tx_key = NULL_SECRET_KEY;
+  bool overt = false;
 };
 
 } //namespace CryptoNote

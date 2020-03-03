@@ -50,14 +50,21 @@ struct TransactionDestinationEntry {
 
   TransactionDestinationEntry() : amount(0), addr(boost::value_initialized<AccountPublicAddress>()) {}
   TransactionDestinationEntry(uint64_t amount, const AccountPublicAddress &addr) : amount(amount), addr(addr) {}
-};
 
+  bool operator<(const TransactionDestinationEntry& a) const {
+    return a.addr.spendPublicKey.data < addr.spendPublicKey.data && a.addr.viewPublicKey.data < addr.viewPublicKey.data;
+  }
+
+  bool operator==(const TransactionDestinationEntry& a) const {
+    return a.addr.spendPublicKey == addr.spendPublicKey && a.addr.viewPublicKey == addr.viewPublicKey;
+  }
+};
 
 bool constructTransaction(
   const AccountKeys& senderAccountKeys,
   const std::vector<TransactionSourceEntry>& sources,
   const std::vector<TransactionDestinationEntry>& destinations,
-  std::vector<uint8_t> extra, Transaction& transaction, uint64_t unlock_time, Crypto::SecretKey &tx_key, Logging::ILogger& log);
+  std::vector<uint8_t> extra, Transaction& transaction, uint64_t unlock_time, Crypto::SecretKey &tx_key, Logging::ILogger& log, bool overt = false);
 
 
 bool is_out_to_acc(const AccountKeys& acc, const KeyOutput& out_key, const Crypto::PublicKey& tx_pub_key, size_t keyIndex);
@@ -126,5 +133,7 @@ void get_tx_tree_hash(const std::vector<Crypto::Hash>& tx_hashes, Crypto::Hash& 
 Crypto::Hash get_tx_tree_hash(const std::vector<Crypto::Hash>& tx_hashes);
 Crypto::Hash get_tx_tree_hash(const Block& b);
 bool is_valid_decomposed_amount(uint64_t amount);
+
+bool get_tx_proof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str, Logging::ILogger& log);
 
 }

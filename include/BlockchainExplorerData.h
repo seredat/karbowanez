@@ -23,7 +23,7 @@
 
 #include "CryptoTypes.h"
 #include "CryptoNote.h"
-#include "BlockchainExplorerData.h"
+#include "CryptoNoteCore/TransactionExtra.h"
 #include <boost/variant.hpp>
 
 namespace CryptoNote {
@@ -89,6 +89,14 @@ struct TransactionExtraDetails {
   std::vector<uint8_t> raw;
 };
 
+struct TransactionExtraDetails2 {
+  std::vector<size_t> padding;
+  Crypto::PublicKey publicKey;
+  BinaryArray nonce;
+  BinaryArray raw;
+  TransactionExtraDisclosure disclosure;
+};
+
 struct transactionOutputDetails2 {
 	TransactionOutput output;
 	uint64_t globalIndex;
@@ -111,13 +119,6 @@ struct MultisignatureInputDetails {
 };
 
 typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> transactionInputDetails2;
-
-struct TransactionExtraDetails2 {
-	std::vector<size_t> padding;
-	Crypto::PublicKey publicKey;
-	BinaryArray nonce;
-	BinaryArray raw;
-};
 
 struct TransactionDetails {
   Crypto::Hash hash;

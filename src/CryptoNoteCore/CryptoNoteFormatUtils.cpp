@@ -21,6 +21,7 @@
 #include <set>
 #include <Logging/LoggerRef.h>
 #include <Common/Varint.h>
+#include "Common/Base58.h"
 
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
@@ -123,7 +124,8 @@ bool constructTransaction(
   Transaction& tx,
   uint64_t unlock_time,
   Crypto::SecretKey &tx_key,
-  Logging::ILogger& log) {
+  Logging::ILogger& log, 
+  bool overt) {
   LoggerRef logger(log, "construct_tx");
 
   tx.inputs.clear();
@@ -230,6 +232,58 @@ bool constructTransaction(
   if (summary_outs_money > summary_inputs_money) {
     logger(ERROR) << "Transaction inputs money (" << summary_inputs_money << ") less than outputs money (" << summary_outs_money << ")";
     return false;
+  }
+
+  if (overt) {
+    TransactionExtraDisclosure disclosure;
+
+    /* We need hash of something for proofs, we don't have tx/prefix hash yet
+     * so why don't we use tx public key?
+     */
+    Crypto::Hash keyHash = reinterpret_cast<Crypto::Hash &>(txkey.publicKey);
+
+    /* Signature to provably distinguish sender. To check we cycle through
+     * declarations until signature matches address in declaration.
+     */
+    Crypto::generate_signature(keyHash, sender_account_keys.address.spendPublicKey, sender_account_keys.spendSecretKey, disclosure.senderSignature);
+
+    /* Generate declarations for each unique destination (remove duplicates
+     * because we need address - proof pair only once).
+     */
+    std::vector<TransactionDestinationEntry> dsts(destinations);
+    sort(dsts.begin(), dsts.end());
+    dsts.erase(unique(dsts.begin(), dsts.end()), dsts.end());
+
+    bool foundSender = false;
+    for (TransactionDestinationEntry d : dsts) {
+      std::string proof;
+      if (!get_tx_proof(keyHash, d.addr, tx_key, proof, log)) {
+        return false;
+      }
+      disclosure.declarations.push_back(std::make_pair(d.addr, proof));
+
+      /* In edge case when signature doesn't match any of the addresses it means 
+       * that everything was sent to destination without change. In this case
+       * add another dummy disclosure with sender's address and proof that proves
+       * nothing in order to store sender's address.
+       */
+      if (d.addr.spendPublicKey == sender_account_keys.address.spendPublicKey &&
+        d.addr.viewPublicKey == sender_account_keys.address.viewPublicKey) {
+        foundSender = true;
+      }
+    }
+    if (!foundSender) {
+      std::string proof;
+      AccountPublicAddress address = sender_account_keys.address;
+      if (!get_tx_proof(keyHash, address, tx_key, proof, log)) {
+        return false;
+      }
+      disclosure.declarations.push_back(std::make_pair(address, proof));
+    }
+
+    if (!appendTransactionDisclosureToExtra(tx.extra, disclosure)) {
+      logger(ERROR) << "Couldn't append overt transaction disclosure";
+    }
   }
 
   //generate ring signatures
@@ -577,6 +631,30 @@ bool is_valid_decomposed_amount(uint64_t amount) {
   if (it == Currency::PRETTY_AMOUNTS.end() || amount != *it) {
 	  return false;
   }
+  return true;
+}
+
+bool get_tx_proof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str, Logging::ILogger& log) {
+  LoggerRef logger(log, "construct_tx"); 
+  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&address.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&tx_key);
+  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
+  Crypto::PublicKey R;
+  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
+  Crypto::secret_key_to_public_key(tx_key, R);
+  Crypto::Signature sig;
+  try {
+    Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
+  }
+  catch (const std::runtime_error &e) {
+    logger(ERROR) << "Proof generation error: " << *e.what();
+    return false;
+  }
+
+  sig_str = std::string("ProofV1") +
+    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
+    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
+
   return true;
 }
 
