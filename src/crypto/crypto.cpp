@@ -1,6 +1,6 @@
-// Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2012-2018, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2014-2017, The Monero Project
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -29,15 +29,11 @@
 
 #include "Common/Varint.h"
 #include "crypto.h"
+#include "crypto-ops.h"
 #include "hash.h"
 #include "random.h"
 
 namespace Crypto {
-
-  extern "C" {
-#include "crypto-ops.h"
-#include "random.h"
-  }
 
   static inline unsigned char *operator &(EllipticCurvePoint &point) {
     return &reinterpret_cast<unsigned char &>(point);
@@ -62,7 +58,7 @@ namespace Crypto {
     memcpy(&res, tmp, 32);
   }
 
-  static inline void hash_to_scalar(const void *data, size_t length, EllipticCurveScalar &res) {
+  void hash_to_scalar(const void *data, size_t length, EllipticCurveScalar &res) {
     cn_fast_hash(data, length, reinterpret_cast<Hash &>(res));
     sc_reduce32(reinterpret_cast<unsigned char*>(&res));
   }
@@ -114,6 +110,20 @@ namespace Crypto {
     }
     ge_scalarmult_base(&point, reinterpret_cast<const unsigned char*>(&sec));
     ge_p3_tobytes(reinterpret_cast<unsigned char*>(&pub), &point);
+    return true;
+  }
+
+  bool crypto_ops::secret_key_mult_public_key(const SecretKey &sec, const PublicKey &pub, PublicKey &result) {
+    if (sc_check(&sec) != 0) {
+      return false;
+    }
+    ge_p3 point;
+    if (ge_frombytes_vartime(&point, &pub) != 0) {
+      return false;
+    }
+    ge_p2 point2;
+    ge_scalarmult(&point2, &sec, &point);
+    ge_tobytes(reinterpret_cast<unsigned char*>(&result), &point2);
     return true;
   }
 
@@ -623,4 +633,5 @@ namespace Crypto {
     sc_sub(reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&h), reinterpret_cast<unsigned char*>(&sum));
     return sc_isnonzero(reinterpret_cast<unsigned char*>(&h)) == 0;
   }
+
 }

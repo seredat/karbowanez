@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <assert.h>
 #include <new>
 
 #include "hash.h"
@@ -38,13 +39,13 @@ namespace Crypto {
   cn_context::cn_context() {
     data = VirtualAlloc(nullptr, MAP_SIZE, MEM_COMMIT, PAGE_READWRITE);
     if (data == nullptr) {
-      throw bad_alloc();
+      throw std::bad_alloc();
     }
   }
 
   cn_context::~cn_context() {
     if (!VirtualFree(data, 0, MEM_RELEASE)) {
-      throw bad_alloc();
+      assert(false);
     }
   }
 
@@ -64,8 +65,8 @@ namespace Crypto {
 
   cn_context::~cn_context() {
     if (munmap(data, MAP_SIZE) != 0) {
-    //  throw bad_alloc();
-		std::terminate();
+      assert(false);
+      std::terminate();
     }
   }
 
