@@ -1269,7 +1269,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
 	}
 	else if (!m_track_new.empty())
 	{
-		std::string walletAddressFile = prepareWalletAddressFilename(m_restore_new);
+		std::string walletAddressFile = prepareWalletAddressFilename(m_track_new);
 		boost::system::error_code ignore;
 		if (boost::filesystem::exists(walletAddressFile, ignore))
 		{
