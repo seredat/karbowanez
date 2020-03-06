@@ -58,6 +58,7 @@ namespace CryptoNote {
     // ITransactionReader
     virtual Hash getTransactionHash() const override;
     virtual Hash getTransactionPrefixHash() const override;
+    virtual Hash getTransactionInputsHash() const override;
     virtual PublicKey getTransactionPublicKey() const override;
     virtual uint64_t getUnlockTime() const override;
     virtual bool getPaymentId(Hash& hash) const override;
@@ -202,6 +203,10 @@ namespace CryptoNote {
 
   Hash TransactionImpl::getTransactionPrefixHash() const {
     return getObjectHash(*static_cast<const TransactionPrefix*>(&transaction));
+  }
+
+  Hash TransactionImpl::getTransactionInputsHash() const {
+    return getObjectHash(transaction.inputs);
   }
 
   PublicKey TransactionImpl::getTransactionPublicKey() const {

@@ -60,6 +60,7 @@ public:
 
   virtual Crypto::Hash getTransactionHash() const = 0;
   virtual Crypto::Hash getTransactionPrefixHash() const = 0;
+  virtual Crypto::Hash getTransactionInputsHash() const = 0;
   virtual Crypto::PublicKey getTransactionPublicKey() const = 0;
   virtual bool getTransactionSecretKey(Crypto::SecretKey& key) const = 0;
   virtual uint64_t getUnlockTime() const = 0;

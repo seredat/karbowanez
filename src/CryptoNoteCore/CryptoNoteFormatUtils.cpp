@@ -116,41 +116,13 @@ uint64_t get_tx_fee(const Transaction& tx) {
   return r;
 }
 
-bool generate_deterministic_tx_keys(BinaryArray& keyImages, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys) {
-  Common::append(keyImages, std::begin(viewSecretKey.data), std::end(viewSecretKey.data));
-  hash_to_scalar(keyImages.data(), keyImages.size(), generatedKeys.secretKey);
+bool generate_deterministic_tx_keys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  BinaryArray ba;
+  Common::append(ba, std::begin(viewSecretKey.data), std::end(viewSecretKey.data));
+  Common::append(ba, std::begin(inputsHash.data), std::end(inputsHash.data));
+
+  hash_to_scalar(ba.data(), ba.size(), generatedKeys.secretKey);
   return Crypto::secret_key_to_public_key(generatedKeys.secretKey, generatedKeys.publicKey);
-}
-
-bool generateDeterministicTransactionKeys(const TransactionPrefix &tx, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
-  BinaryArray ba;
-  for (const auto& in : tx.inputs) {
-    if (in.type() == typeid(KeyInput)) {
-      Common::append(ba, std::begin(boost::get<KeyInput>(in).keyImage.data), std::end(boost::get<KeyInput>(in).keyImage.data));
-    }
-  }
-  
-  return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
-}
-
-bool generateDeterministicTransactionKeys(const std::vector<TransactionInput> &inputs, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
-  BinaryArray ba;
-  for (const auto& in : inputs) {
-    if (in.type() == typeid(KeyInput)) {
-      Common::append(ba, std::begin(boost::get<KeyInput>(in).keyImage.data), std::end(boost::get<KeyInput>(in).keyImage.data));
-    }
-  }
-  
-  return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
-}
-
-bool generateDeterministicTransactionKeys(const std::vector<KeyImage> &keyImages, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
-  BinaryArray ba;
-  for (const auto& im : keyImages) {
-     Common::append(ba, std::begin(im.data), std::end(im.data));
-  }
-
-  return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
 }
 
 bool constructTransaction(
@@ -177,7 +149,6 @@ bool constructTransaction(
     KeyPair in_ephemeral;
   };
 
-  BinaryArray ba;
   std::vector<input_generation_context_data> in_contexts;
   uint64_t summary_inputs_money = 0;
   //fill inputs
@@ -207,7 +178,6 @@ bool constructTransaction(
     KeyInput input_to_key;
     input_to_key.amount = src_entr.amount;
     input_to_key.keyImage = img;
-    Common::append(ba, std::begin(img.data), std::end(img.data));
 
     //fill outputs array and use relative offsets
     for (const TransactionSourceEntry::OutputEntry& out_entry : src_entr.outputs) {
@@ -219,7 +189,7 @@ bool constructTransaction(
   }
 
   KeyPair txkey;
-  if (!generate_deterministic_tx_keys(ba, sender_account_keys.viewSecretKey, txkey)) {
+  if (!generate_deterministic_tx_keys(getObjectHash(tx.inputs), sender_account_keys.viewSecretKey, txkey)) {
     logger(ERROR) << "Couldn't generate deterministic transaction keys";
     return false;
   }
