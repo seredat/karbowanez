@@ -276,6 +276,10 @@ void serialize(MultisignatureInput& multisignature, ISerializer& serializer) {
   serializer(multisignature.outputIndex, "outputIndex");
 }
 
+void serialize(TransactionInputs & inputs, ISerializer & serializer) {
+  serializer(inputs, "vin");
+}
+
 void serialize(TransactionOutput& output, ISerializer& serializer) {
   serializer(output.amount, "amount");
   serializer(output.target, "target");
