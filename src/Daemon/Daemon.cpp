@@ -367,6 +367,12 @@ int main(int argc, char* argv[])
         logger(ERROR, BRIGHT_RED) << "Couldn't parse fee amount";
         return 1;
       }
+      if (fee > CryptoNote::parameters::COIN) {
+        logger(ERROR, BRIGHT_RED) << "Maximum allowed fee is " 
+          << Common::Format::formatAmount(CryptoNote::parameters::COIN);
+        return 1;
+      }
+
       rpcServer.setFeeAmount(fee);
     }
     

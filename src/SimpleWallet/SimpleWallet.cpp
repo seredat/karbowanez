@@ -1369,8 +1369,6 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
   if (command_line::has_arg(vm, arg_reset))
     reset({});
 
-
-
 	return true;
 }
 
