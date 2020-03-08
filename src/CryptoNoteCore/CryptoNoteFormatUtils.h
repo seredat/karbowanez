@@ -55,6 +55,7 @@ struct TransactionDestinationEntry {
 
 bool generate_deterministic_tx_keys(BinaryArray& keyImages, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
 bool generateDeterministicTransactionKeys(const TransactionPrefix &tx, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
+bool generateDeterministicTransactionKeys(const std::vector<TransactionInput>& inputs, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
 
 bool constructTransaction(
   const AccountKeys& senderAccountKeys,

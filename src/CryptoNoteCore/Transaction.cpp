@@ -70,6 +70,7 @@ namespace CryptoNote {
     virtual TransactionTypes::InputType getInputType(size_t index) const override;
     virtual void getInput(size_t index, KeyInput& input) const override;
     virtual void getInput(size_t index, MultisignatureInput& input) const override;
+    virtual std::vector<TransactionInput> getInputs() const override;
 
     // outputs
     virtual size_t getOutputCount() const override;
@@ -473,6 +474,10 @@ namespace CryptoNote {
 
   void TransactionImpl::getInput(size_t index, MultisignatureInput& input) const {
     input = boost::get<MultisignatureInput>(getInputChecked(transaction, index, TransactionTypes::InputType::Multisignature));
+  }
+
+  std::vector<TransactionInput> TransactionImpl::getInputs() const {
+    return transaction.inputs;
   }
 
   size_t TransactionImpl::getOutputCount() const {

@@ -134,6 +134,18 @@ bool generateDeterministicTransactionKeys(const TransactionPrefix &tx, const Sec
   return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
 }
 
+bool generateDeterministicTransactionKeys(const std::vector<TransactionInput> &inputs, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  BinaryArray ba;
+  for (const auto& in : inputs) {
+    uint64_t amount = 0;
+    if (in.type() == typeid(KeyInput)) {
+      Common::append(ba, std::begin(boost::get<KeyInput>(in).keyImage.data), std::end(boost::get<KeyInput>(in).keyImage.data));
+    }
+  }
+  
+  return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
+}
+
 bool constructTransaction(
   const AccountKeys& sender_account_keys,
   const std::vector<TransactionSourceEntry>& sources,

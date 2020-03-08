@@ -52,6 +52,7 @@ public:
   virtual TransactionTypes::InputType getInputType(size_t index) const override;
   virtual void getInput(size_t index, KeyInput& input) const override;
   virtual void getInput(size_t index, MultisignatureInput& input) const override;
+  virtual std::vector<TransactionInput> getInputs() const override;
 
   // outputs
   virtual size_t getOutputCount() const override;
@@ -158,6 +159,10 @@ void TransactionPrefixImpl::getInput(size_t index, KeyInput& input) const {
 
 void TransactionPrefixImpl::getInput(size_t index, MultisignatureInput& input) const {
   input = boost::get<MultisignatureInput>(getInputChecked(m_txPrefix, index, TransactionTypes::InputType::Multisignature));
+}
+
+std::vector<TransactionInput> TransactionPrefixImpl::getInputs() const {
+  return m_txPrefix.inputs;
 }
 
 size_t TransactionPrefixImpl::getOutputCount() const {
