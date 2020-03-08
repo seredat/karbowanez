@@ -94,6 +94,8 @@ public:
 
   // serialized transaction
   virtual BinaryArray getTransactionData() const = 0;
+
+  virtual TransactionPrefix getTransactionPrefix() const = 0;
 };
 
 //

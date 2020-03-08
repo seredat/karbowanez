@@ -54,7 +54,7 @@ namespace CryptoNote {
     TransactionImpl();
     TransactionImpl(const BinaryArray& txblob);
     TransactionImpl(const CryptoNote::Transaction& tx);
-  
+
     // ITransactionReader
     virtual Hash getTransactionHash() const override;
     virtual Hash getTransactionPrefixHash() const override;
@@ -88,6 +88,8 @@ namespace CryptoNote {
 
     // get serialized transaction
     virtual BinaryArray getTransactionData() const override;
+
+    TransactionPrefix getTransactionPrefix() const override;
 
     // ITransactionWriter
 
@@ -157,7 +159,7 @@ namespace CryptoNote {
     return std::unique_ptr<ITransaction>(new TransactionImpl(tx));
   }
 
-  TransactionImpl::TransactionImpl() {   
+  TransactionImpl::TransactionImpl() {
     CryptoNote::KeyPair txKeys(CryptoNote::generateKeyPair());
 
     TransactionExtraPublicKey pk = { txKeys.publicKey };
@@ -174,7 +176,7 @@ namespace CryptoNote {
     if (!fromBinaryArray(transaction, ba)) {
       throw std::runtime_error("Invalid transaction data");
     }
-    
+
     extra.parse(transaction.extra);
     transactionHash = getBinaryArrayHash(ba); // avoid serialization if we already have blob
   }
@@ -194,7 +196,7 @@ namespace CryptoNote {
       transactionHash = getObjectHash(transaction);
     }
 
-    return transactionHash.get();   
+    return transactionHash.get();
   }
 
   Hash TransactionImpl::getTransactionPrefixHash() const {
@@ -295,7 +297,7 @@ namespace CryptoNote {
     MultisignatureOutput outMsig;
     outMsig.requiredSignatureCount = requiredSignatures;
     outMsig.keys.resize(to.size());
-    
+
     for (size_t i = 0; i < to.size(); ++i) {
       derivePublicKey(to[i], txKey, outputIndex, outMsig.keys[i]);
     }
@@ -400,6 +402,10 @@ namespace CryptoNote {
 
   BinaryArray TransactionImpl::getTransactionData() const {
     return toBinaryArray(transaction);
+  }
+
+  TransactionPrefix TransactionImpl::getTransactionPrefix() const {
+    return transaction;
   }
 
   void TransactionImpl::setPaymentId(const Hash& hash) {

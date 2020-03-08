@@ -72,6 +72,8 @@ public:
   // serialized transaction
   virtual BinaryArray getTransactionData() const override;
 
+  virtual TransactionPrefix getTransactionPrefix() const override;
+
   virtual bool getTransactionSecretKey(SecretKey& key) const override;
 
 private:
@@ -209,6 +211,10 @@ bool TransactionPrefixImpl::validateSignatures() const {
 
 BinaryArray TransactionPrefixImpl::getTransactionData() const {
   return toBinaryArray(m_txPrefix);
+}
+
+TransactionPrefix TransactionPrefixImpl::getTransactionPrefix() const {
+   return m_txPrefix;
 }
 
 bool TransactionPrefixImpl::getTransactionSecretKey(SecretKey& key) const {
