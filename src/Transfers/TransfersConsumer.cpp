@@ -399,12 +399,14 @@ std::error_code TransfersConsumer::createTransfers(
   std::vector<PublicKey> temp_keys;
   std::lock_guard<std::mutex> lk(seen_mutex);
 
-  KeyPair deterministic_tx_keys;
-  bool spending = generateDeterministicTransactionKeys(tx.getTransactionPrefix(), account.viewSecretKey, deterministic_tx_keys)
-    && deterministic_tx_keys.publicKey == txPubKey;
+  if (account.spendSecretKey == NULL_SECRET_KEY) {
+    KeyPair deterministic_tx_keys;
+    bool spending = generateDeterministicTransactionKeys(tx.getTransactionPrefix(), account.viewSecretKey, deterministic_tx_keys)
+      && deterministic_tx_keys.publicKey == txPubKey;
 
-  if (spending) {
-    m_logger(WARNING, BRIGHT_YELLOW) << "Spending in tx " << Common::podToHex(tx.getTransactionHash());
+    if (spending) {
+      m_logger(WARNING, BRIGHT_YELLOW) << "Spending in tx " << Common::podToHex(tx.getTransactionHash());
+    }
   }
 
   for (auto idx : outputs) {
