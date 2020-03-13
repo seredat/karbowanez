@@ -125,7 +125,6 @@ bool generate_deterministic_tx_keys(BinaryArray& keyImages, const Crypto::Secret
 bool generateDeterministicTransactionKeys(const TransactionPrefix &tx, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
   BinaryArray ba;
   for (const auto& in : tx.inputs) {
-    uint64_t amount = 0;
     if (in.type() == typeid(KeyInput)) {
       Common::append(ba, std::begin(boost::get<KeyInput>(in).keyImage.data), std::end(boost::get<KeyInput>(in).keyImage.data));
     }
@@ -137,12 +136,20 @@ bool generateDeterministicTransactionKeys(const TransactionPrefix &tx, const Sec
 bool generateDeterministicTransactionKeys(const std::vector<TransactionInput> &inputs, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
   BinaryArray ba;
   for (const auto& in : inputs) {
-    uint64_t amount = 0;
     if (in.type() == typeid(KeyInput)) {
       Common::append(ba, std::begin(boost::get<KeyInput>(in).keyImage.data), std::end(boost::get<KeyInput>(in).keyImage.data));
     }
   }
   
+  return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
+}
+
+bool generateDeterministicTransactionKeys(const std::vector<KeyImage> &keyImages, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  BinaryArray ba;
+  for (const auto& im : keyImages) {
+     Common::append(ba, std::begin(im.data), std::end(im.data));
+  }
+
   return generate_deterministic_tx_keys(ba, viewSecretKey, generatedKeys);
 }
 
