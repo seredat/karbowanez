@@ -37,6 +37,7 @@
 #include "Common/FormatTools.h"
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteBasicImpl.h"
+#include "CryptoNoteCore/CryptoNoteFormatUtils.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "Rpc/CoreRpcServerCommandsDefinitions.h"
 #include "Rpc/HttpClient.h"
@@ -641,6 +642,17 @@ std::error_code NodeRpcProxy::doGetConnections(std::vector<p2pConnection>& conne
   return ec;
 }
 
+void NodeRpcProxy::getTransaction(const Crypto::Hash& transactionHash, CryptoNote::Transaction& transaction, const Callback& callback) {
+  std::lock_guard<std::mutex> lock(m_mutex);
+  if (m_state != STATE_INITIALIZED) {
+    callback(make_error_code(error::NOT_INITIALIZED));
+    return;
+  }
+
+  scheduleRequest(std::bind(&NodeRpcProxy::doGetTransaction, this, std::cref(transactionHash), std::ref(transaction)), callback);
+}
+
+
 void NodeRpcProxy::getTransactions(const std::vector<Crypto::Hash>& transactionHashes, std::vector<TransactionDetails>& transactions, const Callback& callback) {
   std::lock_guard<std::mutex> lock(m_mutex);
   if (m_state != STATE_INITIALIZED) {
@@ -865,6 +877,35 @@ std::error_code NodeRpcProxy::doGetTransactionHashesByPaymentId(const Crypto::Ha
   }
 
   transactionHashes = std::move(resp.transactionHashes);
+  return ec;
+}
+
+std::error_code NodeRpcProxy::doGetTransaction(const Crypto::Hash& transactionHash, CryptoNote::Transaction& transaction) {
+  COMMAND_RPC_GET_TRANSACTIONS::request req = AUTO_VAL_INIT(req);
+  COMMAND_RPC_GET_TRANSACTIONS::response  resp = AUTO_VAL_INIT(resp);
+
+  req.txs_hashes.push_back(Common::podToHex(transactionHash));
+
+  std::error_code ec = jsonCommand("/gettransactions", req, resp);
+  if (ec) {
+    return ec;
+  }
+
+  if (resp.missed_txs.size() > 0) {
+    return make_error_code(CryptoNote::error::REQUEST_ERROR);
+  }
+
+  BinaryArray tx_blob;
+  if (!Common::fromHex(resp.txs_as_hex[0], tx_blob)) {
+    return make_error_code(error::INTERNAL_NODE_ERROR);
+  }
+
+  Crypto::Hash tx_hash = NULL_HASH;
+  Crypto::Hash tx_prefixt_hash = NULL_HASH;
+  if (!parseAndValidateTransactionFromBinaryArray(tx_blob, transaction, tx_hash, tx_prefixt_hash) || tx_hash != transactionHash) {
+    return make_error_code(error::INTERNAL_NODE_ERROR);
+  }
+
   return ec;
 }
 
