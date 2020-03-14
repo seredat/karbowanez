@@ -117,7 +117,7 @@ uint64_t get_tx_fee(const Transaction& tx) {
   return r;
 }
 
-bool generate_deterministic_tx_keys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+bool generateDeterministicTransactionKeys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys) {
   BinaryArray ba;
   Common::append(ba, std::begin(viewSecretKey.data), std::end(viewSecretKey.data));
   Common::append(ba, std::begin(inputsHash.data), std::end(inputsHash.data));
@@ -128,7 +128,7 @@ bool generate_deterministic_tx_keys(const Crypto::Hash& inputsHash, const Crypto
 
 bool generateDeterministicTransactionKeys(const Transaction& tx, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
   Crypto::Hash inputsHash = getObjectHash(tx.inputs);
-  return generate_deterministic_tx_keys(inputsHash, viewSecretKey, generatedKeys);
+  return generateDeterministicTransactionKeys(inputsHash, viewSecretKey, generatedKeys);
 }
 
 bool constructTransaction(
@@ -195,7 +195,7 @@ bool constructTransaction(
   }
 
   KeyPair txkey;
-  if (!generate_deterministic_tx_keys(getObjectHash(tx.inputs), sender_account_keys.viewSecretKey, txkey)) {
+  if (!generateDeterministicTransactionKeys(getObjectHash(tx.inputs), sender_account_keys.viewSecretKey, txkey)) {
     logger(ERROR) << "Couldn't generate deterministic transaction keys";
     return false;
   }

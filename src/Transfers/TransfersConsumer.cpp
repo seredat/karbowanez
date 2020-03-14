@@ -401,7 +401,7 @@ std::error_code TransfersConsumer::createTransfers(
 
   if (account.spendSecretKey == NULL_SECRET_KEY) {
     KeyPair deterministic_tx_keys;
-    bool spending = generateDeterministicTransactionKeys(tx.getTransactionPrefix(), account.viewSecretKey, deterministic_tx_keys)
+    bool spending = generateDeterministicTransactionKeys(tx.getTransactionInputsHash(), account.viewSecretKey, deterministic_tx_keys)
       && deterministic_tx_keys.publicKey == txPubKey;
 
     if (spending) {
