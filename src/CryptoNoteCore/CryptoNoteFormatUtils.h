@@ -54,6 +54,7 @@ struct TransactionDestinationEntry {
 };
 
 bool generate_deterministic_tx_keys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
+bool generateDeterministicTransactionKeys(const Transaction& tx, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
 
 bool constructTransaction(
   const AccountKeys& senderAccountKeys,

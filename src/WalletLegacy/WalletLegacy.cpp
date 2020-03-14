@@ -1000,7 +1000,7 @@ Crypto::SecretKey WalletLegacy::getTxKey(Crypto::Hash& txid) {
 
     Crypto::PublicKey txPubKey = getTransactionPublicKeyFromExtra(tx.extra);
     KeyPair deterministicTxKeys;
-    bool ok = generateDeterministicTransactionKeys(tx.inputs, m_account.getAccountKeys().viewSecretKey, deterministicTxKeys)
+    bool ok = generateDeterministicTransactionKeys(tx, m_account.getAccountKeys().viewSecretKey, deterministicTxKeys)
       && deterministicTxKeys.publicKey == txPubKey;
 
     return ok ? deterministicTxKeys.secretKey : reinterpret_cast<const Crypto::SecretKey&>(transaction.secretKey.get());

@@ -126,6 +126,11 @@ bool generate_deterministic_tx_keys(const Crypto::Hash& inputsHash, const Crypto
   return Crypto::secret_key_to_public_key(generatedKeys.secretKey, generatedKeys.publicKey);
 }
 
+bool generateDeterministicTransactionKeys(const Transaction& tx, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  Crypto::Hash inputsHash = getObjectHash(tx.inputs);
+  return generate_deterministic_tx_keys(inputsHash, viewSecretKey, generatedKeys);
+}
+
 bool constructTransaction(
   const AccountKeys& sender_account_keys,
   const std::vector<TransactionSourceEntry>& sources,
