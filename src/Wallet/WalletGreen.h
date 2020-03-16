@@ -155,6 +155,7 @@ protected:
   std::vector<std::string> doCreateAddressList(const std::vector<NewAddressData>& addressDataList);
 
   CryptoNote::BlockDetails getBlock(const uint32_t blockHeight);
+  Crypto::SecretKey getTransactionDeterministicSecretKey(Crypto::Hash& transactionHash) const;
 
   uint64_t scanHeightToTimestamp(const uint32_t scanHeight);
   uint64_t getCurrentTimestampAdjusted();
