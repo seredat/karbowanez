@@ -60,6 +60,7 @@ public:
 
   virtual Crypto::Hash getTransactionHash() const = 0;
   virtual Crypto::Hash getTransactionPrefixHash() const = 0;
+  virtual Crypto::Hash getTransactionInputsHash() const = 0;
   virtual Crypto::PublicKey getTransactionPublicKey() const = 0;
   virtual bool getTransactionSecretKey(Crypto::SecretKey& key) const = 0;
   virtual uint64_t getUnlockTime() const = 0;
@@ -75,6 +76,7 @@ public:
   virtual TransactionTypes::InputType getInputType(size_t index) const = 0;
   virtual void getInput(size_t index, KeyInput& input) const = 0;
   virtual void getInput(size_t index, MultisignatureInput& input) const = 0;
+  virtual std::vector<TransactionInput> getInputs() const = 0;
 
   // outputs
   virtual size_t getOutputCount() const = 0;
@@ -94,6 +96,8 @@ public:
 
   // serialized transaction
   virtual BinaryArray getTransactionData() const = 0;
+
+  virtual TransactionPrefix getTransactionPrefix() const = 0;
 };
 
 //

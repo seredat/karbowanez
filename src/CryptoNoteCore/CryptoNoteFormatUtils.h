@@ -20,6 +20,7 @@
 
 #include <boost/utility/value_init.hpp>
 
+#include <CryptoNote.h>
 #include "CryptoNoteBasic.h"
 #include "CryptoNoteSerialization.h"
 
@@ -52,6 +53,8 @@ struct TransactionDestinationEntry {
   TransactionDestinationEntry(uint64_t amount, const AccountPublicAddress &addr) : amount(amount), addr(addr) {}
 };
 
+bool generateDeterministicTransactionKeys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
+bool generateDeterministicTransactionKeys(const Transaction& tx, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys);
 
 bool constructTransaction(
   const AccountKeys& senderAccountKeys,

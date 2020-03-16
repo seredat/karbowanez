@@ -69,7 +69,7 @@ void findMyOutputs(
   auto txPublicKey = tx.getTransactionPublicKey();
   KeyDerivation derivation;
 
-  if (!generate_key_derivation( txPublicKey, viewSecretKey, derivation)) {
+  if (!generate_key_derivation(txPublicKey, viewSecretKey, derivation)) {
     return;
   }
 
@@ -399,6 +399,16 @@ std::error_code TransfersConsumer::createTransfers(
   std::vector<PublicKey> temp_keys;
   std::lock_guard<std::mutex> lk(seen_mutex);
 
+  if (account.spendSecretKey == NULL_SECRET_KEY) {
+    KeyPair deterministic_tx_keys;
+    bool spending = generateDeterministicTransactionKeys(tx.getTransactionInputsHash(), account.viewSecretKey, deterministic_tx_keys)
+      && deterministic_tx_keys.publicKey == txPubKey;
+
+    if (spending) {
+      m_logger(WARNING, BRIGHT_YELLOW) << "Spending in tx " << Common::podToHex(tx.getTransactionHash());
+    }
+  }
+
   for (auto idx : outputs) {
 
     if (idx >= tx.getOutputCount()) {
@@ -462,7 +472,7 @@ std::error_code TransfersConsumer::createTransfers(
         if (it == transactions_hash_seen.end()) {
           std::unordered_set<Crypto::PublicKey>::iterator key_it = public_keys_seen.find(key);
           if (key_it != public_keys_seen.end()) {
-			  m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": duplicate multisignature output key is found";
+            m_logger(ERROR, BRIGHT_RED) << "Failed to process transaction " << Common::podToHex(txHash) << ": duplicate multisignature output key is found";
             return std::error_code();
           }
           if (std::find(temp_keys.begin(), temp_keys.end(), key) != temp_keys.end()) {

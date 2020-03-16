@@ -19,11 +19,14 @@
 #include "CryptoNoteFormatUtils.h"
 
 #include <set>
+
 #include <Logging/LoggerRef.h>
+#include <Common/BinaryArray.hpp>
 #include <Common/Varint.h>
 
 #include "Serialization/BinaryOutputStreamSerializer.h"
 #include "Serialization/BinaryInputStreamSerializer.h"
+#include "CryptoNoteSerialization.h"
 
 #include "Account.h"
 #include "CryptoNoteBasicImpl.h"
@@ -114,6 +117,19 @@ uint64_t get_tx_fee(const Transaction& tx) {
   return r;
 }
 
+bool generateDeterministicTransactionKeys(const Crypto::Hash& inputsHash, const Crypto::SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  BinaryArray ba;
+  Common::append(ba, std::begin(viewSecretKey.data), std::end(viewSecretKey.data));
+  Common::append(ba, std::begin(inputsHash.data), std::end(inputsHash.data));
+
+  hash_to_scalar(ba.data(), ba.size(), generatedKeys.secretKey);
+  return Crypto::secret_key_to_public_key(generatedKeys.secretKey, generatedKeys.publicKey);
+}
+
+bool generateDeterministicTransactionKeys(const Transaction& tx, const SecretKey& viewSecretKey, KeyPair& generatedKeys) {
+  Crypto::Hash inputsHash = getObjectHash(tx.inputs);
+  return generateDeterministicTransactionKeys(inputsHash, viewSecretKey, generatedKeys);
+}
 
 bool constructTransaction(
   const AccountKeys& sender_account_keys,
@@ -134,10 +150,6 @@ bool constructTransaction(
   tx.unlockTime = unlock_time;
 
   tx.extra = extra;
-  KeyPair txkey = generateKeyPair();
-  addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
-
-  tx_key = txkey.secretKey;
 
   struct input_generation_context_data {
     KeyPair in_ephemeral;
@@ -181,6 +193,17 @@ bool constructTransaction(
     input_to_key.outputIndexes = absolute_output_offsets_to_relative(input_to_key.outputIndexes);
     tx.inputs.push_back(input_to_key);
   }
+
+  KeyPair txkey;
+  if (!generateDeterministicTransactionKeys(getObjectHash(tx.inputs), sender_account_keys.viewSecretKey, txkey)) {
+    logger(ERROR) << "Couldn't generate deterministic transaction keys";
+    return false;
+  }
+
+  addTransactionPublicKeyToExtra(tx.extra, txkey.publicKey);
+
+  tx_key = txkey.secretKey;
+
 
   // "Shuffle" outs
   std::vector<TransactionDestinationEntry> shuffled_dsts(destinations);
