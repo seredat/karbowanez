@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -52,8 +53,6 @@ public:
   virtual uint64_t getWhitePeerlistSize() const { return 0; }
   virtual uint64_t getGreyPeerlistSize() const { return 0; }
   virtual std::string getNodeVersion() const { return ""; }
-
-  virtual void getFeeAddress() override { }
 
   virtual CryptoNote::BlockHeaderInfo getLastLocalBlockHeaderInfo() const override { return CryptoNote::BlockHeaderInfo(); }
 
@@ -110,7 +109,7 @@ public:
   virtual void getConnections(std::vector<CryptoNote::p2pConnection>& connections, const Callback& callback) override { }
 
   virtual std::string feeAddress() const override { return std::string(); }
-
+  virtual uint64_t feeAmount() const override { return 0; }
 };
 
 

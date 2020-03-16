@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -73,9 +73,8 @@ public:
   virtual uint64_t getWhitePeerlistSize() const override;
   virtual uint64_t getGreyPeerlistSize() const override;
   virtual std::string getNodeVersion() const override;
-
-  virtual void getFeeAddress() override;
-  virtual std::string feeAddress() const override;
+  virtual std::string feeAddress() const override { return std::string(); }
+  virtual uint64_t feeAmount() const override { return 0; }
 
   virtual void getNewBlocks(std::vector<Crypto::Hash>&& knownBlockIds, std::vector<CryptoNote::block_complete_entry>& newBlocks, uint32_t& startHeight, const Callback& callback) override;
   virtual void getTransactionOutsGlobalIndices(const Crypto::Hash& transactionHash, std::vector<uint32_t>& outsGlobalIndices, const Callback& callback) override;

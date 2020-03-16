@@ -55,7 +55,6 @@
 #include <System/Dispatcher.h>
 #include <System/Ipv4Address.h>
 
-std::string remote_fee_address;
 namespace{
 	Tools::PasswordContainer pwd_container;
 }
@@ -76,7 +75,6 @@ namespace CryptoNote
 
     bool process_command(const std::vector<std::string> &args);
     std::string get_commands_str();
-    std::string getFeeAddress();
 
     const CryptoNote::Currency& currency() const { return m_currency; }
 

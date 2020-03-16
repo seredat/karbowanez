@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -431,15 +431,6 @@ uint64_t InProcessNode::getLastLocalBlockTimestamp() const {
 uint64_t InProcessNode::getMinimalFee() const {
   std::unique_lock<std::mutex> lock(mutex);
   return core.getMinimalFee();
-}
-
-void InProcessNode::getFeeAddress() {
-  // Do nothing
-  return;
-}
-
-std::string InProcessNode::feeAddress() const { 
-  return std::string();
 }
 
 uint64_t InProcessNode::getNextDifficulty() const {

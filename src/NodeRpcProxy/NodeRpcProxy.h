@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -72,7 +72,6 @@ public:
   virtual uint64_t getAlreadyGeneratedCoins() const override;
   virtual uint32_t getNodeHeight() const override;
   virtual BlockHeaderInfo getLastLocalBlockHeaderInfo() const override;
-  virtual void getFeeAddress() override;
   virtual uint64_t getTransactionsCount() const override;
   virtual uint64_t getTransactionsPoolSize() const override;
   virtual uint64_t getAltBlocksCount() const override;
@@ -103,6 +102,7 @@ public:
   virtual void getConnections(std::vector<p2pConnection>& connections, const Callback& callback) override;
 
   virtual std::string feeAddress() const override;
+  virtual uint64_t feeAmount() const override;
 
   unsigned int rpcTimeout() const { return m_rpcTimeout; }
   void rpcTimeout(unsigned int val) { m_rpcTimeout = val; }
@@ -121,6 +121,7 @@ private:
   bool updatePoolStatus();
   void updatePeerCount(size_t peerCount);
   void updatePoolState(const std::vector<std::unique_ptr<ITransactionReader>>& addedTxs, const std::vector<Crypto::Hash>& deletedTxsIds);
+  void getFeeAddress();
 
   std::error_code doRelayTransaction(const CryptoNote::Transaction& transaction);
   std::error_code doGetRandomOutsByAmounts(std::vector<uint64_t>& amounts, uint64_t outsCount,
@@ -196,6 +197,8 @@ private:
 
   bool m_connected;
   std::string m_fee_address;
+  uint64_t m_fee_amount = 0;
+
 };
 
 }

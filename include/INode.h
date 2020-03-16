@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -155,8 +156,8 @@ public:
   virtual uint64_t getGreyPeerlistSize() const = 0;
   virtual std::string getNodeVersion() const = 0;
 
-  virtual void getFeeAddress() = 0;
   virtual std::string feeAddress() const = 0;
+  virtual uint64_t feeAmount() const = 0;
 
   virtual void relayTransaction(const Transaction& transaction, const Callback& callback) = 0;
   virtual void getRandomOutsByAmounts(std::vector<uint64_t>&& amounts, uint64_t outsCount, std::vector<CryptoNote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount>& result, const Callback& callback) = 0;

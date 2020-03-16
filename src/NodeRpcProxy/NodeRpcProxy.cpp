@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2019, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -178,7 +178,7 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
-	getFeeAddress();
+    getFeeAddress(); // Get public node's fee info
 
     initialized_callback(std::error_code());
 
@@ -341,12 +341,17 @@ void NodeRpcProxy::getFeeAddress() {
     return;
   }
   m_fee_address = iresp.fee_address;
+  m_fee_amount = iresp.fee_amount;
 
   return;
 }
 
 std::string NodeRpcProxy::feeAddress() const {
   return m_fee_address;
+}
+
+uint64_t NodeRpcProxy::feeAmount() const {
+  return m_fee_amount;
 }
 
 std::vector<Crypto::Hash> NodeRpcProxy::getKnownTxsVector() const {

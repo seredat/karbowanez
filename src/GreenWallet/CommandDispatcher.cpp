@@ -45,7 +45,7 @@ bool handleCommand(const std::string command,
     }
     else if (command == "transfer")
     {
-        transfer(walletInfo, node.getLastKnownBlockHeight(), false, node.feeAddress());
+        transfer(walletInfo, node.getLastKnownBlockHeight(), false, node.feeAddress(), node.feeAmount());
     }
     /* Advanced commands */
     else if (command == "ab_add")
@@ -63,7 +63,7 @@ bool handleCommand(const std::string command,
     else if (command == "ab_send")
     {
         sendFromAddressBook(walletInfo, node.getLastKnownBlockHeight(),
-                            node.feeAddress());
+                            node.feeAddress(), node.feeAmount());
     }
     else if (command == "change_password")
     {

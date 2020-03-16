@@ -296,7 +296,7 @@ void splitTx(CryptoNote::WalletGreen &wallet,
     }
 }
 
-void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool sendAll, std::string nodeAddress)
+void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool sendAll, std::string nodeAddress, uint64_t nodeFee)
 {
     std::cout << InformationMsg("Note: You can type cancel at any time to "
                                 "cancel the transaction")
@@ -325,7 +325,6 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 	/* Make sure we set this later if we're sending everything by deducting
 	   the fee from full balance */
 	uint64_t amount = 0;
-	uint64_t nodeFee = 0;
 
 	uint64_t mixin = WalletConfig::defaultMixin;
 
@@ -341,8 +340,10 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 		}
 		amount = maybeAmount.x;
 
-		if (!nodeAddress.empty())
-			nodeFee = calculateNodeFee(amount);
+    if (!nodeAddress.empty() && nodeFee == 0)
+      nodeFee = calculateNodeFee(amount);
+    else if (!nodeAddress.empty() && nodeFee != 0)
+      nodeFee = std::min<uint64_t>(nodeFee, (uint64_t)CryptoNote::parameters::COIN);
 
 		switch (doWeHaveEnoughBalance(amount, WalletConfig::defaultFee,
 			walletInfo, height, nodeFee))
@@ -445,13 +446,6 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
     const std::string extra = maybeExtra.x;
 
     doTransfer(address, amount, fee, extra, walletInfo, height, mixin, nodeAddress, nodeFee);
-}
-
-uint64_t calculateNodeFee(uint64_t amount) {
-	uint64_t node_fee = static_cast<int64_t>(amount * 0.0025);
-	if (node_fee > (uint64_t)10000000000000)
-		node_fee = (uint64_t)10000000000000;
-	return node_fee;
 }
 
 BalanceInfo doWeHaveEnoughBalance(uint64_t amount, uint64_t fee,

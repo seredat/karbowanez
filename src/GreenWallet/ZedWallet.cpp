@@ -105,13 +105,17 @@ int main(int argc, char **argv)
 	  for using that node to send transactions.
 	*/
 	if (!node->feeAddress().empty()) {
-		std::stringstream feemsg;
+		
+    uint64_t nodeFee = node->feeAmount();
+
+    std::stringstream feemsg;
 
 		feemsg << std::endl << "You have connected to a node that charges " <<
 			"a fee to send transactions." << std::endl << std::endl
-			<< "The fee for sending transactions is 0.25% of transaction amount, " <<
-			"but no more than " << formatAmount(10000000000000) << "KRB." 
-			<< std::endl << std::endl <<
+			<< "The fee for sending transactions is " <<
+      (nodeFee == 0 ? "0.25% of transaction amount, but no more than " + 
+        formatAmount(CryptoNote::parameters::COIN) : formatAmount(nodeFee)) <<
+			std::endl << std::endl <<
 			"If you don't want to pay the node fee, please " <<
 			"relaunch " << WalletConfig::walletName <<
 			" and run your own node." <<
