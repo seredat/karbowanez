@@ -179,8 +179,6 @@ void NodeRpcProxy::workerThread(const INode::Callback& initialized_callback) {
       m_cv_initialized.notify_all();
     }
 
-    getFeeAddress(); // Get public node's fee info
-
     initialized_callback(std::error_code());
 
     contextGroup.spawn([this]() {
@@ -213,6 +211,7 @@ void NodeRpcProxy::updateNodeStatus() {
     updateBlockchainStatus();
     updateBlockchain = !updatePoolStatus();
   }
+  getFeeAddress(); // Get public node's fee info
 }
 
 bool NodeRpcProxy::updatePoolStatus() {
