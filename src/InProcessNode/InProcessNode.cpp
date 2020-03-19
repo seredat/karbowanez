@@ -354,6 +354,7 @@ std::error_code InProcessNode::doRelayTransaction(const CryptoNote::Transaction&
 
     CryptoNote::NOTIFY_NEW_TRANSACTIONS::request r;
     r.txs.push_back(asString(transactionBinaryArray));
+    r.stem = true;
     core.get_protocol()->relay_transactions(r);
   } catch (std::system_error& e) {
     return e.code();

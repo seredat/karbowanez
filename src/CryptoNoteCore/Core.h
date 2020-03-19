@@ -110,6 +110,7 @@ namespace CryptoNote {
      static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);
 
      bool have_block(const Crypto::Hash& id) override;
+     bool haveTransaction(const Crypto::Hash& id) override;
      std::vector<Crypto::Hash> buildSparseChain() override;
      std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) override;
      void on_synchronized() override;

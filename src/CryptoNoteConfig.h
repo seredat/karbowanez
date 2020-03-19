@@ -73,6 +73,11 @@ const uint32_t MIN_TX_MIXIN_V1_HEIGHT                        = 216245;
 const uint32_t MIN_TX_MIXIN_V2_HEIGHT                        = 216394;
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
 
+const size_t   DANDELION_EPOCH                               = 600;
+const size_t   DANDELION_STEMS                               = 2;
+const size_t   DANDELION_STEM_EMBARGO                        = 173;
+const uint8_t  DANDELION_STEM_TX_PROPAGATION_PROBABILITY     = 90;
+
 const size_t   DIFFICULTY_WINDOW                             = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY; // blocks
 const size_t   DIFFICULTY_WINDOW_V2                          = 17;  // blocks
 const size_t   DIFFICULTY_WINDOW_V3                          = 60;  // blocks
@@ -147,7 +152,9 @@ const size_t   P2P_LOCAL_GRAY_PEERLIST_LIMIT                 =  5000;
 // and the minimum version for communication between nodes
 const uint8_t  P2P_VERSION_1                                 = 1;
 const uint8_t  P2P_VERSION_2                                 = 2;
-const uint8_t  P2P_CURRENT_VERSION                           = 3;
+const uint8_t  P2P_VERSION_3                                 = 3;
+const uint8_t  P2P_VERSION_4                                 = 4;
+const uint8_t  P2P_CURRENT_VERSION                           = P2P_VERSION_4;
 const uint8_t  P2P_MINIMUM_VERSION                           = 1;
 
 // This defines the number of versions ahead we must see peers before

@@ -60,6 +60,7 @@ public:
   virtual bool removeObserver(ICoreObserver* observer) = 0;
 
   virtual bool have_block(const Crypto::Hash& id) = 0;
+  virtual bool haveTransaction(const Crypto::Hash& id) = 0;
   virtual std::vector<Crypto::Hash> buildSparseChain() = 0;
   virtual std::vector<Crypto::Hash> buildSparseChain(const Crypto::Hash& startBlockId) = 0;
   virtual bool get_stat_info(CryptoNote::core_stat_info& st_inf) = 0;

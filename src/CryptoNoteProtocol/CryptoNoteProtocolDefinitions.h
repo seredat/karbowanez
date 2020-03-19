@@ -108,10 +108,12 @@ namespace CryptoNote
   /************************************************************************/
   struct NOTIFY_NEW_TRANSACTIONS_request
   {
+    bool stem = false;
     std::vector<std::string> txs;
 
     void serialize(ISerializer& s) {
-      KV_MEMBER(txs);
+      KV_MEMBER(stem)
+      KV_MEMBER(txs)
     }
 
   };
