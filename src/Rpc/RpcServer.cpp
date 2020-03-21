@@ -1473,25 +1473,15 @@ bool RpcServer::on_check_transaction_proof(const COMMAND_RPC_CHECK_TRANSACTION_P
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Failed to parse address " + req.destination_address + '.' };
 	}
 	// parse pubkey r*A & signature
-	const size_t header_len = strlen("ProofV1");
-	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "ProofV1") {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature header check error" };
+	std::string decoded_data;
+	if (!Tools::Base58::decode_addr(req.signature, CryptoNote::parameters::CRYPTONOTE_TX_PROOF_BASE58_PREFIX, decoded_data)) {
+		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Transaction proof decoding error" };
 	}
 	Crypto::PublicKey rA;
 	Crypto::Signature sig;
-	const size_t rA_len = Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))).size();
-	const size_t sig_len = Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature))).size();
-	std::string rA_decoded;
-	std::string sig_decoded;
-	if (!Tools::Base58::decode(req.signature.substr(header_len, rA_len), rA_decoded)) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
-	}
-	if (!Tools::Base58::decode(req.signature.substr(header_len + rA_len, sig_len), sig_decoded)) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
-	}
-	if (sizeof(Crypto::PublicKey) != rA_decoded.size() || sizeof(Crypto::Signature) != sig_decoded.size()) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Signature decoding error" };
-	}
+	std::string rA_decoded = decoded_data.substr(0, sizeof(Crypto::PublicKey));
+	std::string sig_decoded = decoded_data.substr(sizeof(Crypto::PublicKey), sizeof(Crypto::Signature));
+
 	memcpy(&rA, rA_decoded.data(), sizeof(Crypto::PublicKey));
 	memcpy(&sig, sig_decoded.data(), sizeof(Crypto::Signature));
 
