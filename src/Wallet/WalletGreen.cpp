@@ -2848,90 +2848,13 @@ std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::str
   keys.viewSecretKey = m_viewSecretKey;
   keys.address = { wallets[0].wallet->spendPublicKey, m_viewPublicKey };
 
-  // compute signature prefix hash
-  std::string prefix_data = message;
-  prefix_data.append((const char*)&keys.address, sizeof(CryptoNote::AccountPublicAddress));
-
-  std::vector<Crypto::KeyImage> kimages;
-  CryptoNote::KeyPair ephemeral;
-
-  for (size_t i = 0; i < selectedTransfers.size(); ++i) {
-    // have to repeat this to get key image as we don't store m_key_image
-    const TransactionOutputInformation &td = selectedTransfers[i];
-
-    // derive ephemeral secret key
-    Crypto::KeyImage ki;
-    const bool r = CryptoNote::generate_key_image_helper(keys, td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
-    if (!r) {
-      throw std::runtime_error("Failed to generate key image");
-    }
-    // now we can insert key image
-    prefix_data.append((const char*)&ki, sizeof(Crypto::PublicKey));
-    kimages.push_back(ki);
+  std::string reserveProof = "";
+  bool r = CryptoNote::getReserveProof(selectedTransfers, keys, reserve, message, reserveProof, m_logger.getLogger());
+  if (!r) {
+    throw std::runtime_error("Failed to get reserve proof");
   }
 
-  Crypto::Hash prefix_hash;
-  Crypto::cn_fast_hash(prefix_data.data(), prefix_data.size(), prefix_hash);
-
-  // generate proof entries
-  std::vector<reserve_proof_entry> proofs(selectedTransfers.size());
-
-  for (size_t i = 0; i < selectedTransfers.size(); ++i) {
-    const TransactionOutputInformation &td = selectedTransfers[i];
-    reserve_proof_entry& proof = proofs[i];
-    proof.key_image = kimages[i];
-    proof.transaction_id = td.transactionHash;
-    proof.index_in_transaction = td.outputInTransaction;
-
-    auto txPubKey = td.transactionPublicKey;
-
-    for (int i = 0; i < 2; ++i) {
-      Crypto::KeyImage sk = Crypto::scalarmultKey(*reinterpret_cast<const Crypto::KeyImage*>(&txPubKey), *reinterpret_cast<const Crypto::KeyImage*>(&m_viewSecretKey));
-      proof.shared_secret = *reinterpret_cast<const Crypto::PublicKey *>(&sk);
-
-      Crypto::KeyDerivation derivation;
-      if (!Crypto::generate_key_derivation(proof.shared_secret, m_viewSecretKey, derivation)) {
-        throw std::runtime_error("Failed to generate key derivation");
-      }
-    }
-
-    // generate signature for shared secret
-    Crypto::generate_tx_proof(prefix_hash, keys.address.viewPublicKey, txPubKey, proof.shared_secret, m_viewSecretKey, proof.shared_secret_sig);
-
-    // derive ephemeral secret key
-    Crypto::KeyImage ki;
-    CryptoNote::KeyPair ephemeral;
-
-    const bool r = CryptoNote::generate_key_image_helper(keys, td.transactionPublicKey, td.outputInTransaction, ephemeral, ki);
-    if (!r) {
-      throw std::runtime_error("Failed to generate key image");
-    }
-
-    if (ephemeral.publicKey != td.outputKey) {
-      throw std::runtime_error("Derived public key doesn't agree with the stored one");
-    }
-
-    // generate signature for key image
-    const std::vector<const Crypto::PublicKey *>& pubs = { &ephemeral.publicKey };
-
-    Crypto::generate_ring_signature(prefix_hash, proof.key_image, &pubs[0], 1, ephemeral.secretKey, 0, &proof.key_image_sig);
-  }
-
-  // generate signature for the spend key that received those outputs
-  Crypto::Signature signature;
-  Crypto::generate_signature(prefix_hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
-
-  // serialize & encode
-  reserve_proof p;
-  p.proofs.assign(proofs.begin(), proofs.end());
-  memcpy(&p.signature, &signature, sizeof(signature));
-
-  BinaryArray ba = toBinaryArray(p);
-  std::string ret = Common::toHex(ba);
-
-  ret = "ReserveProofV1" + Tools::Base58::encode(ret);
-
-  return ret;
+  return reserveProof;
 }
 
 void WalletGreen::start() {
