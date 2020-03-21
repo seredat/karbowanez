@@ -1474,7 +1474,8 @@ bool RpcServer::on_check_transaction_proof(const COMMAND_RPC_CHECK_TRANSACTION_P
 	}
 	// parse pubkey r*A & signature
 	std::string decoded_data;
-	if (!Tools::Base58::decode_addr(req.signature, CryptoNote::parameters::CRYPTONOTE_TX_PROOF_BASE58_PREFIX, decoded_data)) {
+	uint64_t prefix;
+	if (!Tools::Base58::decode_addr(req.signature, prefix, decoded_data) || prefix != CryptoNote::parameters::CRYPTONOTE_TX_PROOF_BASE58_PREFIX) {
 		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Transaction proof decoding error" };
 	}
 	Crypto::PublicKey rA;
@@ -1570,24 +1571,15 @@ bool RpcServer::on_check_reserve_proof(const COMMAND_RPC_CHECK_RESERVE_PROOF::re
 	}
 	
 	// parse sugnature
-	const char header[] = "ReserveProofV1";
-	const size_t header_len = strlen(header);
-	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != header) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Signature header check error" };
+	std::string decoded_data;
+	uint64_t prefix;
+	if (!Tools::Base58::decode_addr(req.signature, prefix, decoded_data) || prefix != CryptoNote::parameters::CRYPTONOTE_RESERVE_PROOF_BASE58_PREFIX) {
+		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM, "Reserve proof decoding error" };
 	}
-
-	std::string sig_decoded;
-	if (!Tools::Base58::decode(req.signature.substr(header_len), sig_decoded)) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Signature decoding error" };
-	}
-
-	BinaryArray ba;
-	if (!Common::fromHex(sig_decoded, ba)) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Proof decoding error" };
-	}
+	BinaryArray ba(decoded_data.begin(), decoded_data.end());
 	reserve_proof proof_decoded;
 	if (!fromBinaryArray(proof_decoded, ba)) {
-		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "BinaryArray decoding error" };
+		throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Reserve proof BinaryArray decoding error" };
 	}
 
 	std::vector<reserve_proof_entry>& proofs = proof_decoded.proofs;

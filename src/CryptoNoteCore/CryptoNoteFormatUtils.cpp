@@ -713,9 +713,9 @@ bool getReserveProof(const std::vector<TransactionOutputInformation>& selectedTr
   memcpy(&p.signature, &signature, sizeof(signature));
 
   BinaryArray ba = toBinaryArray(p);
-  std::string ret = Common::toHex(ba);
+  std::string ret(ba.begin(), ba.end());
 
-  reserveProof = "ReserveProofV1" + Tools::Base58::encode(ret);
+  reserveProof = Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_RESERVE_PROOF_BASE58_PREFIX, ret);
 
   return true;
 }
