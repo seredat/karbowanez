@@ -1021,7 +1021,7 @@ bool WalletLegacy::get_tx_key(Crypto::Hash& txid, Crypto::SecretKey& txSecretKey
 }
 
 bool WalletLegacy::getTxProof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str) {
-  return get_tx_proof(txid, address, tx_key, sig_str, m_logger.getLogger());
+  return getTransactionProof(txid, address, tx_key, sig_str, m_logger.getLogger());
 }
 
 bool compareTransactionOutputInformationByAmount(const TransactionOutputInformation &a, const TransactionOutputInformation &b) {

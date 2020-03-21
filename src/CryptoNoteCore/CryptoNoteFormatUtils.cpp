@@ -604,24 +604,24 @@ bool is_valid_decomposed_amount(uint64_t amount) {
   return true;
 }
 
-bool get_tx_proof(Crypto::Hash& txid, CryptoNote::AccountPublicAddress& address, Crypto::SecretKey& tx_key, std::string& sig_str, Logging::ILogger& log) {
-  LoggerRef logger(log, "construct_tx"); 
-  Crypto::KeyImage p = *reinterpret_cast<Crypto::KeyImage*>(&address.viewPublicKey);
-  Crypto::KeyImage k = *reinterpret_cast<Crypto::KeyImage*>(&tx_key);
+bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& transactionKey, std::string& transactionProof, Logging::ILogger& log) {
+  LoggerRef logger(log, "get_tx_proof"); 
+  Crypto::KeyImage p = *reinterpret_cast<const Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
+  Crypto::KeyImage k = *reinterpret_cast<const Crypto::KeyImage*>(&transactionKey);
   Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
   Crypto::PublicKey R;
   Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
-  Crypto::secret_key_to_public_key(tx_key, R);
+  Crypto::secret_key_to_public_key(transactionKey, R);
   Crypto::Signature sig;
+
   try {
-    Crypto::generate_tx_proof(txid, R, address.viewPublicKey, rA, tx_key, sig);
-  }
-  catch (const std::runtime_error &e) {
-    logger(ERROR) << "Proof generation error: " << *e.what();
+    Crypto::generate_tx_proof(transactionHash, R, destinationAddress.viewPublicKey, rA, transactionKey, sig);
+  } catch (const std::runtime_error &e) {
+    logger(ERROR, BRIGHT_RED) << "Proof generation error: " << *e.what();
     return false;
   }
 
-  sig_str = std::string("ProofV1") +
+  transactionProof = std::string("ProofV1") +
     Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
     Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
 

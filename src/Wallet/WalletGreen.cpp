@@ -2801,27 +2801,7 @@ Crypto::SecretKey WalletGreen::getTransactionSecretKey(Crypto::Hash& transaction
 }
 
 bool WalletGreen::getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::AccountPublicAddress& destinationAddress, const Crypto::SecretKey& txKey, std::string& transactionProof) {
-  Crypto::KeyImage p = *reinterpret_cast<const Crypto::KeyImage*>(&destinationAddress.viewPublicKey);
-  Crypto::KeyImage k = *reinterpret_cast<const Crypto::KeyImage*>(&txKey);
-  Crypto::KeyImage pk = Crypto::scalarmultKey(p, k);
-  Crypto::PublicKey R;
-  Crypto::PublicKey rA = reinterpret_cast<const PublicKey&>(pk);
-  Crypto::secret_key_to_public_key(txKey, R);
-  Crypto::Signature sig;
-
-  try {
-    Crypto::generate_tx_proof(transactionHash, R, destinationAddress.viewPublicKey, rA, txKey, sig);
-  }
-  catch (const std::runtime_error &e) {
-    m_logger(ERROR, BRIGHT_RED) << "Proof generation error: " << *e.what();
-    return false;
-  }
-
-  transactionProof = std::string("ProofV1") +
-    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
-    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
-
-  return true;
+  return CryptoNote::getTransactionProof(transactionHash, destinationAddress, txKey, transactionProof, m_logger.getLogger());
 }
 
 std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) {
