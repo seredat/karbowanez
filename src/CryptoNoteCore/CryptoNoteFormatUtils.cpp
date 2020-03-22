@@ -622,9 +622,7 @@ bool getTransactionProof(const Crypto::Hash& transactionHash, const CryptoNote::
     return false;
   }
 
-  transactionProof = std::string("ProofV1") +
-    Tools::Base58::encode(std::string((const char *)&rA, sizeof(Crypto::PublicKey))) +
-    Tools::Base58::encode(std::string((const char *)&sig, sizeof(Crypto::Signature)));
+  transactionProof = Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_TX_PROOF_BASE58_PREFIX, std::string((const char *)&rA, sizeof(Crypto::PublicKey)) + std::string((const char *)&sig, sizeof(Crypto::Signature)));
 
   return true;
 }
@@ -715,9 +713,9 @@ bool getReserveProof(const std::vector<TransactionOutputInformation>& selectedTr
   memcpy(&p.signature, &signature, sizeof(signature));
 
   BinaryArray ba = toBinaryArray(p);
-  std::string ret = Common::toHex(ba);
+  std::string ret(ba.begin(), ba.end());
 
-  reserveProof = "ReserveProofV1" + Tools::Base58::encode(ret);
+  reserveProof = Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_RESERVE_PROOF_BASE58_PREFIX, ret);
 
   return true;
 }
