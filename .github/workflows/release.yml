@@ -111,10 +111,13 @@ jobs:
           cd "$build_folder"
           cmake -D ARCH=default -D CMAKE_BUILD_TYPE=Release -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -D BOOST_IGNORE_SYSTEM_PATHS_DEFAULT=ON -D BOOST_ROOT=/usr ../..
           make
+          cd src
           exeFiles=()
-          for f in src/*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
+          for f in ./*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
           strip "${exeFiles[@]}"
           tar -czf "$release_name".tar.gz "${exeFiles[@]}"
+          mv "$release_name".tar.gz ../
+          cd ..
           sha256=$(shasum -a 256 "$release_name".tar.gz | awk '{print toupper($1)}')
           asset_path="./$build_folder/$release_name.tar.gz"
           echo "::set-output name=sha256::${sha256}"
@@ -153,10 +156,13 @@ jobs:
           cd "$build_folder"
           cmake -D ARCH=default -D CMAKE_BUILD_TYPE=Release -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -D BOOST_IGNORE_SYSTEM_PATHS_DEFAULT=ON -D BOOST_ROOT=/usr ../..
           make
+          cd src
           exeFiles=()
-          for f in src/*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
+          for f in ./*; do [[ -x $f && -f $f ]] && exeFiles+=( "$f" ); done
           strip "${exeFiles[@]}"
           tar -czf "$release_name".tar.gz "${exeFiles[@]}"
+          mv "$release_name".tar.gz ../
+          cd ..
           sha256=$(shasum -a 256 "$release_name".tar.gz | awk '{print toupper($1)}')
           asset_path="./$build_folder/$release_name.tar.gz"
           echo "::set-output name=sha256::${sha256}"
