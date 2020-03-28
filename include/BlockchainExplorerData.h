@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -90,33 +91,34 @@ struct TransactionExtraDetails {
 };
 
 struct transactionOutputDetails2 {
-	TransactionOutput output;
-	uint64_t globalIndex;
+  TransactionOutput output;
+  uint64_t globalIndex;
 };
 
 struct BaseInputDetails {
-	BaseInput input;
-	uint64_t amount;
+  BaseInput input;
+  uint64_t amount;
 };
 
 struct KeyInputDetails {
-	KeyInput input;
-	uint64_t mixin;
-	std::vector<TransactionOutputReferenceDetails> outputs;
+  KeyInput input;
+  uint64_t mixin;
+  std::vector<TransactionOutputReferenceDetails> outputs;
 };
 
 struct MultisignatureInputDetails {
-	MultisignatureInput input;
-	TransactionOutputReferenceDetails output;
+  MultisignatureInput input;
+  TransactionOutputReferenceDetails output;
 };
 
 typedef boost::variant<BaseInputDetails, KeyInputDetails, MultisignatureInputDetails> transactionInputDetails2;
 
 struct TransactionExtraDetails2 {
-	std::vector<size_t> padding;
-	Crypto::PublicKey publicKey;
-	BinaryArray nonce;
-	BinaryArray raw;
+  std::vector<size_t> padding;
+  Crypto::PublicKey publicKey;
+  BinaryArray nonce;
+  BinaryArray raw;
+  size_t size = 0;
 };
 
 struct TransactionDetails {
