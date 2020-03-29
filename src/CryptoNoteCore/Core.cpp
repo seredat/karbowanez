@@ -318,6 +318,13 @@ bool Core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
     return false;
   }
 
+  // tx extra size in bytes, uint8_t is a one byte
+  uint64_t extraSize = tx.extra.size();
+
+  // It is possible to just limit max tx extra size e.g. to prevent abuse
+  // (blockchain bloat) or charge fee per byte above min free size of extra,
+  // 0.1 Kb is enough to contain data of ordinary tx (payment id, nonce etc.)
+
   Crypto::Hash h = NULL_HASH;
   getObjectHash(tx, h, blobSize);
   const uint64_t fee = inputs_amount - outputs_amount;
