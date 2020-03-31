@@ -425,6 +425,12 @@ namespace CryptoNote {
     return std::min<uint64_t>(CryptoNote::parameters::MAXIMUM_FEE, minimumFee);
   }
 
+  // All that exceeds 100 bytes is charged per byte,
+  // the cost of one byte is 1/100 of minimal fee
+  uint64_t Currency::getFeePerByte(const uint64_t txExtraSize, const uint64_t minFee) const {
+    return txExtraSize > 100 ? minFee / 100 * (txExtraSize - 100) : 0;
+  }
+
 	uint64_t Currency::roundUpMinFee(uint64_t minimalFee, int digits) const {
 		uint64_t ret(0);
 		std::string minFeeString = formatAmount(minimalFee);

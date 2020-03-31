@@ -319,11 +319,11 @@ bool Core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
   }
 
   // tx extra size in bytes, uint8_t is a one byte
-  uint64_t extraSize = tx.extra.size();
+  uint64_t extraSize = (uint64_t)tx.extra.size();
 
-  // It is possible to just limit max tx extra size e.g. to prevent abuse
-  // (blockchain bloat) or charge fee per byte above min free size of extra,
-  // 0.1 Kb is enough to contain data of ordinary tx (payment id, nonce etc.)
+  // To prevent blockchain bloat it's possible to just limit max tx extra size
+  // or charge fee per byte for the size exceeding free limit, 100 bytes is
+  // enough to contain data of the ordinary tx (public key, payment id, etc.)
 
   Crypto::Hash h = NULL_HASH;
   getObjectHash(tx, h, blobSize);
@@ -338,6 +338,12 @@ bool Core::check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_
       }
     } else {
       uint64_t min = getMinimalFeeForHeight(height);
+
+      if (height > CryptoNote::parameters::FEE_PER_BYTE_HEIGHT) {
+        uint64_t feePerByte = m_currency.getFeePerByte(extraSize, min);
+        min += feePerByte;
+      }
+
       if (fee < (min - min * 20 / 100)) {
         logger(INFO) << "[Core] Transaction fee is not enough: " << m_currency.formatAmount(fee) << ", minimum fee: " << m_currency.formatAmount(min);
         enough = false;
