@@ -147,44 +147,52 @@ namespace CryptoNote {
 		}
 	}
 
-	bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
-		uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
-		// assert(alreadyGeneratedCoins <= m_moneySupply);
-		assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
+  uint64_t Currency::calculateReward(uint64_t alreadyGeneratedCoins) const {
+    // assert(alreadyGeneratedCoins <= m_moneySupply);
+    assert(m_emissionSpeedFactor > 0 && m_emissionSpeedFactor <= 8 * sizeof(uint64_t));
 
-		// Tail emission
+    uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
 
-		uint64_t baseReward = (m_moneySupply - alreadyGeneratedCoins) >> m_emissionSpeedFactor;
-		if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
-		{
-			// flat rate tail emission reward
-			//baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
+    // Tail emission
+    if (alreadyGeneratedCoins + CryptoNote::parameters::TAIL_EMISSION_REWARD >= m_moneySupply || baseReward < CryptoNote::parameters::TAIL_EMISSION_REWARD)
+    {
+      // flat rate tail emission reward,
+      // inflation slowly diminishing in relation to supply
+      //baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
 
-			// Friedman's k-percent rule
-			// inflation 2% of total coins in circulation
-			const uint64_t blocksInOneYear = CryptoNote::parameters::EXPECTED_NUMBER_OF_BLOCKS_PER_DAY * 365;
-			uint64_t twoPercentOfEmission = static_cast<uint64_t>(static_cast<double>(alreadyGeneratedCoins) / 100.0 * 2.0);
-			baseReward = twoPercentOfEmission / blocksInOneYear;
-		}
+      // Friedman's k-percent rule,
+      // inflation 2% of total coins in circulation per year
+      const uint64_t blocksInOneYear = expectedNumberOfBlocksPerDay() * 365;
+      uint64_t twoPercentOfEmission = static_cast<uint64_t>(static_cast<double>(alreadyGeneratedCoins) / 100.0 * 2.0);
+      baseReward = twoPercentOfEmission / blocksInOneYear;
+    }
 
-		size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
-		medianSize = std::max(medianSize, blockGrantedFullRewardZone);
-		if (currentBlockSize > UINT64_C(2) * medianSize) {
-			logger(DEBUGGING) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
-			return false;
-		}
+    return baseReward;
+  }
 
-		uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
-		uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_2 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
-		if (cryptonoteCoinVersion() == 1) {
-			penalizedFee = getPenalizedAmount(fee, medianSize, currentBlockSize);
-		}
+  bool Currency::getBlockReward(uint8_t blockMajorVersion, size_t medianSize, size_t currentBlockSize, uint64_t alreadyGeneratedCoins,
+    uint64_t fee, uint64_t& reward, int64_t& emissionChange) const {
 
-		emissionChange = penalizedBaseReward - (fee - penalizedFee);
-		reward = penalizedBaseReward + penalizedFee;
+    uint64_t baseReward = calculateReward(alreadyGeneratedCoins);
 
-		return true;
-	}
+    size_t blockGrantedFullRewardZone = blockGrantedFullRewardZoneByBlockVersion(blockMajorVersion);
+    medianSize = std::max(medianSize, blockGrantedFullRewardZone);
+    if (currentBlockSize > UINT64_C(2) * medianSize) {
+      logger(DEBUGGING) << "Block cumulative size is too big: " << currentBlockSize << ", expected less than " << 2 * medianSize;
+      return false;
+    }
+
+    uint64_t penalizedBaseReward = getPenalizedAmount(baseReward, medianSize, currentBlockSize);
+    uint64_t penalizedFee = blockMajorVersion >= BLOCK_MAJOR_VERSION_2 ? getPenalizedAmount(fee, medianSize, currentBlockSize) : fee;
+    if (cryptonoteCoinVersion() == 1) {
+      penalizedFee = getPenalizedAmount(fee, medianSize, currentBlockSize);
+    }
+
+    emissionChange = penalizedBaseReward - (fee - penalizedFee);
+    reward = penalizedBaseReward + penalizedFee;
+
+    return true;
+  }
 
 	size_t Currency::maxBlockCumulativeSize(uint64_t height) const {
 		assert(height <= std::numeric_limits<uint64_t>::max() / m_maxBlockSizeGrowthSpeedNumerator);
