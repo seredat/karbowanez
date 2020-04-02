@@ -159,9 +159,10 @@ namespace CryptoNote {
       // flat rate tail emission reward,
       // inflation slowly diminishing in relation to supply
       //baseReward = CryptoNote::parameters::TAIL_EMISSION_REWARD;
-
+      // changed to
       // Friedman's k-percent rule,
       // inflation 2% of total coins in circulation per year
+      // according to Whitepaper v. 1, p. 16 (with change of 1% to 2%)
       const uint64_t blocksInOneYear = expectedNumberOfBlocksPerDay() * 365;
       uint64_t twoPercentOfEmission = static_cast<uint64_t>(static_cast<double>(alreadyGeneratedCoins) / 100.0 * 2.0);
       baseReward = twoPercentOfEmission / blocksInOneYear;
@@ -396,7 +397,7 @@ namespace CryptoNote {
 		return Common::Format::parseAmount(str, amount);
 	}
 
-  // Copyright (c) 2017-2018 Zawy 
+  // The idea is based on Zawy's post
   // http://zawy1.blogspot.com/2017/12/using-difficulty-to-get-constant-value.html
   // Moore's law application by Sergey Kozlov
   uint64_t Currency::getMinimalFee(uint64_t avgCurrentDifficulty, uint64_t avgCurrentReward, uint64_t avgHistoricDifficulty, uint64_t avgHistoricReward, uint32_t height) const {
