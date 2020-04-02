@@ -767,6 +767,31 @@ difficulty_type Blockchain::getAvgDifficulty(uint32_t height) {
   return m_blocks[std::min<difficulty_type>(height, m_blocks.size())].cumulative_difficulty / std::min<difficulty_type>(height, m_blocks.size());
 }
 
+difficulty_type Blockchain::getSMADifficulty(uint32_t height, size_t window) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+  height = std::min<uint32_t>(height, (uint32_t)m_blocks.size() - 1);
+  if (height <= 1)
+    return 1;
+
+  size_t offset;
+  offset = height - std::min<uint32_t>(height, std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), static_cast<uint32_t>(window)));
+  if (offset == 0) {
+    ++offset;
+  }
+
+  uint64_t cumulDiff = m_blocks[height].cumulative_difficulty - m_blocks[offset].cumulative_difficulty;
+  uint64_t solveTime = m_blocks[height].bl.timestamp - m_blocks[offset].bl.timestamp;
+  uint64_t adjWindow = std::min<uint32_t>(static_cast<uint32_t>(m_blocks.size() - 1), static_cast<uint32_t>(window));
+  uint64_t T         = CryptoNote::parameters::DIFFICULTY_TARGET;
+  uint64_t low, high;
+  low = mul128(cumulDiff, T, &high);
+  if (high != 0) {
+    return 0;
+  }
+
+  return low / (T * adjWindow / 2 + solveTime / 2);
+}
+
 uint64_t Blockchain::getBlockTimestamp(uint32_t height) {
   assert(height < m_blocks.size());
   return m_blocks[height].bl.timestamp;
@@ -793,7 +818,8 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
   }
 
   // calculate average difficulty for ~last month
-  uint64_t avgCurrentDifficulty = getAvgDifficulty(height, window * 7 * 4);
+  // In whitepaper here stands SMA
+  uint64_t avgCurrentSMADifficulty = getSMADifficulty(height, window * 7 * 4);
   // reference trailing average difficulty
   uint64_t avgReferenceDifficulty = m_blocks[height].cumulative_difficulty / height;
   // calculate current base reward
@@ -801,7 +827,7 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
   // reference trailing average reward
   uint64_t avgReferenceReward = m_blocks[height].already_generated_coins / height;
 
-  return m_currency.getMinimalFee(avgCurrentDifficulty, currentReward, avgReferenceDifficulty, avgReferenceReward, height);
+  return m_currency.getMinimalFee(avgCurrentSMADifficulty, currentReward, avgReferenceDifficulty, avgReferenceReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
