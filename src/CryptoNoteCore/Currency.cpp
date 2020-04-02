@@ -409,13 +409,13 @@ namespace CryptoNote {
                                     pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
     minFee = baseFee * static_cast<double>(avgReferenceDifficulty) / currentDifficultyMoore *
              static_cast<double>(currentReward) / static_cast<double>(avgReferenceReward);
-    
+
     // zero test 
     if (minFee == 0 || !std::isfinite(minFee))
       return CryptoNote::parameters::MAXIMUM_FEE;
 
     minimumFee = static_cast<uint64_t>(minFee);
-        
+
     if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
       // Make all insignificant digits zero
       uint64_t i = 1000000000;
