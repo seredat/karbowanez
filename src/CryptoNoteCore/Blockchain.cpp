@@ -792,6 +792,10 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
     ++offset;
   }
 
+  /* Perhaps, in case of POW change, difficulties for calculations here
+   * should be reset and used starting from the fork height.
+   */
+
   // calculate average difficulty for ~last month
   uint64_t avgCurrentDifficulty = getAvgDifficulty(height, window * 7 * 4);
   // reference trailing average difficulty
