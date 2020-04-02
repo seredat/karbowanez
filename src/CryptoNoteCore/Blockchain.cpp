@@ -793,15 +793,15 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
   }
 
   // calculate average difficulty for ~last month
-  uint64_t avgDifficultyCurrent = getAvgDifficulty(height, window * 7 * 4);
-  // historical reference trailing average difficulty
-  uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
-  // calculate average reward for ~last day (base, excluding fees)
-  uint64_t avgRewardCurrent = (m_blocks[height].already_generated_coins - m_blocks[offset].already_generated_coins) / window;
-  // historical reference trailing average reward
-  uint64_t avgRewardHistorical = m_blocks[height].already_generated_coins / height;
+  uint64_t avgCurrentDifficulty = getAvgDifficulty(height, window * 7 * 4);
+  // reference trailing average difficulty
+  uint64_t avgReferenceDifficulty = m_blocks[height].cumulative_difficulty / height;
+  // calculate current base reward
+  uint64_t currentReward = m_currency.calculateReward(m_blocks[height].already_generated_coins);
+  // reference trailing average reward
+  uint64_t avgReferenceReward = m_blocks[height].already_generated_coins / height;
 
-  return m_currency.getMinimalFee(avgDifficultyCurrent, avgRewardCurrent, avgDifficultyHistorical, avgRewardHistorical, height);
+  return m_currency.getMinimalFee(avgCurrentDifficulty, currentReward, avgReferenceDifficulty, avgReferenceReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
