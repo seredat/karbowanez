@@ -416,7 +416,7 @@ namespace CryptoNote {
 
     minimumFee = static_cast<uint64_t>(minFee);
 
-    if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V5) {
+    if (height > CryptoNote::parameters::FEE_PER_BYTE_HEIGHT) {
       // Make all insignificant digits zero
       uint64_t i = 1000000000;
       while (i > 1) {
