@@ -74,6 +74,7 @@ const uint64_t MAX_TX_MIXIN_SIZE                             = MAX_TX_MIXIN_SIZE
 const uint32_t MIN_TX_MIXIN_V1_HEIGHT                        = 216245;
 const uint32_t MIN_TX_MIXIN_V2_HEIGHT                        = 216394;
 const uint32_t FEE_PER_BYTE_HEIGHT                           = 490000;
+const uint64_t MAX_EXTRA_SIZE                                = 1024;
 
 const uint64_t MAX_TRANSACTION_SIZE_LIMIT                    = CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE_CURRENT / 4 - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE;
 
