@@ -1089,19 +1089,19 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
 
   if (!(b.baseTransaction.inputs.size() == 1)) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block has no inputs";
+      << "Coinbase transaction in the block has no inputs";
     return false;
   }
 
   if (!(b.baseTransaction.signatures.empty())) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block shouldn't have signatures";
+      << "Coinbase transaction in the block shouldn't have signatures";
     return false;
   }
 
   if (!(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block has the wrong type";
+      << "Coinbase transaction in the block has the wrong type";
     return false;
   }
 
@@ -1113,14 +1113,14 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
 
   if (!(b.baseTransaction.unlockTime == height + (b.majorVersion < BLOCK_MAJOR_VERSION_5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1()))) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction transaction have wrong unlock time="
+      << "Coinbase transaction has wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
       << height + (b.majorVersion < BLOCK_MAJOR_VERSION_5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1());
     return false;
   }
 
   if (!check_outs_overflow(b.baseTransaction)) {
-    logger(INFO, BRIGHT_RED) << "miner transaction have money overflow in block " << get_block_hash(b);
+    logger(ERROR, BRIGHT_RED) << "The miner transaction has money overflow in block " << get_block_hash(b);
     return false;
   }
 
