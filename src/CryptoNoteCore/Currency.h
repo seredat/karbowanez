@@ -39,7 +39,6 @@ public:
   size_t maxTxSize() const { return m_maxTxSize; }
   uint64_t publicAddressBase58Prefix() const { return m_publicAddressBase58Prefix; }
   size_t minedMoneyUnlockWindow() const { return m_minedMoneyUnlockWindow; }
-  size_t minedMoneyUnlockWindow_v1() const { return m_minedMoneyUnlockWindow_v1; }
   size_t transactionSpendableAge() const { return m_transactionSpendableAge; }
   size_t expectedNumberOfBlocksPerDay() const { return m_expectedNumberOfBlocksPerDay; }
 
@@ -193,7 +192,6 @@ private:
   size_t m_maxTxSize;
   uint64_t m_publicAddressBase58Prefix;
   size_t m_minedMoneyUnlockWindow;
-  size_t m_minedMoneyUnlockWindow_v1;
   size_t m_transactionSpendableAge;
   size_t m_expectedNumberOfBlocksPerDay;
 
@@ -282,7 +280,6 @@ public:
   CurrencyBuilder& maxTxSize(size_t val) { m_currency.m_maxTxSize = val; return *this; }
   CurrencyBuilder& publicAddressBase58Prefix(uint64_t val) { m_currency.m_publicAddressBase58Prefix = val; return *this; }
   CurrencyBuilder& minedMoneyUnlockWindow(size_t val) { m_currency.m_minedMoneyUnlockWindow = val; return *this; }
-  CurrencyBuilder& minedMoneyUnlockWindow_v1(size_t val) { m_currency.m_minedMoneyUnlockWindow_v1 = val; return *this; }
   CurrencyBuilder& transactionSpendableAge(size_t val) { m_currency.m_transactionSpendableAge = val; return *this; }
   CurrencyBuilder& expectedNumberOfBlocksPerDay(size_t val) { m_currency.m_expectedNumberOfBlocksPerDay = val; return *this; }
 
