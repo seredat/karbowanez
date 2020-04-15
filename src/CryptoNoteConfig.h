@@ -69,7 +69,7 @@ const uint64_t MAXIMUM_FEE                                   = UINT64_C(10000000
 const uint64_t DEFAULT_DUST_THRESHOLD                        = UINT64_C(100000000);
 const uint64_t MIN_TX_MIXIN_SIZE                             = 2;
 const uint64_t MAX_TX_MIXIN_SIZE                             = 20;
-const uint32_t MIN_TX_MIXIN_HEIGHT                           = 216394;
+const uint32_t MIN_TX_MIXIN_HEIGHT                           = MINIMUM_FEE_V2_HEIGHT;
 const uint32_t FEE_PER_BYTE_HEIGHT                           = 500000;
 const uint64_t MAX_EXTRA_SIZE                                = 1024;
 
