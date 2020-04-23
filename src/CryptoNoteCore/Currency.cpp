@@ -416,7 +416,7 @@ namespace CryptoNote {
 
     minimumFee = static_cast<uint64_t>(minFee);
 
-    if (height > CryptoNote::parameters::FEE_PER_BYTE_HEIGHT) {
+    if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V4_2) {
       // Make all insignificant digits zero
       uint64_t i = 1000000000;
       while (i > 1) {
@@ -651,7 +651,7 @@ namespace CryptoNote {
 
 		int64_t max_TS, prev_max_TS;
 		prev_max_TS = timestamps[0];
-		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_LWMA3;
+		uint32_t lwma3_height = CryptoNote::parameters::UPGRADE_HEIGHT_V4_1;
 		
 		for (int64_t i = 1; i <= N; i++) {
 			if (height < lwma3_height) { // LWMA-2

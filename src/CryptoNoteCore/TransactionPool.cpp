@@ -425,8 +425,8 @@ namespace CryptoNote {
       }
 
       tx_verification_context tvc = boost::value_initialized<tx_verification_context>();
-      if (!m_core.check_tx_fee(txd.tx, txd.blobSize, tvc, m_core.getCurrentBlockchainHeight())) {
-        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is too small";
+      if (!m_core.check_tx_fee(txd.tx, getObjectHash(txd.tx), txd.blobSize, tvc, m_core.getCurrentBlockchainHeight())) {
+        logger(DEBUGGING) << "Transaction " << txd.id << " not included to block template because fee is insufficient";
         continue;
       }
 

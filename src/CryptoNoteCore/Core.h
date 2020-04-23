@@ -189,15 +189,15 @@ namespace CryptoNote {
      bool load_state_data();
      bool parse_tx_from_blob(Transaction& tx, Crypto::Hash& tx_hash, Crypto::Hash& tx_prefix_hash, const BinaryArray& blob);
 
-     bool check_tx_syntax(const Transaction& tx);
+     bool check_tx_syntax(const Transaction& txc, const Crypto::Hash& txHash);
      //check correct values, amounts and all lightweight checks not related with database
-     bool check_tx_semantic(const Transaction& tx, bool keeped_by_block);
+     bool check_tx_semantic(const Transaction& tx, const Crypto::Hash& txHash, bool keeped_by_block);
      //check if tx already in memory pool or in main blockchain
-     bool check_tx_mixin(const Transaction& tx, uint32_t height);
+     bool check_tx_mixin(const Transaction& tx, const Crypto::Hash& txHash, uint32_t height);
      //check if the mixin is not too large
-     virtual bool check_tx_fee(const Transaction& tx, size_t blobSize, tx_verification_context& tvc, uint32_t height) override;
+     virtual bool check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_t blobSize, tx_verification_context& tvc, uint32_t height) override;
      //check if tx is not sending unmixable outputs
-     bool check_tx_unmixable(const Transaction& tx, uint32_t height);
+     bool check_tx_unmixable(const Transaction& tx, const Crypto::Hash& txHash, uint32_t height);
 
      bool update_miner_block_template();
      bool handle_command_line(const boost::program_options::variables_map& vm);
