@@ -37,7 +37,6 @@ const uint64_t CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX       = 111; // addresses
 const uint64_t CRYPTONOTE_TX_PROOF_BASE58_PREFIX             = 3576968; // (0x369488), starts with "Proof..."
 const uint64_t CRYPTONOTE_RESERVE_PROOF_BASE58_PREFIX        = 44907175188; // (0xa74ad1d14), starts with "RsrvPrf..."
 const size_t   CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW          = 10;
-const size_t   CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1       = EXPECTED_NUMBER_OF_BLOCKS_PER_DAY;
 const size_t   CRYPTONOTE_TX_SPENDABLE_AGE                   = 6;
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT            = DIFFICULTY_TARGET * 7;
 const uint64_t CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1         = DIFFICULTY_TARGET * 3;
@@ -195,7 +194,8 @@ const char* const SEED_NODES[] = {
   "45.32.232.11:32347",
   "46.149.182.151:32347",
   "144.91.94.65:32347",
-  "95.216.195.104:32347"
+  "95.216.195.104:32347",
+  "45.151.175.158:32347"
 };
 
 } // CryptoNote

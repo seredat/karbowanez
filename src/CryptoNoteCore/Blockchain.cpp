@@ -1111,11 +1111,11 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
     return false;
   }
 
-  if (!(b.baseTransaction.unlockTime == height + (b.majorVersion < BLOCK_MAJOR_VERSION_5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1()))) {
+  if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
     logger(ERROR, BRIGHT_RED)
       << "Coinbase transaction has wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
-      << height + (b.majorVersion < BLOCK_MAJOR_VERSION_5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1());
+      << (height + m_currency.minedMoneyUnlockWindow());
     return false;
   }
 
@@ -1509,7 +1509,7 @@ size_t Blockchain::find_end_of_allowed_index(const std::vector<std::pair<Transac
   size_t i = amount_outs.size();
   do {
     --i;
-    if (amount_outs[i].first.block + (amount_outs[i].first.block < CryptoNote::parameters::UPGRADE_HEIGHT_V5 ? m_currency.minedMoneyUnlockWindow() : m_currency.minedMoneyUnlockWindow_v1()) <= getCurrentBlockchainHeight()) {
+    if (amount_outs[i].first.block + (amount_outs[i].first.block < m_currency.minedMoneyUnlockWindow()) <= getCurrentBlockchainHeight()) {
       return i + 1;
     }
   } while (i != 0);
