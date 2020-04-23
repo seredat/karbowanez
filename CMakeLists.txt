@@ -558,6 +558,7 @@ function (treat_warnings_as_errors dirs)
 endfunction()
 
 add_subdirectory(src)
+add_subdirectory(include)
 
 treat_warnings_as_errors(src)
 
