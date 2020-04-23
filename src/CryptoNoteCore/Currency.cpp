@@ -403,7 +403,7 @@ namespace CryptoNote {
   uint64_t Currency::getMinimalFee(uint64_t avgCurrentDifficulty, uint64_t currentReward, uint64_t avgReferenceDifficulty, uint64_t avgReferenceReward, uint32_t height) const {
     uint64_t minimumFee(0);
     double minFee(0.0);
-    const double baseFee = height <= CryptoNote::parameters::FEE_PER_BYTE_HEIGHT ? static_cast<double>(250000000000) : static_cast<double>(50000000000);
+    const double baseFee = static_cast<double>(250000000000);
     const uint64_t blocksInTwoYears = expectedNumberOfBlocksPerDay() * 365 * 2;
     double currentDifficultyMoore = static_cast<double>(avgCurrentDifficulty) / 
                                     pow(2, static_cast<double>(height) / static_cast<double>(blocksInTwoYears));
