@@ -334,7 +334,7 @@ m_timestampIndex(blockchainIndexesEnabled),
 m_generatedTransactionsIndex(blockchainIndexesEnabled),
 m_orphanBlocksIndex(blockchainIndexesEnabled),
 m_blockchainIndexesEnabled(blockchainIndexesEnabled) {
-  m_outputs.set_deleted_key(0);
+  
 }
 
 bool Blockchain::addObserver(IBlockchainStorageObserver* observer) {

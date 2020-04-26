@@ -20,7 +20,7 @@
 
 #include <atomic>
 #include <unordered_map>
-
+#include <parallel_hashmap/phmap.h>
 #include "google/sparse_hash_set"
 #include "google/sparse_hash_map"
 
@@ -44,6 +44,8 @@
 #include <Logging/LoggerRef.h>
 
 #undef ERROR
+
+using phmap::flat_hash_map;
 
 namespace CryptoNote {
 
@@ -254,10 +256,10 @@ namespace CryptoNote {
       }
     };
 
-    typedef std::unordered_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
-    typedef std::unordered_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
-    typedef google::sparse_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
-    typedef google::sparse_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
+    typedef flat_hash_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
+    typedef flat_hash_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
+    typedef flat_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
+    typedef flat_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
 
     const Currency& m_currency;
     tx_memory_pool& m_tx_pool;
@@ -274,8 +276,8 @@ namespace CryptoNote {
     Checkpoints m_checkpoints;
 
     typedef SwappedVector<BlockEntry> Blocks;
-    typedef std::unordered_map<Crypto::Hash, uint32_t> BlockMap;
-    typedef std::unordered_map<Crypto::Hash, TransactionIndex> TransactionMap;
+    typedef flat_hash_map<Crypto::Hash, uint32_t> BlockMap;
+    typedef flat_hash_map<Crypto::Hash, TransactionIndex> TransactionMap;
     typedef BasicUpgradeDetector<Blocks> UpgradeDetector;
 
     friend class BlockCacheSerializer;
