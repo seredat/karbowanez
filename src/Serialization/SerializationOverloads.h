@@ -228,12 +228,12 @@ bool serialize(std::unordered_map<K, V, Hash>& value, Common::StringView name, C
 
 template<typename K, typename V, typename Hash>
 bool serialize(flat_hash_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
-  return serializeMap(value, name, serializer, [&value](size_t size) { value.reserve(size); });
+  return serializeMap(value, name, serializer, [](size_t size) {});
 }
 
 template<typename K, typename V, typename Hash>
 bool serialize(parallel_flat_hash_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
-  return serializeMap(value, name, serializer, [&value](size_t size) { value.reserve(size); });
+  return serializeMap(value, name, serializer, [](size_t size) {});
 }
 
 template<typename K, typename V, typename Hash>
