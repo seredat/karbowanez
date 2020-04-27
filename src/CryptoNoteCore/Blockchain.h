@@ -45,7 +45,7 @@
 
 #undef ERROR
 
-using phmap::flat_hash_map;
+using phmap::parallel_flat_hash_map;
 
 namespace CryptoNote {
 
@@ -256,10 +256,10 @@ namespace CryptoNote {
       }
     };
 
-    typedef flat_hash_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
-    typedef flat_hash_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
-    typedef flat_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
-    typedef flat_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
+    typedef parallel_flat_hash_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
+    typedef parallel_flat_hash_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
+    typedef parallel_flat_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
+    typedef parallel_flat_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
 
     const Currency& m_currency;
     tx_memory_pool& m_tx_pool;
@@ -276,8 +276,8 @@ namespace CryptoNote {
     Checkpoints m_checkpoints;
 
     typedef SwappedVector<BlockEntry> Blocks;
-    typedef flat_hash_map<Crypto::Hash, uint32_t> BlockMap;
-    typedef flat_hash_map<Crypto::Hash, TransactionIndex> TransactionMap;
+    typedef parallel_flat_hash_map<Crypto::Hash, uint32_t> BlockMap;
+    typedef parallel_flat_hash_map<Crypto::Hash, TransactionIndex> TransactionMap;
     typedef BasicUpgradeDetector<Blocks> UpgradeDetector;
 
     friend class BlockCacheSerializer;
