@@ -256,7 +256,7 @@ namespace CryptoNote {
       }
     };
 
-    typedef parallel_flat_hash_map<Crypto::KeyImage, uint32_t> SpentKeyImagesContainer;
+    typedef parallel_flat_hash_map<Crypto::KeyImage, uint32_t> key_images_container;
     typedef parallel_flat_hash_map<Crypto::Hash, BlockEntry> blocks_ext_by_hash;
     typedef parallel_flat_hash_map<uint64_t, std::vector<std::pair<TransactionIndex, uint16_t>>> outputs_container; //Crypto::Hash - tx hash, size_t - index of out in transaction
     typedef parallel_flat_hash_map<uint64_t, std::vector<MultisignatureOutputUsage>> MultisignatureOutputsContainer;
@@ -267,7 +267,7 @@ namespace CryptoNote {
     Crypto::cn_context m_cn_context;
     Tools::ObserverManager<IBlockchainStorageObserver> m_observerManager;
 
-    SpentKeyImagesContainer m_spent_key_images;
+    key_images_container m_spent_key_images;
     size_t m_current_block_cumul_sz_limit;
     blocks_ext_by_hash m_alternative_chains; // Crypto::Hash -> block_extended_info
     outputs_container m_outputs;
