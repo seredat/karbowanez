@@ -715,7 +715,7 @@ bool RpcServer::on_get_index(const COMMAND_HTTP::request& req, COMMAND_HTTP::res
 
 
 bool RpcServer::on_get_supply(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
-  std::string already_generated_coins = m_core.currency().formatAmount(alreadyGeneratedCoins);
+  std::string already_generated_coins = m_core.currency().formatAmount(m_core.getTotalGeneratedAmount());
   res = already_generated_coins;
 
   return true;
