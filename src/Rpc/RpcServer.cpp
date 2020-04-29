@@ -213,6 +213,32 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
           response.addHeader("Content-Type", "application/json");
           response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
           response.setBody(storeToJson(rsp));
+        } else {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Internal error");
+        }
+        return;
+
+      } else if (Common::starts_with(url, block_hash_method)) {
+
+        std::string hash_str = url.substr(block_hash_method.size());
+        auto it = s_handlers.find("/get_block_details_by_hash");
+        if (!it->second.allowBusyCore && !isCoreReady()) {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Core is busy");
+          return;
+        }
+        COMMAND_RPC_GET_BLOCK_DETAILS_BY_HASH::request req;
+        req.hash = hash_str;
+        COMMAND_RPC_GET_BLOCK_DETAILS_BY_HASH::response rsp;
+        bool r = on_get_block_details_by_hash(req, rsp);
+        if (r) {
+          response.addHeader("Content-Type", "application/json");
+          response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
+          response.setBody(storeToJson(rsp));
+        } else {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Internal error");
         }
         return;
 
@@ -221,6 +247,7 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
       } else if (Common::starts_with(url, payment_id_method)) {
 
       }
+      response.setStatus(HttpResponse::STATUS_404);
       return;
     }
     else {
