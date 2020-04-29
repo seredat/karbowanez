@@ -270,6 +270,34 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
 
       } else if (Common::starts_with(url, payment_id_method)) {
 
+        std::string pid_str = url.substr(payment_id_method.size());
+        auto it = s_handlers.find("/get_transaction_hashes_by_payment_id");
+        if (!it->second.allowBusyCore && !isCoreReady()) {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Core is busy");
+          return;
+        }
+        Crypto::Hash pid_hash;
+        if (!parse_hash256(pid_str, pid_hash)) {
+          throw JsonRpc::JsonRpcError{
+            CORE_RPC_ERROR_CODE_WRONG_PARAM,
+            "Failed to parse hex representation of payment id. Hex = " + pid_str + '.' };
+        }
+        COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request req;
+        req.paymentId = pid_hash;
+        COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response rsp;
+        bool r = on_get_transaction_hashes_by_paymentid(req, rsp);
+        if (r) {
+          response.addHeader("Content-Type", "application/json");
+          response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
+          response.setBody(storeToJson(rsp));
+        }
+        else {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Internal error");
+        }
+        return;
+
       }
       response.setStatus(HttpResponse::STATUS_404);
       return;
