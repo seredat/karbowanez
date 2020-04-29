@@ -996,7 +996,7 @@ struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES {
 
 struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
 	struct request {
-		Crypto::Hash hash;
+		std::string hash;
 
 		void serialize(ISerializer &s) {
 			KV_MEMBER(hash);
