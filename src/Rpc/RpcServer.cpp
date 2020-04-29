@@ -31,6 +31,7 @@
 #include "BlockchainExplorerData.h"
 #include "Common/StringTools.h"
 #include "Common/Base58.h"
+#include "Common/Math.h"
 #include "CryptoNoteCore/TransactionUtils.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
@@ -187,8 +188,45 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
 
   auto it = s_handlers.find(url);
   if (it == s_handlers.end()) {
-    response.setStatus(HttpResponse::STATUS_404);
-    return;
+    if (Common::starts_with(url, "/api/")) {
+
+      std::string block_height_method = "/api/block/height/";
+      std::string block_hash_method = "/api/block/hash/";
+      std::string tx_hash_method = "/api/transaction/";
+      std::string payment_id_method = "/api/payment_id/";
+
+      if (Common::starts_with(url, block_height_method)) {
+
+        std::string height_str = url.substr(block_height_method.size());
+        uint32_t height = Common::integer_cast<uint32_t>(height_str);
+        auto it = s_handlers.find("/get_block_details_by_height");
+        if (!it->second.allowBusyCore && !isCoreReady()) {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Core is busy");
+          return;
+        }
+        COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::request req;
+        req.blockHeight = height;
+        COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::response rsp;
+        bool r = on_get_block_details_by_height(req, rsp);
+        if (r) {
+          response.addHeader("Content-Type", "application/json");
+          response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
+          response.setBody(storeToJson(rsp));
+        }
+        return;
+
+      } else if (Common::starts_with(url, tx_hash_method)) {
+
+      } else if (Common::starts_with(url, payment_id_method)) {
+
+      }
+      return;
+    }
+    else {
+      response.setStatus(HttpResponse::STATUS_404);
+      return;
+    }
   }
 
   if (!it->second.allowBusyCore && !isCoreReady()) {

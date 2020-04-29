@@ -369,4 +369,16 @@ std::string timeIntervalToString(uint64_t intervalInSeconds) {
   return ss.str();
 }
 
+bool starts_with(const std::string &str1, const std::string &str2) {
+  if (str1.length() < str2.length())
+    return false;
+  return str1.compare(0, str2.length(), str2) == 0;
+}
+
+bool ends_with(const std::string &str1, const std::string &str2) {
+  if (str1.length() < str2.length())
+    return false;
+  return str1.compare(str1.length() - str2.length(), str2.length(), str2) == 0;
+}
+
 }
