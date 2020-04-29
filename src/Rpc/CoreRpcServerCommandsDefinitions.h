@@ -265,6 +265,13 @@ struct COMMAND_RPC_START_MINING {
     }
   };
 };
+
+struct COMMAND_HTTP {
+  typedef EMPTY_STRUCT request;
+
+  typedef std::string response;
+};
+
 //-----------------------------------------------
 struct COMMAND_RPC_GET_INFO {
   typedef EMPTY_STRUCT request;
