@@ -78,6 +78,7 @@ private:
 
   // http handlers
   bool on_get_index(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res);
+  bool on_get_supply(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res);
 
   // json handlers
   bool on_get_info(const COMMAND_RPC_GET_INFO::request& req, COMMAND_RPC_GET_INFO::response& res);

@@ -139,6 +139,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
 
   // http handlers
   { "/", { httpMethod<COMMAND_HTTP>(&RpcServer::on_get_index), true } },
+  { "/supply", { httpMethod<COMMAND_HTTP>(&RpcServer::on_get_supply), false } },
 
   // http get json handlers
   { "/getinfo", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
@@ -711,6 +712,15 @@ bool RpcServer::on_get_index(const COMMAND_HTTP::request& req, COMMAND_HTTP::res
 
   return true;
 }
+
+
+bool RpcServer::on_get_supply(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
+  std::string already_generated_coins = m_core.currency().formatAmount(alreadyGeneratedCoins);
+  res = already_generated_coins;
+
+  return true;
+}
+
 
 //
 // JSON handlers
