@@ -343,7 +343,7 @@ bool Core::check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_
       }
     }
 
-    if (!enough) {     
+    if (!enough) {
       tvc.m_verification_failed = true;
       tvc.m_tx_fee_too_small = true;
       logger(DEBUGGING) << "The fee for transaction " 
