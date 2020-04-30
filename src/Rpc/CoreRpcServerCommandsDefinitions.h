@@ -932,7 +932,7 @@ struct COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS {
   struct request {
     uint64_t timestampBegin;
     uint64_t timestampEnd;
-	uint32_t limit;
+    uint32_t limit;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(timestampBegin)
@@ -943,7 +943,7 @@ struct COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS {
 
   struct response {
     std::vector<Crypto::Hash> blockHashes;
-	uint32_t count;
+    uint32_t count;
     std::string status;
 
     void serialize(ISerializer &s) {
@@ -956,7 +956,7 @@ struct COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS {
 
 struct COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID {
   struct request {
-    Crypto::Hash paymentId;
+    std::string paymentId;
 
     void serialize(ISerializer &s) {
       KV_MEMBER(paymentId)

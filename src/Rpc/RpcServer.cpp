@@ -277,14 +277,8 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
           response.setBody("Core is busy");
           return;
         }
-        Crypto::Hash pid_hash;
-        if (!parse_hash256(pid_str, pid_hash)) {
-          throw JsonRpc::JsonRpcError{
-            CORE_RPC_ERROR_CODE_WRONG_PARAM,
-            "Failed to parse hex representation of payment id. Hex = " + pid_str + '.' };
-        }
         COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request req;
-        req.paymentId = pid_hash;
+        req.paymentId = pid_str;
         COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response rsp;
         bool r = on_get_transaction_hashes_by_paymentid(req, rsp);
         if (r) {
@@ -778,7 +772,14 @@ bool RpcServer::on_get_transaction_details_by_hash(const COMMAND_RPC_GET_TRANSAC
 }
 
 bool RpcServer::on_get_transaction_hashes_by_paymentid(const COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::request& req, COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID::response& rsp) {
-  rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(req.paymentId);
+  Crypto::Hash pid_hash;
+  if (!parse_hash256(req.paymentId, pid_hash)) {
+    throw JsonRpc::JsonRpcError{
+      CORE_RPC_ERROR_CODE_WRONG_PARAM,
+      "Failed to parse hex representation of payment id. Hex = " + req.paymentId + '.' };
+  }
+  
+  rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(pid_hash);
 
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
