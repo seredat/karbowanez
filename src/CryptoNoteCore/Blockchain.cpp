@@ -792,16 +792,20 @@ uint64_t Blockchain::getMinimalFee(uint32_t height) {
     ++offset;
   }
 
-  // calculate average difficulty for ~last month
-  uint64_t avgDifficultyCurrent = getAvgDifficulty(height, window * 7 * 4);
-  // historical reference trailing average difficulty
-  uint64_t avgDifficultyHistorical = m_blocks[height].cumulative_difficulty / height;
-  // calculate average reward for ~last day (base, excluding fees)
-  uint64_t avgRewardCurrent = (m_blocks[height].already_generated_coins - m_blocks[offset].already_generated_coins) / window;
-  // historical reference trailing average reward
-  uint64_t avgRewardHistorical = m_blocks[height].already_generated_coins / height;
+  /* Perhaps, in case of POW change, difficulties for calculations here
+   * should be reset and used starting from the fork height.
+   */
 
-  return m_currency.getMinimalFee(avgDifficultyCurrent, avgRewardCurrent, avgDifficultyHistorical, avgRewardHistorical, height);
+  // calculate average difficulty for ~last month
+  uint64_t avgCurrentDifficulty = getAvgDifficulty(height, window * 7 * 4);
+  // reference trailing average difficulty
+  uint64_t avgReferenceDifficulty = m_blocks[height].cumulative_difficulty / height;
+  // calculate current base reward
+  uint64_t currentReward = m_currency.calculateReward(m_blocks[height].already_generated_coins);
+  // reference trailing average reward
+  uint64_t avgReferenceReward = m_blocks[height].already_generated_coins / height;
+
+  return m_currency.getMinimalFee(avgCurrentDifficulty, currentReward, avgReferenceDifficulty, avgReferenceReward, height);
 }
 
 uint64_t Blockchain::getCoinsInCirculation() {
@@ -1085,19 +1089,19 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
 
   if (!(b.baseTransaction.inputs.size() == 1)) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block has no inputs";
+      << "Coinbase transaction in the block has no inputs";
     return false;
   }
 
   if (!(b.baseTransaction.signatures.empty())) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block shouldn't have signatures";
+      << "Coinbase transaction in the block shouldn't have signatures";
     return false;
   }
 
   if (!(b.baseTransaction.inputs[0].type() == typeid(BaseInput))) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction in the block has the wrong type";
+      << "Coinbase transaction in the block has the wrong type";
     return false;
   }
 
@@ -1109,14 +1113,24 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
 
   if (!(b.baseTransaction.unlockTime == height + m_currency.minedMoneyUnlockWindow())) {
     logger(ERROR, BRIGHT_RED)
-      << "coinbase transaction transaction have wrong unlock time="
+      << "Coinbase transaction has wrong unlock time="
       << b.baseTransaction.unlockTime << ", expected "
       << (height + m_currency.minedMoneyUnlockWindow());
     return false;
   }
 
   if (!check_outs_overflow(b.baseTransaction)) {
-    logger(INFO, BRIGHT_RED) << "miner transaction have money overflow in block " << get_block_hash(b);
+    logger(ERROR, BRIGHT_RED) << "The miner transaction has money overflow in block " << get_block_hash(b);
+    return false;
+  }
+
+  uint64_t extraSize = (uint64_t)b.baseTransaction.extra.size();
+  if (height > CryptoNote::parameters::UPGRADE_HEIGHT_V4_2 && extraSize > CryptoNote::parameters::MAX_EXTRA_SIZE) {
+    logger(ERROR, BRIGHT_RED)
+      << "The miner transaction extra is too large in block "
+      << get_block_hash(b) << ". Allowed: "
+      << CryptoNote::parameters::MAX_EXTRA_SIZE
+      << ", actual: " << extraSize << ".";
     return false;
   }
 
