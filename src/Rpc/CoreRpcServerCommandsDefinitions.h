@@ -730,18 +730,6 @@ struct COMMAND_RPC_QUERY_BLOCKS_LITE {
   };
 };
 
-struct COMMAND_RPC_GEN_PAYMENT_ID {
-  typedef EMPTY_STRUCT request;
-  
-  struct response {
-	  std::string payment_id;
-
-	  void serialize(ISerializer &s) {
-		  KV_MEMBER(payment_id)
-	  }
-  };
-};
-
 //-----------------------------------------------
 struct COMMAND_RPC_CHECK_TRANSACTION_KEY {
 	struct request {

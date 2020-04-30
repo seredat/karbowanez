@@ -141,12 +141,12 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   // http handlers
   { "/", { httpMethod<COMMAND_HTTP>(&RpcServer::on_get_index), true } },
   { "/supply", { httpMethod<COMMAND_HTTP>(&RpcServer::on_get_supply), false } },
+  { "/paymentid", { httpMethod<COMMAND_HTTP>(&RpcServer::on_get_payment_id), true } },
 
   // http get json handlers
   { "/getinfo", { jsonMethod<COMMAND_RPC_GET_INFO>(&RpcServer::on_get_info), true } },
   { "/getheight", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
   { "/feeaddress", { jsonMethod<COMMAND_RPC_GET_FEE_ADDRESS>(&RpcServer::on_get_fee_address), true } },
-  { "/paymentid", { jsonMethod<COMMAND_RPC_GEN_PAYMENT_ID>(&RpcServer::on_get_payment_id), true } },
 
   // rpc post json handlers
   { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), true } },
@@ -845,6 +845,13 @@ bool RpcServer::on_get_supply(const COMMAND_HTTP::request& req, COMMAND_HTTP::re
   return true;
 }
 
+bool RpcServer::on_get_payment_id(const COMMAND_HTTP::request& req, COMMAND_HTTP::response& res) {
+  Crypto::Hash result;
+  Random::randomBytes(32, result.data);
+  res = Common::podToHex(result);
+
+  return true;
+}
 
 //
 // JSON handlers
@@ -1173,13 +1180,6 @@ bool RpcServer::on_get_connections(const COMMAND_RPC_GET_CONNECTIONS::request& r
   }
 
   res.status = CORE_RPC_STATUS_OK;
-  return true;
-}
-
-bool RpcServer::on_get_payment_id(const COMMAND_RPC_GEN_PAYMENT_ID::request& req, COMMAND_RPC_GEN_PAYMENT_ID::response& res) {
-  Crypto::Hash result;
-  Random::randomBytes(32, result.data);
-  res.payment_id = Common::podToHex(result);
   return true;
 }
 
