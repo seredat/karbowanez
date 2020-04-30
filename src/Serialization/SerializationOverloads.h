@@ -32,6 +32,10 @@
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
+#include <parallel_hashmap/phmap.h>
+
+using phmap::flat_hash_map;
+using phmap::parallel_flat_hash_map;
 
 namespace CryptoNote {
 
@@ -220,6 +224,16 @@ bool serialize(std::set<K, Cmp>& value, Common::StringView name, CryptoNote::ISe
 template<typename K, typename V, typename Hash>
 bool serialize(std::unordered_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
   return serializeMap(value, name, serializer, [&value](size_t size) { value.reserve(size); });
+}
+
+template<typename K, typename V, typename Hash>
+bool serialize(flat_hash_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+  return serializeMap(value, name, serializer, [](size_t size) {});
+}
+
+template<typename K, typename V, typename Hash>
+bool serialize(parallel_flat_hash_map<K, V, Hash>& value, Common::StringView name, CryptoNote::ISerializer& serializer) {
+  return serializeMap(value, name, serializer, [](size_t size) {});
 }
 
 template<typename K, typename V, typename Hash>
