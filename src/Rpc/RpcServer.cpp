@@ -186,6 +186,8 @@ RpcServer::RpcServer(System::Dispatcher& dispatcher, Logging::ILogger& log, Cryp
 void RpcServer::processRequest(const HttpRequest& request, HttpResponse& response) {
   //logger(Logging::TRACE) << "RPC request came: \n" << request << std::endl;
 
+  try {
+
   auto url = request.getUrl();
 
   auto it = s_handlers.find(url);
@@ -309,6 +311,17 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
   }
 
   it->second.handler(this, request, response);
+
+  }
+  catch (const JsonRpc::JsonRpcError& err) {
+    response.addHeader("Content-Type", "application/json");
+    response.setStatus(HttpResponse::STATUS_500);
+    response.setBody(storeToJsonValue(err).toString());
+  }
+  catch (const std::exception& e) {
+    response.setStatus(HttpResponse::STATUS_500);
+    response.setBody(e.what());
+  }
 }
 
 bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& response) {
