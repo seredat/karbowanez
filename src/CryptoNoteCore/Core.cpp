@@ -320,8 +320,8 @@ bool Core::check_tx_fee(const Transaction& tx, const Crypto::Hash& txHash, size_
   if (!isFusionTransaction && !m_checkpoints.is_in_checkpoint_zone(height)) {
     bool enough = true;
 
-    if (height <= CryptoNote::parameters::UPGRADE_HEIGHT_V3_1 && fee < CryptoNote::parameters::MINIMUM_FEE_V1 ||
-        height > CryptoNote::parameters::UPGRADE_HEIGHT_V3_1 && height <= CryptoNote::parameters::UPGRADE_HEIGHT_V4 && fee < CryptoNote::parameters::MINIMUM_FEE_V2)
+    if ((height <= CryptoNote::parameters::UPGRADE_HEIGHT_V3_1 && fee < CryptoNote::parameters::MINIMUM_FEE_V1) ||
+        (height > CryptoNote::parameters::UPGRADE_HEIGHT_V3_1 && height <= CryptoNote::parameters::UPGRADE_HEIGHT_V4 && fee < CryptoNote::parameters::MINIMUM_FEE_V2))
     {
       enough = false;
     }
