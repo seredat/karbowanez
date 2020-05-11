@@ -1433,13 +1433,6 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 			fail_msg_writer() << "failed to save new wallet: " << e.what();
 			throw;
 		}
-
-		AccountKeys keys;
-		m_wallet->getAccountKeys(keys);
-
-		logger(INFO, BRIGHT_WHITE) <<
-			"Generated new wallet: " << m_wallet->getAddress() << std::endl <<
-			"view key: " << Common::podToHex(keys.viewSecretKey);
 	}
 	catch (const std::exception& e)
 	{
@@ -1449,6 +1442,11 @@ bool simple_wallet::new_wallet(const std::string &wallet_file, const std::string
 
 	AccountKeys keys;
 	m_wallet->getAccountKeys(keys);
+
+	logger(INFO, BRIGHT_WHITE) <<
+		"Generated new wallet: " << m_wallet->getAddress() << std::endl <<
+		"view key: " << Common::podToHex(keys.viewSecretKey);
+
 	// convert rng value to electrum-style word list
 	std::string electrum_words;
 	Crypto::ElectrumWords::bytes_to_words(keys.spendSecretKey, electrum_words, "English");
