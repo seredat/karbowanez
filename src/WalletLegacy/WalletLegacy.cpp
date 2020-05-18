@@ -557,27 +557,26 @@ std::string WalletLegacy::sign_message(const std::string &message) {
   const CryptoNote::AccountKeys &keys = m_account.getAccountKeys();
   Crypto::Signature signature;
   Crypto::generate_signature(hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
-  return std::string("SigV1") + Tools::Base58::encode(std::string((const char *)&signature, sizeof(signature)));
+  return Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX, std::string((const char *)&signature, sizeof(signature)));
 }
 
 bool WalletLegacy::verify_message(const std::string &message, const CryptoNote::AccountPublicAddress &address, const std::string &signature) {
-  const size_t header_len = strlen("SigV1");
-  if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
-    m_logger(Logging::ERROR) << "Signature header check error";
-    return false;
-  }
-  Crypto::Hash hash;
-  Crypto::cn_fast_hash(message.data(), message.size(), hash);
   std::string decoded;
-  if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
+  uint64_t prefix;
+  if (!Tools::Base58::decode_addr(signature, prefix, decoded) || prefix != CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX) {
     m_logger(Logging::ERROR) << "Signature decoding error";
     return false;
   }
+
   Crypto::Signature s;
   if (sizeof(s) != decoded.size()) {
-    m_logger(Logging::ERROR) << "Signature decoding error";
+    m_logger(Logging::ERROR) << "Signature size wrong";
     return false;
   }
+
+  Crypto::Hash hash;
+  Crypto::cn_fast_hash(message.data(), message.size(), hash);
+
   memcpy(&s, decoded.data(), sizeof(s));
   return Crypto::check_signature(hash, address.spendPublicKey, s);
 }

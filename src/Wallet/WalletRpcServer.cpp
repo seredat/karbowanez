@@ -621,17 +621,21 @@ bool wallet_rpc_server::on_verify_message(const wallet_rpc::COMMAND_RPC_VERIFY_M
 	if (!m_currency.parseAccountAddressString(req.address, address)) {
 		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_ADDRESS, std::string("Failed to parse address"));
 	}
-	const size_t header_len = strlen("SigV1");
-	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "SigV1") {
-		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature header check error"));
-	}
-	std::string decoded;
-	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(Crypto::Signature) != decoded.size()) {
-		throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature decoding error"));
-		return false;
-	}
-    res.good = m_wallet.verify_message(req.message, address, req.signature);
-    return true;
+	
+  std::string decoded;
+  Crypto::Signature s;
+  uint64_t prefix;
+  if (!Tools::Base58::decode_addr(req.signature, prefix, decoded) || prefix != CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX) {
+    throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature decoding error"));
+  }
+
+  if (sizeof(s) != decoded.size()) {
+    throw JsonRpc::JsonRpcError(WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE, std::string("Signature size wrong"));
+    return false;
+  }
+
+  res.good = m_wallet.verify_message(req.message, address, req.signature);
+  return true;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------

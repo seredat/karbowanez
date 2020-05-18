@@ -2321,25 +2321,12 @@ bool simple_wallet::verify_message(const std::vector<std::string> &args) {
     fail_msg_writer() << "failed to parse address " << address_string;
 	return true;
   }
-  const size_t header_len = strlen("SigV1");
-  if (signature.size() < header_len || signature.substr(0, header_len) != "SigV1") {
-    fail_msg_writer() << ("Signature header check error");
-    return false;
-  }
-  std::string decoded;
-  if (!Tools::Base58::decode(signature.substr(header_len), decoded)) {
-    fail_msg_writer() << ("Signature decoding error");
-    return false;
-  }
-  if (sizeof(Crypto::Signature) != decoded.size()) {
-    fail_msg_writer() << ("Signature decoding error");
-    return false;
-  }
+  
   bool r = m_wallet->verify_message(message, address, signature);
   if (!r) {
     fail_msg_writer() << "Invalid signature from " << address_string;
   } else {
-    success_msg_writer() << "Valid signature from " << address_string;
+    success_msg_writer(true) << "Valid signature from " << address_string;
   }
   return true;
 }

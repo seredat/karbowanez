@@ -1921,24 +1921,26 @@ bool RpcServer::on_validate_address(const COMMAND_RPC_VALIDATE_ADDRESS::request&
 }
 
 bool RpcServer::on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req, COMMAND_RPC_VERIFY_MESSAGE::response& res) {
-	Crypto::Hash hash;
-	Crypto::cn_fast_hash(req.message.data(), req.message.size(), hash);
-
 	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
 	if (!m_core.currency().parseAccountAddressString(req.address, acc)) {
 		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Failed to parse address"));
 	}
 
-	const size_t header_len = strlen("SigV1");
-	if (req.signature.size() < header_len || req.signature.substr(0, header_len) != "SigV1") {
-		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature header check error"));
-	}
 	std::string decoded;
 	Crypto::Signature s;
-	if (!Tools::Base58::decode(req.signature.substr(header_len), decoded) || sizeof(s) != decoded.size()) {
-		throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature decoding error"));
-		return false;
-	}
+	uint64_t prefix;
+  if (!Tools::Base58::decode_addr(req.signature, prefix, decoded) || prefix != CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX) {
+    throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature decoding error"));
+  }
+  
+  if (sizeof(s) != decoded.size()) {
+    throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Signature size wrong"));
+    return false;
+  }
+
+  Crypto::Hash hash;
+  Crypto::cn_fast_hash(req.message.data(), req.message.size(), hash);
+
 	memcpy(&s, decoded.data(), sizeof(s));
 	res.sig_valid = Crypto::check_signature(hash, acc.spendPublicKey, s);
 	res.status = CORE_RPC_STATUS_OK;
