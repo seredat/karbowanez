@@ -485,11 +485,11 @@ bool wallet_rpc_server::on_validate_address(const wallet_rpc::COMMAND_RPC_VALIDA
 {
 	AccountPublicAddress acc = boost::value_initialized<AccountPublicAddress>();
 	bool r = m_currency.parseAccountAddressString(req.address, acc);
-	res.isvalid = r;
+	res.is_valid = r;
 	if (r) {
 		res.address = m_currency.accountAddressAsString(acc);
-		res.spendPublicKey = Common::podToHex(acc.spendPublicKey);
-		res.viewPublicKey = Common::podToHex(acc.viewPublicKey);
+		res.spend_public_key = Common::podToHex(acc.spendPublicKey);
+		res.view_public_key = Common::podToHex(acc.viewPublicKey);
 	}
 	res.status = CORE_RPC_STATUS_OK;
 	return true;

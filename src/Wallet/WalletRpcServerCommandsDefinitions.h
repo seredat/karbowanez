@@ -474,17 +474,17 @@ using CryptoNote::ISerializer;
 		};
 
 		struct response {
-			bool isvalid;
+			bool is_valid;
 			std::string address;
-			std::string spendPublicKey;
-			std::string viewPublicKey;
+			std::string spend_public_key;
+			std::string view_public_key;
 			std::string status;
 
 			void serialize(ISerializer &s) {
-				KV_MEMBER(isvalid)
+				KV_MEMBER(is_valid)
 				KV_MEMBER(address)
-				KV_MEMBER(spendPublicKey)
-				KV_MEMBER(viewPublicKey)
+				KV_MEMBER(spend_public_key)
+				KV_MEMBER(view_public_key)
 				KV_MEMBER(status)
 			}
 		};

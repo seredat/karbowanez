@@ -101,7 +101,8 @@ private:
   std::error_code handleGetAddressesCount(const GetAddressesCount::Request& request, GetAddressesCount::Response& response);
   std::error_code handleValidateAddress(const ValidateAddress::Request& request, ValidateAddress::Response& response);
   std::error_code handleGetReserveProof(const GetReserveProof::Request& request, GetReserveProof::Response& response);
-
+  std::error_code handleSignMessage(const SignMessage::Request& request, SignMessage::Response& response);
+  std::error_code handleVerifyMessage(const VerifyMessage::Request& request, VerifyMessage::Response& response);
   std::error_code handleSendFusionTransaction(const SendFusionTransaction::Request& request, SendFusionTransaction::Response& response);
   std::error_code handleEstimateFusion(const EstimateFusion::Request& request, EstimateFusion::Response& response);
 };
