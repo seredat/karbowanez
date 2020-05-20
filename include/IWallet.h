@@ -191,6 +191,9 @@ public:
 
   virtual std::string getReserveProof(const uint64_t &reserve, const std::string& address, const std::string &message) = 0;
 
+  virtual std::string signMessage(const std::string &message, const std::string& address) = 0;
+  virtual bool verifyMessage(const std::string &message, const std::string& address, const std::string &signature) = 0;
+
   virtual size_t transfer(const TransactionParameters& sendingTransaction, Crypto::SecretKey &txSecretKey) = 0;
 
   virtual size_t makeTransaction(const TransactionParameters& sendingTransaction) = 0;

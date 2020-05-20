@@ -2857,6 +2857,50 @@ std::string WalletGreen::getReserveProof(const uint64_t &reserve, const std::str
   return reserveProof;
 }
 
+std::string WalletGreen::signMessage(const std::string &message, const std::string& address) {
+  throwIfNotInitialized();
+  throwIfTrackingMode();
+  throwIfStopped();
+
+  WalletRecord wallet;
+
+  if (!address.empty()) {
+    wallet = getWalletRecord(address);
+  }
+  else {
+    if (!m_walletsContainer.empty()) {
+      wallet = m_walletsContainer.get<RandomAccessIndex>()[0];
+    }
+    else {
+      throw std::system_error(make_error_code(CryptoNote::error::BAD_ADDRESS));
+    }
+  }
+
+  CryptoNote::AccountKeys keys;
+  keys.spendSecretKey = wallet.spendSecretKey;
+  keys.viewSecretKey = m_viewSecretKey;
+  keys.address.viewPublicKey = m_viewPublicKey;
+  keys.address.spendPublicKey = wallet.spendPublicKey;
+
+  return CryptoNote::signMessage(message, keys);
+}
+
+bool WalletGreen::verifyMessage(const std::string &message, const std::string& address, const std::string &signature) {
+  throwIfNotInitialized();
+  throwIfStopped();
+
+  try {
+    CryptoNote::AccountPublicAddress pubAddr = parseAddress(address);
+
+    return CryptoNote::verifyMessage(message, pubAddr, signature, m_logger.getLogger());
+  }
+  catch (const std::exception& e) {
+    m_logger(ERROR, BRIGHT_RED) << "Failed to verify message: " << e.what();
+  }
+
+  return false;
+}
+
 void WalletGreen::start() {
   m_logger(INFO, BRIGHT_WHITE) << "Starting container";
   m_stopped = false;
