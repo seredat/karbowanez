@@ -1255,7 +1255,7 @@ bool RpcServer::on_alt_blocks_list_json(const COMMAND_RPC_GET_ALT_BLOCKS_LIST::r
 
   if (m_core.get_alternative_blocks(alt_blocks) && !alt_blocks.empty()) {
     for (const auto & b : alt_blocks) {
-      Crypto::Hash block_hash = getObjectHash(b);
+      Crypto::Hash block_hash = get_block_hash(b);
       uint32_t block_height = boost::get<BaseInput>(b.baseTransaction.inputs.front()).blockIndex;
       size_t tx_cumulative_block_size;
       m_core.getBlockSize(block_hash, tx_cumulative_block_size);
