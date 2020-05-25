@@ -357,6 +357,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "getblocksbyhashes", { makeMemberMethod(&RpcServer::on_get_blocks_details_by_hashes), true } },
       { "getblockshashesbytimestamps", { makeMemberMethod(&RpcServer::on_get_blocks_hashes_by_timestamps), true } },
       { "getblockslist", { makeMemberMethod(&RpcServer::on_blocks_list_json), true } },
+      { "getaltblockslist", { makeMemberMethod(&RpcServer::on_alt_blocks_list_json), true } },
       { "getlastblockheader", { makeMemberMethod(&RpcServer::on_get_last_block_header), true } },
       { "gettransaction", { makeMemberMethod(&RpcServer::on_get_transaction_details_by_hash), true } },
       { "gettransactionspool", { makeMemberMethod(&RpcServer::on_get_transactions_pool), true } },
@@ -1243,6 +1244,37 @@ bool RpcServer::on_blocks_list_json(const COMMAND_RPC_GET_BLOCKS_LIST::request& 
 
     if (i == 0)
       break;
+  }
+
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::on_alt_blocks_list_json(const COMMAND_RPC_GET_ALT_BLOCKS_LIST::request& req, COMMAND_RPC_GET_ALT_BLOCKS_LIST::response& res) {
+  std::list<Block> alt_blocks;
+
+  if (m_core.get_alternative_blocks(alt_blocks) && !alt_blocks.empty()) {
+    for (const auto & b : alt_blocks) {
+      Crypto::Hash block_hash = get_block_hash(b);
+      uint32_t block_height = boost::get<BaseInput>(b.baseTransaction.inputs.front()).blockIndex;
+      size_t tx_cumulative_block_size;
+      m_core.getBlockSize(block_hash, tx_cumulative_block_size);
+      size_t blokBlobSize = getObjectBinarySize(b);
+      size_t minerTxBlobSize = getObjectBinarySize(b.baseTransaction);
+      difficulty_type blockDiff;
+      m_core.getBlockDifficulty(static_cast<uint32_t>(block_height), blockDiff);
+
+      block_short_response block_short;
+      block_short.timestamp = b.timestamp;
+      block_short.height = block_height;
+      block_short.hash = Common::podToHex(block_hash);
+      block_short.cumulative_size = blokBlobSize + tx_cumulative_block_size - minerTxBlobSize;
+      block_short.transactions_count = b.transactionHashes.size() + 1;
+      block_short.difficulty = blockDiff;
+      block_short.min_fee = m_core.getMinimalFeeForHeight(block_height);
+
+      res.alt_blocks.push_back(block_short);
+    }
   }
 
   res.status = CORE_RPC_STATUS_OK;

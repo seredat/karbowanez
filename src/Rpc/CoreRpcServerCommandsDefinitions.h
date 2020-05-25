@@ -639,6 +639,20 @@ struct COMMAND_RPC_GET_BLOCKS_LIST {
   };
 };
 
+struct COMMAND_RPC_GET_ALT_BLOCKS_LIST {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<block_short_response> alt_blocks;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(alt_blocks)
+      KV_MEMBER(status)
+    }
+  };
+};
+
 //-----------------------------------------------
 struct COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
   struct request {
