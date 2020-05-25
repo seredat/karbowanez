@@ -61,10 +61,12 @@ std::vector<AdvancedCommand> allCommands()
 		AdvancedCommand("save", "Save your wallet state", true, true),
 		AdvancedCommand("save_csv", "Save all wallet transactions to a CSV file", true, true),
 		AdvancedCommand("send_all", "Send all your balance to someone", false, true),
+		AdvancedCommand("sign_message", "Sign message with your wallet keys", false, true),
 		AdvancedCommand("status", "Display sync status and network hashrate", true, true),
 		AdvancedCommand("tx_key", "Display transaction secret key if it's stored in wallet cache", false, true),
-        AdvancedCommand("tx_proof", "Display proof of payment to specified address", false, true),
-    };
+		AdvancedCommand("tx_proof", "Display proof of payment to specified address", false, true),
+		AdvancedCommand("verify_message", "Verify signed message", true, true),
+	};
 }
 
 std::vector<AdvancedCommand> basicCommands()

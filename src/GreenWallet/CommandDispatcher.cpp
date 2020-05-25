@@ -117,6 +117,14 @@ bool handleCommand(const std::string command,
     {
         txProof(walletInfo->wallet);
     }
+    else if (command == "sign_message")
+    {
+      signMessage(walletInfo, walletInfo->viewWallet);
+    }
+    else if (command == "verify_message")
+    {
+      verifyMessage(walletInfo->wallet);
+    }
     /* This should never happen */
     else
     {

@@ -720,4 +720,36 @@ bool getReserveProof(const std::vector<TransactionOutputInformation>& selectedTr
   return true;
 }
 
+std::string signMessage(const std::string &data, const CryptoNote::AccountKeys &keys) {
+  Crypto::Hash hash;
+  Crypto::cn_fast_hash(data.data(), data.size(), hash);
+  
+  Crypto::Signature signature;
+  Crypto::generate_signature(hash, keys.address.spendPublicKey, keys.spendSecretKey, signature);
+  return Tools::Base58::encode_addr(CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX, std::string((const char *)&signature, sizeof(signature)));
+}
+
+bool verifyMessage(const std::string &data, const CryptoNote::AccountPublicAddress &address, const std::string &signature, Logging::ILogger& log) {
+  LoggerRef logger(log, "verify_message");
+
+  std::string decoded;
+  uint64_t prefix;
+  if (!Tools::Base58::decode_addr(signature, prefix, decoded) || prefix != CryptoNote::parameters::CRYPTONOTE_KEYS_SIGNATURE_BASE58_PREFIX) {
+    logger(Logging::ERROR) << "Signature decoding error";
+    return false;
+  }
+
+  Crypto::Signature s;
+  if (sizeof(s) != decoded.size()) {
+    logger(Logging::ERROR) << "Signature size wrong";
+    return false;
+  }
+
+  Crypto::Hash hash;
+  Crypto::cn_fast_hash(data.data(), data.size(), hash);
+
+  memcpy(&s, decoded.data(), sizeof(s));
+  return Crypto::check_signature(hash, address.spendPublicKey, s);
+}
+
 }

@@ -81,7 +81,7 @@ void ValidateAddress::Request::serialize(CryptoNote::ISerializer& serializer) {
 }
 
 void ValidateAddress::Response::serialize(CryptoNote::ISerializer& serializer) {
-  serializer(isvalid, "isvalid");
+  serializer(isValid, "isValid");
   serializer(address, "address");
   serializer(spendPublicKey, "spendPublicKey");
   serializer(viewPublicKey, "viewPublicKey");
@@ -317,6 +317,29 @@ void WalletRpcOrder::serialize(CryptoNote::ISerializer& serializer) {
   if (!r) {
     throw RequestSerializationError();
   }
+}
+
+void SignMessage::Request::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(address, "address");
+
+  if (!serializer(message, "message")) {
+    throw RequestSerializationError();
+  }
+}
+
+void SignMessage::Response::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(address, "address");
+  serializer(signature, "signature");
+}
+
+void VerifyMessage::Request::serialize(CryptoNote::ISerializer& serializer) {
+  if (!serializer(address, "address") || !serializer(message, "message") || !serializer(signature, "signature")) {
+    throw RequestSerializationError();
+  }
+}
+
+void VerifyMessage::Response::serialize(CryptoNote::ISerializer& serializer) {
+  serializer(isValid, "isValid");
 }
 
 void SendTransaction::Request::serialize(CryptoNote::ISerializer& serializer) {

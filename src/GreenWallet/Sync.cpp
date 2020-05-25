@@ -124,7 +124,7 @@ void syncWallet(CryptoNote::INode &node,
         remoteHeight = node.getLastKnownBlockHeight();
         std::cout << SuccessMsg(std::to_string(walletHeight))
                   << " of " << InformationMsg(std::to_string(localHeight))
-                  << "\r" << std::flush;
+                  << "                                       \r" << std::flush;
 
         const uint32_t tmpWalletHeight = walletInfo->wallet.getBlockCount();
 
