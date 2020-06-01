@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
-// Copyright (c) 2016-2018, The Karbowanec developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -65,7 +65,8 @@ const std::initializer_list<CheckpointData> CHECKPOINTS = {
   {402737,  "aa1d5c7a172c02d63465d67d2f8c92e79ff6e0668e16e63abd1ad97189abc022" },
   {433960,  "ff92f9decd1e617054d121ddf26c315698a125e2d3254e0af07bac83ec81bbb1" },
   {447500,  "e4a5b3d01ebea63a5cf40ae6c379585bdf3969e2097b7e746885cd8e2169b8f9" },
-  {482842,  "33e7c23c7e665fda38e27652323c7b1efa8c3a21af42493d030f48bbde1e4572" }
+  {482842,  "33e7c23c7e665fda38e27652323c7b1efa8c3a21af42493d030f48bbde1e4572" },
+  {494000,  "c8da9f4c2887d8a9c9f3a858aa05bb889eeb3e44e1b26e3f6a2cc2e20314759b" }
 };
   
 }

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The TurtleCoin developers
-// Copyright (c) 2018, The Karbo developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -19,7 +19,7 @@
 
 #pragma once
 #include <map>
-#include "CryptoNoteBasicImpl.h"
+#include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <Logging/LoggerRef.h>
 
 namespace CryptoNote

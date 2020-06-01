@@ -26,8 +26,8 @@
 
 #include "Common/ObserverManager.h"
 #include "Common/Util.h"
+#include "Checkpoints/Checkpoints.h"
 #include "CryptoNoteCore/BlockIndex.h"
-#include "CryptoNoteCore/Checkpoints.h"
 #include "CryptoNoteCore/Currency.h"
 #include "CryptoNoteCore/IBlockchainStorageObserver.h"
 #include "CryptoNoteCore/ITransactionValidator.h"
