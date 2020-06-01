@@ -32,7 +32,7 @@
 #include "ICore.h"
 #include "ICoreObserver.h"
 #include "Common/ObserverManager.h"
-#include "CryptoNoteCore/Checkpoints.h"
+#include "Checkpoints/Checkpoints.h"
 #include "System/Dispatcher.h"
 #include "CryptoNoteCore/MessageQueue.h"
 #include "CryptoNoteCore/BlockchainMessages.h"
