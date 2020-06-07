@@ -38,7 +38,7 @@ public:
   BlockchainExplorerDataBuilder& operator=(const BlockchainExplorerDataBuilder&) = delete;
   BlockchainExplorerDataBuilder& operator=(BlockchainExplorerDataBuilder&&) = delete;
 
-  bool fillBlockDetails(const Block& block, BlockDetails& blockDetails);
+  bool fillBlockDetails(const Block& block, BlockDetails& blockDetails, bool calculate_pow = false);
   bool fillTransactionDetails(const Transaction &tx, TransactionDetails& txRpcInfo, uint64_t timestamp = 0);
 
   static bool getPaymentId(const Transaction& transaction, Crypto::Hash& paymentId);

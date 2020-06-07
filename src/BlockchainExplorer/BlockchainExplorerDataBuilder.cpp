@@ -89,10 +89,9 @@ size_t BlockchainExplorerDataBuilder::median(std::vector<size_t>& v) {
   } else {//2, 4, 6...
     return (v[n - 1] + v[n]) / 2;
   }
-
 }
 
-bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDetails& blockDetails) {
+bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDetails& blockDetails, bool calculate_pow) {
   Crypto::Hash hash = get_block_hash(block);
 
   blockDetails.majorVersion = block.majorVersion;
@@ -115,9 +114,12 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   Crypto::Hash tmpHash = m_core.getBlockIdByHeight(blockDetails.height);
   blockDetails.isOrphaned = hash != tmpHash;
 
-  Crypto::cn_context context;
-  if (!get_block_longhash(context, block, blockDetails.proofOfWork)) {
-    return false;
+  blockDetails.proofOfWork = boost::value_initialized<Crypto::Hash>();
+  if (calculate_pow) {
+    Crypto::cn_context context;
+    if (!get_block_longhash(context, block, blockDetails.proofOfWork)) {
+      return false;
+    }
   }
 
   if (!m_core.getBlockDifficulty(blockDetails.height, blockDetails.difficulty)) {

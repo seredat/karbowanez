@@ -632,7 +632,7 @@ bool RpcServer::on_get_blocks_details_by_heights(const COMMAND_RPC_GET_BLOCKS_DE
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by height " + std::to_string(height) + '.' };
     }
     BlockDetails detail;
-    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail)) {
+    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
     }
     blockDetails.push_back(detail);
@@ -651,7 +651,7 @@ bool RpcServer::on_get_blocks_details_by_hashes(const COMMAND_RPC_GET_BLOCKS_DET
       //throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by hash " + Common::PodToHex(hash) + '.' };
     }
     BlockDetails detail;
-    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail)) {
+    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
     }
     blockDetails.push_back(detail);
@@ -674,7 +674,7 @@ bool RpcServer::on_get_block_details_by_height(const COMMAND_RPC_GET_BLOCK_DETAI
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
       "Internal error: can't get block by height " + std::to_string(req.blockHeight) + '.' };
 }
-  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails)) {
+  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
   }
   rsp.block = blockDetails;
@@ -697,7 +697,7 @@ bool RpcServer::on_get_block_details_by_hash(const COMMAND_RPC_GET_BLOCK_DETAILS
       CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
       "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
   }
-  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails)) {
+  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
   }
   rsp.block = blockDetails;
