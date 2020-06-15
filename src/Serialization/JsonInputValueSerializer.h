@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -16,6 +17,8 @@
 // along with Karbo.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
+
+#include <type_traits>
 
 #include "Common/JsonValue.h"
 #include "ISerializer.h"
@@ -70,7 +73,12 @@ private:
       return false;
     }
 
-    v = static_cast<T>(ptr->getInteger());
+    if (std::is_integral<T>::value) {
+      v = static_cast<T>(ptr->getInteger());
+    }
+    else if (std::is_floating_point<T>::value) {
+      v = static_cast<T>(ptr->getReal());
+    }
     return true;
   }
 };
