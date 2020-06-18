@@ -49,6 +49,7 @@
 #undef ERROR
 
 const uint32_t MAX_NUMBER_OF_BLOCKS_PER_STATS_REQUEST = 10000;
+const uint64_t BLOCK_LIST_MAX_COUNT = 1000;
 
 namespace CryptoNote {
 
@@ -620,167 +621,238 @@ bool RpcServer::on_get_pool_changes_lite(const COMMAND_RPC_GET_POOL_CHANGES_LITE
 }
 
 bool RpcServer::on_get_blocks_details_by_heights(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HEIGHTS::response& rsp) {
-  std::vector<BlockDetails> blockDetails;
-  for (const uint32_t& height : req.blockHeights) {
-    if (m_core.getCurrentBlockchainHeight() <= height) {
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
-        std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
+  try {
+    if (req.blockHeights.size() > BLOCK_LIST_MAX_COUNT) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        std::string("Requested blocks count: ") + std::to_string(req.blockHeights.size()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
     }
-    Crypto::Hash block_hash = m_core.getBlockIdByHeight(height);
-    Block blk;
-    if (!m_core.getBlockByHash(block_hash, blk)) {
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by height " + std::to_string(height) + '.' };
+    std::vector<BlockDetails> blockDetails;
+    for (const uint32_t& height : req.blockHeights) {
+      if (m_core.getCurrentBlockchainHeight() <= height) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+          std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
+      }
+      Crypto::Hash block_hash = m_core.getBlockIdByHeight(height);
+      Block blk;
+      if (!m_core.getBlockByHash(block_hash, blk)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by height " + std::to_string(height) + '.' };
+      }
+      BlockDetails detail;
+      if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+      }
+      blockDetails.push_back(detail);
     }
-    BlockDetails detail;
-    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
-    }
-    blockDetails.push_back(detail);
+    rsp.blocks = std::move(blockDetails);
   }
-  rsp.blocks = std::move(blockDetails);
-
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_blocks_details_by_hashes(const COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_BLOCKS_DETAILS_BY_HASHES::response& rsp) {
-  std::vector<BlockDetails> blockDetails;
-  for (const Crypto::Hash& hash : req.blockHashes) {
-    Block blk;
-    if (!m_core.getBlockByHash(hash, blk)) {
-      //throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by hash " + Common::PodToHex(hash) + '.' };
+  try {
+    if (req.blockHashes.size() > BLOCK_LIST_MAX_COUNT) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        std::string("Requested blocks count: ") + std::to_string(req.blockHashes.size()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
     }
-    BlockDetails detail;
-    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+    std::vector<BlockDetails> blockDetails;
+    for (const Crypto::Hash& hash : req.blockHashes) {
+      Block blk;
+      if (!m_core.getBlockByHash(hash, blk)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by hash " + Common::podToHex(hash) + '.' };
+      }
+      BlockDetails detail;
+      if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, detail, false)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+      }
+      blockDetails.push_back(detail);
     }
-    blockDetails.push_back(detail);
+    rsp.blocks = std::move(blockDetails);
   }
-  rsp.blocks = std::move(blockDetails);
-
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_block_details_by_height(const COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::request& req, COMMAND_RPC_GET_BLOCK_DETAILS_BY_HEIGHT::response& rsp) {
-  BlockDetails blockDetails;
-  if (m_core.getCurrentBlockchainHeight() <= req.blockHeight) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
-      std::string("To big height: ") + std::to_string(req.blockHeight) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
+  try {
+    BlockDetails blockDetails;
+    if (m_core.getCurrentBlockchainHeight() <= req.blockHeight) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+        std::string("To big height: ") + std::to_string(req.blockHeight) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
+    }
+    Crypto::Hash block_hash = m_core.getBlockIdByHeight(req.blockHeight);
+    Block blk;
+    if (!m_core.getBlockByHash(block_hash, blk)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't get block by height " + std::to_string(req.blockHeight) + '.' };
   }
-  Crypto::Hash block_hash = m_core.getBlockIdByHeight(req.blockHeight);
-  Block blk;
-  if (!m_core.getBlockByHash(block_hash, blk)) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't get block by height " + std::to_string(req.blockHeight) + '.' };
-}
-  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+    }
+    rsp.block = blockDetails;
   }
-  rsp.block = blockDetails;
-
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_block_details_by_hash(const COMMAND_RPC_GET_BLOCK_DETAILS_BY_HASH::request& req, COMMAND_RPC_GET_BLOCK_DETAILS_BY_HASH::response& rsp) {
-  BlockDetails blockDetails;
-  Crypto::Hash block_hash;
-  if (!parse_hash256(req.hash, block_hash)) {
-    throw JsonRpc::JsonRpcError{
-      CORE_RPC_ERROR_CODE_WRONG_PARAM,
-      "Failed to parse hex representation of block hash. Hex = " + req.hash + '.' };
+  try {
+    BlockDetails blockDetails;
+    Crypto::Hash block_hash;
+    if (!parse_hash256(req.hash, block_hash)) {
+      throw JsonRpc::JsonRpcError{
+        CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        "Failed to parse hex representation of block hash. Hex = " + req.hash + '.' };
+    }
+    Block blk;
+    if (!m_core.getBlockByHash(block_hash, blk)) {
+      throw JsonRpc::JsonRpcError{
+        CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
+    }
+    if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+    }
+    rsp.block = blockDetails;
   }
-  Block blk;
-  if (!m_core.getBlockByHash(block_hash, blk)) {
-    throw JsonRpc::JsonRpcError{
-      CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't get block by hash. Hash = " + req.hash + '.' };
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
   }
-  if (!blockchainExplorerDataBuilder.fillBlockDetails(blk, blockDetails, true)) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill block details." };
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
   }
-  rsp.block = blockDetails;
-
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_blocks_hashes_by_timestamps(const COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS::request& req, COMMAND_RPC_GET_BLOCKS_HASHES_BY_TIMESTAMPS::response& rsp) {
-  uint32_t count;
-  std::vector<Crypto::Hash> blockHashes;
-  if (!m_core.get_blockchain_storage().getBlockIdsByTimestamp(req.timestampBegin, req.timestampEnd, req.limit, blockHashes, count)) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't get blocks within timestamps " + std::to_string(req.timestampBegin) + " - " + std::to_string(req.timestampEnd) + "." };
+  try {
+    uint32_t count;
+    std::vector<Crypto::Hash> blockHashes;
+    if (!m_core.get_blockchain_storage().getBlockIdsByTimestamp(req.timestampBegin, req.timestampEnd, req.limit, blockHashes, count)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't get blocks within timestamps " + std::to_string(req.timestampBegin) + " - " + std::to_string(req.timestampEnd) + "." };
+    }
+    rsp.blockHashes = std::move(blockHashes);
+    rsp.count = count;
   }
-  rsp.blockHashes = std::move(blockHashes);
-  rsp.count = count;
-  
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
 
 bool RpcServer::on_get_transactions_details_by_hashes(const COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::request& req, COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES::response& rsp) {
-  std::vector<TransactionDetails> transactionsDetails;
-  transactionsDetails.reserve(req.transactionHashes.size());
+  try {
+    std::vector<TransactionDetails> transactionsDetails;
+    transactionsDetails.reserve(req.transactionHashes.size());
 
-  std::list<Crypto::Hash> missed_txs;
-  std::list<Transaction> txs;
-  m_core.getTransactions(req.transactionHashes, txs, missed_txs, true);
+    std::list<Crypto::Hash> missed_txs;
+    std::list<Transaction> txs;
+    m_core.getTransactions(req.transactionHashes, txs, missed_txs, true);
 
-  if (!txs.empty()) {
-    for (const Transaction& tx : txs) {
-      TransactionDetails txDetails;
-      if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, txDetails)) {
-        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-          "Internal error: can't fill transaction details." };
+    if (!txs.empty()) {
+      for (const Transaction& tx : txs) {
+        TransactionDetails txDetails;
+        if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, txDetails)) {
+          throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+            "Internal error: can't fill transaction details." };
+        }
+        transactionsDetails.push_back(txDetails);
       }
-      transactionsDetails.push_back(txDetails);
-    }
 
-    rsp.transactions = std::move(transactionsDetails);
-    rsp.status = CORE_RPC_STATUS_OK;
-  }
-  if (txs.empty() || !missed_txs.empty()) {
-    std::ostringstream ss;
-    std::string separator;
-    for (auto h : missed_txs) {
-      ss << separator << Common::podToHex(h);
-      separator = ",";
+      rsp.transactions = std::move(transactionsDetails);
+      rsp.status = CORE_RPC_STATUS_OK;
     }
-    rsp.status = "transaction(s) not found: " + ss.str() + ".";
+    if (txs.empty() || !missed_txs.empty()) {
+      std::ostringstream ss;
+      std::string separator;
+      for (auto h : missed_txs) {
+        ss << separator << Common::podToHex(h);
+        separator = ",";
+      }
+      rsp.status = "transaction(s) not found: " + ss.str() + ".";
+    }
   }
-
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   return true;
 }
 
 bool RpcServer::on_get_transaction_details_by_hash(const COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::request& req, COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH::response& rsp) {
-  std::list<Crypto::Hash> missed_txs;
-  std::list<Transaction> txs;
-  std::vector<Crypto::Hash> hashes;
-  Crypto::Hash tx_hash;
-  if (!parse_hash256(req.hash, tx_hash)) {
-    throw JsonRpc::JsonRpcError{
-      CORE_RPC_ERROR_CODE_WRONG_PARAM,
-      "Failed to parse hex representation of transaction hash. Hex = " + req.hash + '.' };
+  try {
+    std::list<Crypto::Hash> missed_txs;
+    std::list<Transaction> txs;
+    std::vector<Crypto::Hash> hashes;
+    Crypto::Hash tx_hash;
+    if (!parse_hash256(req.hash, tx_hash)) {
+      throw JsonRpc::JsonRpcError{
+        CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        "Failed to parse hex representation of transaction hash. Hex = " + req.hash + '.' };
+    }
+    hashes.push_back(tx_hash);
+    m_core.getTransactions(hashes, txs, missed_txs, true);
+
+    if (txs.empty() || !missed_txs.empty()) {
+      std::string hash_str = Common::podToHex(missed_txs.back());
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        "transaction wasn't found. Hash = " + hash_str + '.' };
+    }
+
+    TransactionDetails transactionsDetails;
+    if (!blockchainExplorerDataBuilder.fillTransactionDetails(txs.back(), transactionsDetails)) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
+        "Internal error: can't fill transaction details." };
+    }
+
+    rsp.transaction = std::move(transactionsDetails);
   }
-  hashes.push_back(tx_hash);
-  m_core.getTransactions(hashes, txs, missed_txs, true);
-
-  if (txs.empty() || !missed_txs.empty()) {
-    std::string hash_str = Common::podToHex(missed_txs.back());
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
-      "transaction wasn't found. Hash = " + hash_str + '.' };
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
   }
-
-  TransactionDetails transactionsDetails;
-  if (!blockchainExplorerDataBuilder.fillTransactionDetails(txs.back(), transactionsDetails)) {
-    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR,
-      "Internal error: can't fill transaction details." };
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
   }
-
-  rsp.transaction = std::move(transactionsDetails);
-
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
@@ -792,9 +864,17 @@ bool RpcServer::on_get_transaction_hashes_by_paymentid(const COMMAND_RPC_GET_TRA
       CORE_RPC_ERROR_CODE_WRONG_PARAM,
       "Failed to parse hex representation of payment id. Hex = " + req.paymentId + '.' };
   }
-  
-  rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(pid_hash);
-
+  try {
+    rsp.transactionHashes = m_core.getTransactionHashesByPaymentId(pid_hash);
+  }
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
   rsp.status = CORE_RPC_STATUS_OK;
   return true;
 }
@@ -1208,7 +1288,7 @@ bool RpcServer::on_blocks_list_json(const COMMAND_RPC_GET_BLOCKS_LIST::request& 
   }
 
   uint32_t print_blocks_count = 10;
-  if(req.count <= 1000)
+  if(req.count <= BLOCK_LIST_MAX_COUNT)
     print_blocks_count = req.count;
   
   uint32_t last_height = req.height - print_blocks_count;
