@@ -32,6 +32,10 @@
 
 using namespace CryptoNote;
 
+#if defined(WIN32)
+#undef ERROR
+#endif
+
 namespace Miner {
 
 namespace {
@@ -207,7 +211,7 @@ void MinerManager::stopBlockchainMonitoring() {
 
 bool MinerManager::submitBlock(const Block& minedBlock, const std::string& daemonHost, uint16_t daemonPort) {
   try {
-    HttpClient client(m_dispatcher, daemonHost, daemonPort);
+    HttpClient client(m_dispatcher, daemonHost, daemonPort, false);
 
     COMMAND_RPC_SUBMITBLOCK::request request;
     request.emplace_back(Common::toHex(toBinaryArray(minedBlock)));
@@ -227,7 +231,7 @@ bool MinerManager::submitBlock(const Block& minedBlock, const std::string& daemo
 
 BlockMiningParameters MinerManager::requestMiningParameters(System::Dispatcher& dispatcher, const std::string& daemonHost, uint16_t daemonPort, const std::string& miningAddress) {
   try {
-    HttpClient client(dispatcher, daemonHost, daemonPort);
+    HttpClient client(dispatcher, daemonHost, daemonPort, false);
 
     COMMAND_RPC_GETBLOCKTEMPLATE::request request;
     request.wallet_address = miningAddress;

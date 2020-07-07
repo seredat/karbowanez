@@ -61,10 +61,6 @@ namespace CryptoNote {
     bindPortSSL(RPC_DEFAULT_SSL_PORT) {
   }
 
-  std::string RpcServerConfig::getBindAddress() const {
-    return bindIp + ":" + std::to_string(bindPort);
-  }
-
   bool RpcServerConfig::isEnabledSSL() const { return enableSSL; }
   uint16_t RpcServerConfig::getBindPort() const { return bindPort; }
   uint16_t RpcServerConfig::getBindPortSSL() const { return bindPortSSL; }

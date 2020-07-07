@@ -112,6 +112,10 @@ public:
 
   virtual std::string feeAddress() const override { return std::string(); }
   virtual uint64_t feeAmount() const override { return 0; }
+
+  virtual void setRootCert(const std::string &path) override { }
+  virtual void disableVerify() override { }
+
 };
 
 
