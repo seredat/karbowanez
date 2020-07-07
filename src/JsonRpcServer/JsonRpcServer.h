@@ -48,7 +48,10 @@ public:
   JsonRpcServer(System::Dispatcher& sys, System::Event& stopEvent, Logging::ILogger& loggerGroup);
   JsonRpcServer(const JsonRpcServer&) = delete;
 
-  void start(const std::string& bindAddress, uint16_t bindPort, const std::string& m_rpcUser, const std::string& m_rpcPassword);
+  void setCerts(const std::string& chain_file, const std::string& key_file, const std::string& dh_file);
+
+  void start(const std::string& bindAddress, uint16_t bindPort, uint16_t bindPortSSL,
+             bool server_ssl_enable, const std::string& m_rpcUser, const std::string& m_rpcPassword);
 
 protected:
   static void makeErrorResponse(const std::error_code& ec, Common::JsonValue& resp);

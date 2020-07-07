@@ -24,9 +24,15 @@
 #include <HTTP/HttpResponse.h>
 #include <System/TcpConnection.h>
 #include <System/TcpStream.h>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/asio/ssl/stream.hpp>
 #include "JsonRpc.h"
 
 #include "Serialization/SerializationTools.h"
+
+using boost::asio::ip::tcp;
+
 
 namespace CryptoNote {
 
@@ -38,11 +44,14 @@ public:
 class HttpClient {
 public:
 
-  HttpClient(System::Dispatcher& dispatcher, const std::string& address, uint16_t port);
+  HttpClient(System::Dispatcher& dispatcher, const std::string& address, uint16_t port, bool ssl_enable);
   ~HttpClient();
-  void request(const HttpRequest& req, HttpResponse& res);
+  void request(HttpRequest& req, HttpResponse& res);
   
   bool isConnected() const;
+
+  void setRootCert(const std::string &path);
+  void disableVerify();
 
 private:
   void connect();
@@ -51,10 +60,16 @@ private:
   const std::string m_address;
   const uint16_t m_port;
 
+  std::string m_ssl_cert;
+
   bool m_connected = false;
+  bool m_ssl_enable;
+  bool m_ssl_no_verify;
   System::Dispatcher& m_dispatcher;
   System::TcpConnection m_connection;
   std::unique_ptr<System::TcpStreambuf> m_streamBuf;
+  boost::asio::io_service m_io_service;
+  std::unique_ptr<boost::asio::ssl::stream<tcp::socket>> m_ssl_sock;
 };
 
 template <typename Request, typename Response>

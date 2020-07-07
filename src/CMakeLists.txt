@@ -4,6 +4,10 @@ add_definitions(-DSTATICLIB)
 include_directories(${CMAKE_SOURCE_DIR}/external/linenoise)
 include_directories(${CMAKE_SOURCE_DIR}/external/parallel_hashmap)
 
+if (WITH_SSL AND SECURE_FOUND)
+  include_directories(${SECURE_INCLUDE_DIR})
+endif()
+
 file(GLOB_RECURSE BlockchainExplorer BlockchainExplorer/*)
 file(GLOB_RECURSE Checkpoints Checkpoints/*)
 file(GLOB_RECURSE Common Common/*)
@@ -94,8 +98,16 @@ target_link_libraries(PaymentGateService ${KarboPaymentGate} ${KarboWallet} ${Ka
                       ${KarboLink} ${KarboCommon} upnpc-static ${Boost_LIBRARIES})
 target_link_libraries(Miner ${KarboCore} ${KarboCommon} ${Boost_LIBRARIES})
 
+if (WITH_SSL AND SECURE_FOUND)
+  target_link_libraries(Daemon ${SECURE_LIBRARIES})
+  target_link_libraries(SimpleWallet ${SECURE_LIBRARIES})
+  target_link_libraries(GreenWallet ${SECURE_LIBRARIES})
+  target_link_libraries(Optimizer ${SECURE_LIBRARIES})
+  target_link_libraries(PaymentGateService ${SECURE_LIBRARIES})
+endif()
+
 if (MSVC)
-  target_link_libraries(System ws2_32)
+  target_link_libraries(System crypt32 ws2_32)
   target_link_libraries(Daemon Rpcrt4)
   target_link_libraries(SimpleWallet Rpcrt4)
   target_link_libraries(PaymentGateService Rpcrt4)
