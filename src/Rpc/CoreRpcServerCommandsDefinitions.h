@@ -283,6 +283,7 @@ struct COMMAND_RPC_GET_INFO {
     std::string top_block_hash;
     uint64_t difficulty;
     uint64_t cumulative_difficulty;
+    uint64_t max_cumulative_block_size;
     uint64_t next_reward;
     uint64_t min_fee;
     uint64_t transactions_count;
@@ -306,6 +307,7 @@ struct COMMAND_RPC_GET_INFO {
       KV_MEMBER(top_block_hash)
       KV_MEMBER(difficulty)
       KV_MEMBER(cumulative_difficulty)
+      KV_MEMBER(max_cumulative_block_size)
       KV_MEMBER(next_reward)
       KV_MEMBER(min_fee)
       KV_MEMBER(transactions_count)

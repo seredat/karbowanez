@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -17,6 +18,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 #include <boost/variant.hpp>
 
