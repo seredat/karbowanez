@@ -92,9 +92,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-ubuntu16:
-    name: Ubuntu 16.04
-    runs-on: ubuntu-16.04
+  build-ubuntu20:
+    name: Ubuntu 20.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@master
         with:
@@ -106,7 +106,7 @@ jobs:
           sudo apt install -y libboost-all-dev
           build_folder="build/release"
           krb_ver=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
-          release_name=Karbo-cli-ubuntu16.04-"$krb_ver"
+          release_name=Karbo-cli-ubuntu20.04-"$krb_ver"
           mkdir -p "$build_folder"
           cd "$build_folder"
           cmake -D ARCH=default -D CMAKE_BUILD_TYPE=Release -D CMAKE_POSITION_INDEPENDENT_CODE:BOOL=true -D BOOST_IGNORE_SYSTEM_PATHS_DEFAULT=ON -D BOOST_ROOT=/usr ../..
