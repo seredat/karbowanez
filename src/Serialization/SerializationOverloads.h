@@ -25,6 +25,7 @@
 #include <cstring>
 #include <list>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <set>
 #include <type_traits>

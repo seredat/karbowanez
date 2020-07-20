@@ -330,7 +330,7 @@ int CryptoNoteProtocolHandler::handle_notify_new_transactions(int command, NOTIF
     logger(Logging::TRACE) << context
       << " Pending lite block detected, handling request as missing lite block transactions response";
     std::vector<BinaryArray> _txs;
-    for (const auto tx : arg.txs) {
+    for (const auto& tx : arg.txs) {
       _txs.push_back(asBinaryArray(tx));
     }
     return doPushLiteBlock(context.m_pending_lite_block->request, context, std::move(_txs));
