@@ -1178,4 +1178,24 @@ struct COMMAND_RPC_GET_STATS_BY_HEIGHTS_RANGE {
   };
 };
 
+struct COMMAND_RPC_RESOLVE_OPEN_ALIAS {
+  struct request {
+    std::string url;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(url);
+    }
+  };
+
+  struct response {
+    std::vector<std::string> addresses;
+    std::string status;
+
+    void serialize(ISerializer& s) {
+      KV_MEMBER(addresses);
+      KV_MEMBER(status);
+    }
+  };
+};
+
 }

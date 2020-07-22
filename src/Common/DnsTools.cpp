@@ -135,4 +135,79 @@ namespace Common {
 
 #endif
 
+bool processServerAliasResponse(const std::string& s, std::string& address) {
+  try {
+    // Courtesy of Monero Project
+    // make sure the txt record has "oa1:krb" and find it
+    auto pos = s.find("oa1:krb");
+    if (pos == std::string::npos)
+      return false;
+    // search from there to find "recipient_address="
+    pos = s.find("recipient_address=", pos);
+    if (pos == std::string::npos)
+      return false;
+    pos += 18; // move past "recipient_address="
+    // find the next semicolon
+    auto pos2 = s.find(";", pos);
+    if (pos2 != std::string::npos)
+    {
+      // length of address == 95, we can at least validate that much here
+      if (pos2 - pos == 95)
+      {
+        address = s.substr(pos, 95);
+      }
+      else {
+        return false;
+      }
+    }
+  }
+  catch (std::exception&) {
+    return false;
+  }
+
+  return true;
+}
+
+std::string resolveAlias(const std::string& aliasUrl) {
+  std::string host;
+  std::string uri;
+  std::vector<std::string> records;
+  std::string address;
+
+  if (!Common::fetch_dns_txt(aliasUrl, records)) {
+    throw std::runtime_error("Failed to lookup DNS record");
+  }
+
+  for (const auto& record : records) {
+    if (Common::processServerAliasResponse(record, address)) {
+      return address;
+    }
+  }
+  throw std::runtime_error("Failed to parse server response");
+}
+
+std::vector<std::string> resolveAliases(const std::string& aliasUrl) {
+  std::string host;
+  std::string uri;
+  std::vector<std::string> records;
+  std::vector<std::string> addresses;
+  
+  if (!Common::fetch_dns_txt(aliasUrl, records)) {
+    throw std::runtime_error("Failed to lookup DNS record");
+  }
+
+  for (const auto& record : records) {
+    std::string address;
+    if (Common::processServerAliasResponse(record, address)) {
+      addresses.push_back(address);
+    }
+  }
+
+  if (!addresses.empty()) {
+    return addresses;
+  }
+
+  throw std::runtime_error("Failed to parse server response");
+}
+
 }

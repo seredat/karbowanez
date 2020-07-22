@@ -127,9 +127,6 @@ namespace CryptoNote
     bool sign_message(const std::vector<std::string> &args);
     bool verify_message(const std::vector<std::string> &args);
 
-#ifndef __ANDROID__
-    std::string resolveAlias(const std::string& aliasUrl);
-#endif
     void printConnectionError() const;
     uint64_t getMinimalFee();
 
