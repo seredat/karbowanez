@@ -1188,11 +1188,11 @@ struct COMMAND_RPC_RESOLVE_OPEN_ALIAS {
   };
 
   struct response {
-    std::vector<std::string> addresses;
+    std::string address;
     std::string status;
 
     void serialize(ISerializer& s) {
-      KV_MEMBER(addresses);
+      KV_MEMBER(address);
       KV_MEMBER(status);
     }
   };

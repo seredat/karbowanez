@@ -2068,15 +2068,11 @@ bool RpcServer::on_verify_message(const COMMAND_RPC_VERIFY_MESSAGE::request& req
 
 bool RpcServer::on_resolve_open_alias(const COMMAND_RPC_RESOLVE_OPEN_ALIAS::request& req, COMMAND_RPC_RESOLVE_OPEN_ALIAS::response& res) {
   try {
-    res.addresses = Common::resolveAliases(req.url);
+    res.address = Common::resolveAlias(req.url);
 
-    if (!res.addresses.empty()) {
-      for (const auto& address : res.addresses) {
-        AccountPublicAddress ignore;
-        if (!m_core.currency().parseAccountAddressString(address, ignore)) {
-          throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Address \"" + address + "\" is invalid");
-        }
-      }
+    AccountPublicAddress ignore;
+    if (!m_core.currency().parseAccountAddressString(res.address, ignore)) {
+          throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Address \"" + res.address + "\" is invalid");
     }
   }
   catch (std::exception& e) {
