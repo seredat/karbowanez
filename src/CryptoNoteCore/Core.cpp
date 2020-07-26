@@ -1076,6 +1076,10 @@ bool Core::scanOutputkeysForIndices(const KeyInput& txInToKey, std::list<std::pa
 }
 
 bool Core::getBlockTimestamp(uint32_t height, uint64_t& timestamp) {
+  if (height > getCurrentBlockchainHeight()) {
+    return false;
+  }
+
   timestamp = m_blockchain.getBlockTimestamp(height);
   return true;
 }
