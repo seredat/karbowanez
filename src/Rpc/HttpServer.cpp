@@ -27,7 +27,8 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl/stream.hpp>
 
-#include <Common/Base64.h>
+#include <Common/base64.hpp>
+#include <Common/StringTools.h>
 #include <HTTP/HttpParser.h>
 #include <System/InterruptedException.h>
 #include <System/TcpStream.h>
@@ -77,7 +78,7 @@ void HttpServer::start(const std::string& address, uint16_t port, uint16_t port_
   this->m_address = address;
 
   if (!user.empty() || !password.empty()) {
-    m_credentials = Tools::Base64::encode(user + ":" + password);
+    m_credentials = base64::encode(Common::asBinaryArray(user + ":" + password));
   }
 
   if (!this->m_chain_file.empty() && !this->m_key_file.empty() && !this->m_dh_file.empty() &&
