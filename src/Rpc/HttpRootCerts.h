@@ -1,4 +1,5 @@
-
+// Copyright (c) 2019-2020, The Karbo developers
+//
 // This file is part of Karbo.
 //
 // Bundle of CA Root Certificates
