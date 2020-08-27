@@ -22,6 +22,7 @@
 
 #include <CryptoTypes.h>
 #include "generic-ops.h"
+#include "yespower.h"
 
 namespace Crypto {
 
@@ -61,6 +62,24 @@ namespace Crypto {
 
   inline void cn_slow_hash(cn_context &context, const void *data, size_t length, Hash &hash) {
     cn_slow_hash(data, length, reinterpret_cast<char *>(&hash));
+  }
+
+  inline bool y_slow_hash(const void *data, size_t length, Hash &hash) {
+    Hash h;
+    cn_fast_hash(data, length, reinterpret_cast<char *>(&h));
+
+    static const yespower_params_t yespower_params = {
+      2048,
+      32,
+      h.data,
+      sizeof(h)
+    };
+
+    if (yespower_tls(reinterpret_cast<uint8_t *>(&data), length, &yespower_params, reinterpret_cast<yespower_binary_t *>(&hash))) {
+      return false;
+    }
+
+    return true;
   }
 
   inline void tree_hash(const Hash *hashes, size_t count, Hash &root_hash) {
