@@ -48,7 +48,7 @@ cd ..
 make
 ```
 
- The resulting executables can be found in `build/release/src`.
+The resulting executables can be found in `build/release/src`.
 
 **Advanced options:**
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -44,7 +45,7 @@ void invokeJsonRpcCommand(HttpClient& httpClient, JsonRpcRequest& jsReq, JsonRpc
   HttpResponse httpRes;
 
   if (!user.empty() || !password.empty()) {
-    httpReq.addHeader("Authorization", "Basic " + Tools::Base64::encode(user + ":" + password));
+    httpReq.addHeader("Authorization", "Basic " + base64::encode(Common::asBinaryArray(user + ":" + password)));
   }
   httpReq.addHeader("Content-Type", "application/json");
   httpReq.setUrl("/json_rpc");
