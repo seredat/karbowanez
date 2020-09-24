@@ -55,7 +55,7 @@ struct TransactionOutputInformation {
   Crypto::PublicKey transactionPublicKey;
 
   union {
-    Crypto::PublicKey outputKey;         // Type: Key 
+    Crypto::PublicKey outputKey; // Type: Key 
     uint32_t requiredSignatures; // Type: Multisignature
   };
 };
