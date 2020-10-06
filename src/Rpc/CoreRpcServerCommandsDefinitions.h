@@ -1018,6 +1018,35 @@ struct COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH {
   };
 };
 
+struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HEIGHTS {
+  struct request {
+    std::vector<uint32_t> heights;
+    bool include_miner_txs = true;
+    bool exclude_signatures = true;
+    bool range = false;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(heights)
+      KV_MEMBER(include_miner_txs)
+      KV_MEMBER(exclude_signatures)
+      KV_MEMBER(range)
+    };
+  };
+
+  struct response {
+    std::vector<TransactionDetails> transactions;
+    std::list<std::string> missed_txs;
+    std::string status;
+
+    void serialize(ISerializer &s)
+    {
+      KV_MEMBER(transactions)
+      KV_MEMBER(missed_txs)
+      KV_MEMBER(status)       
+    }
+  };
+};
+
 //-----------------------------------------------
 struct reserve_proof_entry
 {
