@@ -911,28 +911,29 @@ bool RpcServer::on_get_transactions_details_by_heights(const COMMAND_RPC_GET_TRA
         transactions.reserve(blk.transactionHashes.size());
       }
 
-      //bool isOrphaned = get_block_hash(blk) != block_hash;
-
       std::list<Transaction> found;
       std::list<Crypto::Hash> missed;
-      m_core.getTransactions(blk.transactionHashes, found, missed, false /*isOrphaned*/);
-      if (found.size() != blk.transactionHashes.size()) {
-        return false;
-      }
 
-      for (const Transaction& tx : found) {
-        TransactionDetails transactionDetails;
-        if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, transactionDetails, blk.timestamp)) {
-          throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill tx details." };
-        }
-        if (req.exclude_signatures) {
-          transactionDetails.signatures.clear();
-        }
-        transactions.push_back(std::move(transactionDetails));
-      }
+      if (!blk.transactionHashes.empty()) {
+        m_core.getTransactions(blk.transactionHashes, found, missed, false);
+        //if (found.size() != blk.transactionHashes.size()) {
+        //  throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: not all block's txs were found." };
+        //}
 
-      for (const auto& miss_tx : missed) {
-        rsp.missed_txs.push_back(Common::podToHex(miss_tx));
+        for (const Transaction& tx : found) {
+          TransactionDetails transactionDetails;
+          if (!blockchainExplorerDataBuilder.fillTransactionDetails(tx, transactionDetails, blk.timestamp)) {
+            throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill tx details." };
+          }
+          if (req.exclude_signatures) {
+            transactionDetails.signatures.clear();
+          }
+          transactions.push_back(std::move(transactionDetails));
+        }
+
+        for (const auto& miss_tx : missed) {
+          rsp.missed_txs.push_back(Common::podToHex(miss_tx));
+        }
       }
     }
     rsp.transactions = std::move(transactions);
