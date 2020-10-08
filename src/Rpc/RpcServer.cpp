@@ -202,6 +202,7 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
       std::string block_hash_method = "/api/block/hash/";
       std::string tx_hash_method = "/api/transaction/";
       std::string payment_id_method = "/api/payment_id/";
+      std::string tx_mempool_method = "/api/mempool/";
 
       if (Common::starts_with(url, block_height_method)) {
 
@@ -298,7 +299,33 @@ void RpcServer::processRequest(const HttpRequest& request, HttpResponse& respons
         }
         return;
 
+      } else if (Common::starts_with(url, tx_mempool_method)) {
+
+        auto it = s_handlers.find("/gettransactionsinpool");
+        if (!it->second.allowBusyCore && !isCoreReady())
+        {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Core is busy");
+          return;
+        }
+
+        COMMAND_RPC_GET_TRANSACTIONS_POOL::request req;
+        COMMAND_RPC_GET_TRANSACTIONS_POOL::response rsp;
+        bool r = on_get_transactions_pool(req, rsp);
+        if (r) {
+          response.addHeader("Content-Type", "application/json");
+          response.setStatus(HttpResponse::HTTP_STATUS::STATUS_200);
+          response.setBody(storeToJson(rsp));
+        }
+        else {
+          response.setStatus(HttpResponse::STATUS_500);
+          response.setBody("Internal error");
+        }
+
+        return;
+
       }
+
       response.setStatus(HttpResponse::STATUS_404);
       return;
     }
