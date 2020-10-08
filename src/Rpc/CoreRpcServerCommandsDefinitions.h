@@ -676,11 +676,25 @@ struct COMMAND_RPC_GET_TRANSACTIONS_BY_PAYMENT_ID {
   };
 };
 
-struct COMMAND_RPC_GET_TRANSACTIONS_POOL {
+struct COMMAND_RPC_GET_TRANSACTIONS_POOL_SHORT {
   typedef EMPTY_STRUCT request;
 
   struct response {
     std::vector<transaction_pool_response> transactions;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transactions)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_TRANSACTIONS_POOL {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<TransactionDetails> transactions;
     std::string status;
 
     void serialize(ISerializer &s) {
