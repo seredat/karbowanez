@@ -1040,13 +1040,13 @@ bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const 
         }
 
         for (const auto &txi : txs) {
-          rsp.transactions.push_back(COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::entry());
-          COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::entry &e = rsp.transactions.back();
+          rsp.transactions.push_back(tx_with_output_global_indexes());
+          tx_with_output_global_indexes &e = rsp.transactions.back();
 
-          e.hash = *ti++; // missed are rather improbable
+          e.hash = *ti++;
           e.height = height;
           e.timestamp = blk.timestamp;
-          e.transaction = txi.first;
+          e.transaction = *static_cast<const TransactionPrefix*>(&txi.first);
           e.output_indexes = txi.second;
           e.fee = getInputAmount(txi.first) - getOutputAmount(txi.first);
         }
