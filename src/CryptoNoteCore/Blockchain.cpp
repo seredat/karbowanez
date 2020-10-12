@@ -1452,6 +1452,24 @@ bool Blockchain::getBlocks(uint32_t start_offset, uint32_t count, std::list<Bloc
   return true;
 }
 
+bool Blockchain::getTransactionsWithOutputGlobalIndexes(const std::vector<Crypto::Hash>& txs_ids, std::list<Crypto::Hash>& missed_txs, std::vector<std::pair<Transaction, std::vector<uint32_t>>>& txs) {
+  std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+
+  for (const auto& tx_id : txs_ids) {
+    auto it = m_transactionMap.find(tx_id);
+    if (it == m_transactionMap.end()) {
+      missed_txs.push_back(tx_id);
+    }
+    else {
+      const TransactionEntry& tx = transactionByIndex(it->second);
+      if (!(tx.m_global_output_indexes.size())) { logger(ERROR, BRIGHT_RED) << "internal error: global indexes for transaction " << tx_id << " is empty"; return false; }
+      txs.push_back(std::make_pair(tx.tx, tx.m_global_output_indexes));
+    }
+  }
+
+  return true;
+}
+
 bool Blockchain::handleGetObjects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp) { //Deprecated. Should be removed with CryptoNoteProtocolHandler.
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   rsp.current_blockchain_height = getCurrentBlockchainHeight();

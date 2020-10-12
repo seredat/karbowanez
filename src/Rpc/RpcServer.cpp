@@ -168,6 +168,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/get_transaction_details_by_hashes", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HASHES>(&RpcServer::on_get_transactions_details_by_hashes), true } },
   { "/get_transaction_details_by_hash", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_DETAILS_BY_HASH>(&RpcServer::on_get_transaction_details_by_hash), true } },
   { "/get_transaction_details_by_heights", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HEIGHTS>(&RpcServer::on_get_transactions_details_by_heights), true } },
+  { "/get_transactions_with_output_global_indexes_by_heights", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS>(&RpcServer::on_get_transactions_with_output_global_indexes_by_heights), true } },
   { "/get_transaction_hashes_by_payment_id", { jsonMethod<COMMAND_RPC_GET_TRANSACTION_HASHES_BY_PAYMENT_ID>(&RpcServer::on_get_transaction_hashes_by_paymentid), true } },
   
   // disabled in restricted rpc mode
@@ -368,6 +369,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "gettransactionhashesbypaymentid", { makeMemberMethod(&RpcServer::on_get_transaction_hashes_by_paymentid), true } },
       { "gettransactionsbyhashes", { makeMemberMethod(&RpcServer::on_get_transactions_details_by_hashes), true } },
       { "gettransactionsbyheights", { makeMemberMethod(&RpcServer::on_get_transactions_details_by_heights), true } },
+      { "gettransactionswithoutputglobalindexesbyheights", { makeMemberMethod(&RpcServer::on_get_transactions_with_output_global_indexes_by_heights), true } },
       { "getcurrencyid", { makeMemberMethod(&RpcServer::on_get_currency_id), true } },
       { "getstatsbyheights", { makeMemberMethod(&RpcServer::on_get_stats_by_heights), false } },
       { "getstatsinrange", { makeMemberMethod(&RpcServer::on_get_stats_by_heights_range), false } },
@@ -876,7 +878,7 @@ bool RpcServer::on_get_transactions_details_by_heights(const COMMAND_RPC_GET_TRA
           std::string("The range is set to true but heights size is not equal to 2") };
       }
       uint32_t upperBound = std::min(req.heights[1], m_core.getCurrentBlockchainHeight());
-      for (size_t i = 0; i < (upperBound - req.heights[0]) + 1; i++) {
+      for (size_t i = 0; i < (upperBound - req.heights[0]); i++) {
         heights.push_back(req.heights[0] + i);
       }
     }
@@ -937,6 +939,94 @@ bool RpcServer::on_get_transactions_details_by_heights(const COMMAND_RPC_GET_TRA
       }
     }
     rsp.transactions = std::move(transactions);
+  }
+  catch (std::system_error& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
+    return false;
+  }
+  catch (std::exception& e) {
+    throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error: " + std::string(e.what()) };
+    return false;
+  }
+  rsp.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::request& req, COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::response& rsp) {
+  try {
+    if (req.heights.size() > BLOCK_LIST_MAX_COUNT) {
+      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+        std::string("Requested blocks count: ") + std::to_string(req.heights.size()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
+    }
+
+    std::vector<uint32_t> heights;
+    
+    if (req.range) {
+      if (req.heights.size() != 2) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+          std::string("The range is set to true but heights size is not equal to 2") };
+      }
+      uint32_t upperBound = std::min(req.heights[1], m_core.getCurrentBlockchainHeight());
+      for (size_t i = 0; i < (upperBound - req.heights[0]); i++) {
+        heights.push_back(req.heights[0] + i);
+      }
+    }
+    else {
+      heights = req.heights;
+    }
+
+    for (const uint32_t& height : heights) {
+      if (m_core.getCurrentBlockchainHeight() <= height) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_TOO_BIG_HEIGHT,
+          std::string("To big height: ") + std::to_string(height) + ", current blockchain height = " + std::to_string(m_core.getCurrentBlockchainHeight() - 1) };
+      }
+
+      Crypto::Hash block_hash = m_core.getBlockIdByHeight(height);
+      Block blk;
+      if (!m_core.getBlockByHash(block_hash, blk)) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't get block by height " + std::to_string(height) + '.' };
+      }
+
+      std::vector<Crypto::Hash> txs_ids;
+
+      if (req.include_miner_txs) {
+        txs_ids.reserve(blk.transactionHashes.size() + 1);
+        txs_ids.push_back(getObjectHash(blk.baseTransaction));
+      }
+      else {
+        txs_ids.reserve(blk.transactionHashes.size());
+      }
+      if (!blk.transactionHashes.empty()) {
+        txs_ids.insert(txs_ids.end(), blk.transactionHashes.begin(), blk.transactionHashes.end());
+      }
+
+      std::vector<Crypto::Hash>::const_iterator ti = txs_ids.begin();
+
+      std::vector<std::pair<Transaction, std::vector<uint32_t>>> txs;
+      std::list<Crypto::Hash> missed;
+
+      if (!txs_ids.empty()) {
+        if (!m_core.getTransactionsWithOutputGlobalIndexes(txs_ids, missed, txs)) {
+          throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Error getting transactions with output global indexes" };
+        }
+
+        for (const auto &txi : txs) {
+          rsp.transactions.push_back(COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::entry());
+          COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::entry &e = rsp.transactions.back();
+
+          e.hash = *ti++; // missed are rather improbable
+          e.height = height;
+          e.timestamp = blk.timestamp;
+          e.transaction = txi.first;
+          e.output_indexes = txi.second;
+          e.fee = getInputAmount(txi.first) - getOutputAmount(txi.first);
+        }
+      }
+
+      for (const auto& miss_tx : missed) {
+        rsp.missed_txs.push_back(Common::podToHex(miss_tx));
+      }
+    }
   }
   catch (std::system_error& e) {
     throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, e.what() };
