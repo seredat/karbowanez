@@ -1062,6 +1062,28 @@ struct COMMAND_RPC_GET_TRANSACTIONS_DETAILS_BY_HEIGHTS {
 };
 
 //-----------------------------------------------
+
+struct tx_with_output_global_indexes {
+  TransactionPrefix transaction;
+  Crypto::Hash hash;
+  Crypto::Hash block_hash;
+  uint32_t height;
+  uint64_t fee;
+  uint64_t timestamp;
+  std::vector<uint32_t> output_indexes;
+
+  void serialize(ISerializer &s)
+  {
+    KV_MEMBER(transaction)
+    KV_MEMBER(hash)
+    KV_MEMBER(block_hash)
+    KV_MEMBER(height)
+    KV_MEMBER(fee)
+    KV_MEMBER(timestamp)
+    KV_MEMBER(output_indexes)
+  }
+};
+
 struct COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS {
   struct request {
     std::vector<uint32_t> heights;
@@ -1075,29 +1097,8 @@ struct COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS {
     };
   };
 
-  struct entry
-  {
-    Transaction transaction;
-    Crypto::Hash hash;
-    uint32_t height;
-    uint64_t fee;
-    uint64_t timestamp;
-    std::vector<uint32_t> output_indexes;
-
-    void serialize(ISerializer &s)
-    {
-      KV_MEMBER(transaction)
-      KV_MEMBER(hash)
-      KV_MEMBER(height)
-      KV_MEMBER(fee)
-      KV_MEMBER(timestamp)
-      KV_MEMBER(output_indexes)
-    }
-  };
-
-
   struct response {
-    std::vector<entry> transactions;
+    std::vector<tx_with_output_global_indexes> transactions;
     std::list<std::string> missed_txs;
     std::string status;
 
@@ -1105,6 +1106,20 @@ struct COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS {
     {
       KV_MEMBER(transactions)
       KV_MEMBER(missed_txs)
+      KV_MEMBER(status)
+    }
+  };
+};
+
+struct COMMAND_RPC_GET_RAW_TRANSACTIONS_POOL {
+  typedef EMPTY_STRUCT request;
+
+  struct response {
+    std::vector<tx_with_output_global_indexes> transactions;
+    std::string status;
+
+    void serialize(ISerializer &s) {
+      KV_MEMBER(transactions)
       KV_MEMBER(status)
     }
   };

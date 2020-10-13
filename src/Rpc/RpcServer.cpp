@@ -150,6 +150,7 @@ std::unordered_map<std::string, RpcServer::RpcHandler<RpcServer::HandlerFunction
   { "/getheight", { jsonMethod<COMMAND_RPC_GET_HEIGHT>(&RpcServer::on_get_height), true } },
   { "/gettransactionspool", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_POOL_SHORT>(&RpcServer::on_get_transactions_pool_short), true } },
   { "/gettransactionsinpool", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS_POOL>(&RpcServer::on_get_transactions_pool), true } },
+  { "/getrawtransactionspool", { jsonMethod<COMMAND_RPC_GET_RAW_TRANSACTIONS_POOL>(&RpcServer::on_get_transactions_pool_raw), true } },
 
   // post json handlers
   { "/gettransactions", { jsonMethod<COMMAND_RPC_GET_TRANSACTIONS>(&RpcServer::on_get_transactions), true } },
@@ -393,6 +394,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
       { "getlastblockheader", { makeMemberMethod(&RpcServer::on_get_last_block_header), true } },
       { "gettransaction", { makeMemberMethod(&RpcServer::on_get_transaction_details_by_hash), true } },
       { "gettransactionspool", { makeMemberMethod(&RpcServer::on_get_transactions_pool_short), true } },
+      { "getrawtransactionspool", { makeMemberMethod(&RpcServer::on_get_transactions_pool_raw), true } },
       { "gettransactionsinpool", { makeMemberMethod(&RpcServer::on_get_transactions_pool), true } },
       { "gettransactionsbypaymentid", { makeMemberMethod(&RpcServer::on_get_transactions_by_payment_id), true } },
       { "gettransactionhashesbypaymentid", { makeMemberMethod(&RpcServer::on_get_transaction_hashes_by_paymentid), true } },
@@ -1044,6 +1046,7 @@ bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const 
           tx_with_output_global_indexes &e = rsp.transactions.back();
 
           e.hash = *ti++;
+          e.block_hash = block_hash;
           e.height = height;
           e.timestamp = blk.timestamp;
           e.transaction = *static_cast<const TransactionPrefix*>(&txi.first);
@@ -1596,6 +1599,24 @@ bool RpcServer::on_get_transactions_pool(const COMMAND_RPC_GET_TRANSACTIONS_POOL
       throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_INTERNAL_ERROR, "Internal error: can't fill mempool tx details." };
     }
     res.transactions.push_back(std::move(transactionDetails));
+  }
+  res.status = CORE_RPC_STATUS_OK;
+  return true;
+}
+
+bool RpcServer::on_get_transactions_pool_raw(const COMMAND_RPC_GET_RAW_TRANSACTIONS_POOL::request& req, COMMAND_RPC_GET_RAW_TRANSACTIONS_POOL::response& res) {
+  auto pool = m_core.getMemoryPool();
+
+  for (const auto& txd : pool) {
+    res.transactions.push_back(tx_with_output_global_indexes());
+    tx_with_output_global_indexes &e = res.transactions.back();
+
+    e.hash = txd.id;
+    e.height = boost::value_initialized<uint32_t>();
+    e.block_hash = boost::value_initialized<Crypto::Hash>();
+    e.timestamp = txd.receiveTime;
+    e.transaction = *static_cast<const TransactionPrefix*>(&txd.tx);
+    e.fee = txd.fee;
   }
   res.status = CORE_RPC_STATUS_OK;
   return true;
