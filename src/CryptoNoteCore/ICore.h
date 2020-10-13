@@ -99,6 +99,7 @@ public:
   virtual bool getBlockByHash(const Crypto::Hash &h, Block &blk) = 0;
   virtual bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) = 0;
   virtual void getTransactions(const std::vector<Crypto::Hash>& txs_ids, std::list<Transaction>& txs, std::list<Crypto::Hash>& missed_txs, bool checkTxPool = false) = 0;
+  virtual bool getTransactionsWithOutputGlobalIndexes(const std::vector<Crypto::Hash>& txs_ids, std::list<Crypto::Hash>& missed_txs, std::vector<std::pair<Transaction, std::vector<uint32_t>>>& txs) = 0;
   virtual bool getTransaction(const Crypto::Hash& id, Transaction& tx, bool checkTxPool = false) = 0;
   virtual bool getBackwardBlocksSizes(uint32_t fromHeight, std::vector<size_t>& sizes, size_t count) = 0;
   virtual bool getBlockSize(const Crypto::Hash& hash, size_t& size) = 0;
