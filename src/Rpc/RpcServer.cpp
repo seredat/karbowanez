@@ -1051,7 +1051,7 @@ bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const 
           e.timestamp = blk.timestamp;
           e.transaction = *static_cast<const TransactionPrefix*>(&txi.first);
           e.output_indexes = txi.second;
-          e.fee = getInputAmount(txi.first) - getOutputAmount(txi.first);
+          e.fee = is_coinbase(txi.first) ? 0 : getInputAmount(txi.first) - getOutputAmount(txi.first);
         }
       }
 
