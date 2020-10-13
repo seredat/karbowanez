@@ -1616,7 +1616,7 @@ bool RpcServer::on_get_transactions_pool_raw(const COMMAND_RPC_GET_RAW_TRANSACTI
     e.block_hash = boost::value_initialized<Crypto::Hash>();
     e.timestamp = txd.receiveTime;
     e.transaction = *static_cast<const TransactionPrefix*>(&txd.tx);
-    e.fee = txd.fee;
+    e.fee = is_coinbase(txd.tx) ? 0 : txd.fee;
   }
   res.status = CORE_RPC_STATUS_OK;
   return true;
