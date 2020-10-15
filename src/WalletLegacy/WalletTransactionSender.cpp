@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2016-2020, Karbo developers
 //
 // This file is part of Karbo.
@@ -366,26 +367,31 @@ T popRandomValue(URNG& randomGenerator, std::vector<T>& vec) {
 
 }
 
-
+/* The output selection is based on separating the available outputs into base10 buckets
+ * and then picking outputs from each bucket until have enough for the transfer. */
 uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bool addUnmixable, uint64_t dust, std::list<TransactionOutputInformation>& selectedTransfers) {
-
-  std::vector<size_t> unusedTransfers;
-  std::vector<size_t> unusedDust;
+  std::map<uint64_t, std::vector<TransactionOutputInformation>> buckets;
   std::vector<size_t> unusedUnmixable;
   
   std::vector<TransactionOutputInformation> outputs;
   m_transferDetails.getOutputs(outputs, ITransfersContainer::IncludeKeyUnlocked);
+  
+  // Sort inputs by their amounts, largest first
+  std::sort(outputs.begin(), outputs.end(), [](const TransactionOutputInformation& a, const TransactionOutputInformation& b) {
+    return a.amount > b.amount;
+  });
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     const auto& out = outputs[i];
     if (!m_transactionsCache.isUsed(out)) {
       if (is_valid_decomposed_amount(out.amount)) {
-        if (dust < out.amount) {
-          unusedTransfers.push_back(i);
-        } else {
-          unusedDust.push_back(i);
-        }
+        // Find out how many digits the amount has
+        int numberOfDigits = floor(log10(out.amount)) + 1;
+        // Push mixable outputs into base 10 buckets. Smallest amount buckets will come first,
+        // and largest amounts within those buckets come first.
+        buckets[numberOfDigits].push_back(out);
       } else {
+        // Push unmixable outputs in separate vector
         unusedUnmixable.push_back(i);
       }
     }
@@ -393,16 +399,33 @@ uint64_t WalletTransactionSender::selectTransfersToSend(uint64_t neededMoney, bo
 
   uint64_t foundMoney = 0;
 
-  while (foundMoney < neededMoney && (!unusedTransfers.empty() || !unusedDust.empty() || (addUnmixable && !unusedUnmixable.empty()))) {
-    size_t idx;
+  while (foundMoney < neededMoney && (!buckets.empty() || (addUnmixable && !unusedUnmixable.empty()))) {
     std::mt19937 urng = Random::generator();
     if (addUnmixable && !unusedUnmixable.empty()) {
-      idx = popRandomValue(urng, unusedUnmixable);
+      // Spend unmixable old way (random selection)
+      size_t idx = popRandomValue(urng, unusedUnmixable);
+      selectedTransfers.push_back(outputs[idx]);
+      foundMoney += outputs[idx].amount;
     } else {
-      idx = !unusedTransfers.empty() ? popRandomValue(urng, unusedTransfers) : popRandomValue(urng, unusedDust);
-    }
-    selectedTransfers.push_back(outputs[idx]);
-    foundMoney += outputs[idx].amount;
+      //Take one element from each bucket, smallest first
+      for (auto bucket = buckets.begin(); bucket != buckets.end();) {
+        // Bucket has been exhausted, remove from list
+        if (bucket->second.empty()) {
+          bucket = buckets.erase(bucket);
+        } else {
+          // Add last (smallest amount) in this bucket amount to the selected transfers
+          // as long as foundMoney is still less than neededMoney. This prevents
+          // spending larger outputs than we need when we already have enough money.
+          if (foundMoney < neededMoney) {
+            selectedTransfers.push_back(bucket->second.back());
+            foundMoney += bucket->second.back().amount;
+          }
+          // Remove amount we just added
+          bucket->second.pop_back();
+          bucket++;
+        }
+      }
+    } 
   }
 
   return foundMoney;

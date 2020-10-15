@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
 // Copyright (c) 2018, The BBSCoin Developers
+// Copyright (c) 2018-2019, The TurtleCoin Developers
 // Copyright (c) 2017-2018, Karbo developers
 //
 // This file is part of Karbo.
@@ -2452,7 +2453,7 @@ void WalletGreen::requestMixinOuts(
 
 uint64_t WalletGreen::selectTransfers(
   uint64_t neededMoney,
-  bool dust,
+  bool unmixable,
   uint64_t dustThreshold,
   std::vector<WalletOuts>&& wallets,
   std::vector<OutputToTransfer>& selectedTransfers) {
@@ -2460,32 +2461,56 @@ uint64_t WalletGreen::selectTransfers(
   uint64_t foundMoney = 0;
 
   typedef std::pair<WalletRecord*, TransactionOutputInformation> OutputData;
-  std::vector<OutputData> dustOutputs;
-  std::vector<OutputData> walletOuts;
+  std::vector<OutputData> unmixableOuts;
+  std::map<uint64_t, std::vector<OutputData>> buckets;
+
   for (auto walletIt = wallets.begin(); walletIt != wallets.end(); ++walletIt) {
+    // Sort inputs by their amounts, largest first
+    std::sort(walletIt->outs.begin(), walletIt->outs.end(), [](const TransactionOutputInformation& a, const TransactionOutputInformation& b) {
+      return a.amount > b.amount;
+    });
+
     for (auto outIt = walletIt->outs.begin(); outIt != walletIt->outs.end(); ++outIt) {
-      if (outIt->amount > dustThreshold) {
-        walletOuts.emplace_back(std::piecewise_construct, std::forward_as_tuple(walletIt->wallet), std::forward_as_tuple(*outIt));
-      } else if (dust) {
-        dustOutputs.emplace_back(std::piecewise_construct, std::forward_as_tuple(walletIt->wallet), std::forward_as_tuple(*outIt));
+      if (is_valid_decomposed_amount(outIt->amount)) {
+        int numberOfDigits = floor(log10(outIt->amount)) + 1;
+        buckets[numberOfDigits].emplace_back(std::piecewise_construct, std::forward_as_tuple(walletIt->wallet), std::forward_as_tuple(*outIt));
+      } else {
+        unmixableOuts.emplace_back(std::piecewise_construct, std::forward_as_tuple(walletIt->wallet), std::forward_as_tuple(*outIt));
       }
     }
   }
 
-  ShuffleGenerator<size_t> indexGenerator(walletOuts.size());
-  while (foundMoney < neededMoney && !indexGenerator.empty()) {
-    auto& out = walletOuts[indexGenerator()];
-    foundMoney += out.second.amount;
-    selectedTransfers.emplace_back(OutputToTransfer{ std::move(out.second), std::move(out.first) });
-  }
-
-  if (dust && !dustOutputs.empty()) {
-    ShuffleGenerator<size_t> dustIndexGenerator(dustOutputs.size());
+  if (unmixable && !unmixableOuts.empty()) {
+    ShuffleGenerator<size_t> unmixableIndexGenerator(unmixableOuts.size());
     do {
-      auto& out = dustOutputs[dustIndexGenerator()];
+      auto& out = unmixableOuts[unmixableIndexGenerator()];
       foundMoney += out.second.amount;
       selectedTransfers.emplace_back(OutputToTransfer{ std::move(out.second), std::move(out.first) });
-    } while (foundMoney < neededMoney && !dustIndexGenerator.empty());
+    } while (foundMoney < neededMoney && !unmixableIndexGenerator.empty());
+  }
+
+  while (foundMoney < neededMoney && !buckets.empty()) {
+    // Take one element from each bucket, smallest first
+    for (auto bucket = buckets.begin(); bucket != buckets.end();) {
+      // Bucket has been exhausted, remove from list
+      if (bucket->second.empty()) {
+        bucket = buckets.erase(bucket);
+      } else {
+        // Add the amount to the selected transfers so long as
+        // foundMoney is still less than neededMoney. This prevents
+        // larger outputs than we need when we already have enough funds.
+        if (foundMoney < neededMoney) {
+          auto out = bucket->second.back();
+          selectedTransfers.emplace_back(OutputToTransfer{ std::move(out.second), std::move(out.first) });
+          foundMoney += out.second.amount;
+        }
+
+        // Remove amount we just added
+        bucket->second.pop_back();
+
+        bucket++;
+      }
+    }
   }
 
   return foundMoney;
