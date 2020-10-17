@@ -89,7 +89,7 @@ RpcServer::HandlerFunction jsonMethod(bool (RpcServer::*handler)(typename Comman
     if (!cors_domain.empty()) {
       response.addHeader("Access-Control-Allow-Origin", cors_domain);
       response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-      response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+      response.addHeader("Access-Control-Allow-Methods", "POST, GET");
     }
     response.addHeader("Content-Type", "application/json");
     response.setBody(storeToJson(res.data()));
@@ -114,7 +114,7 @@ RpcServer::HandlerFunction httpMethod(bool (RpcServer::*handler)(typename Comman
     if (!cors_domain.empty()) {
       response.addHeader("Access-Control-Allow-Origin", cors_domain);
       response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-      response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+      response.addHeader("Access-Control-Allow-Methods", "POST, GET");
     }
     response.addHeader("Content-Type", "text/html; charset=UTF-8");
     response.addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -365,7 +365,7 @@ bool RpcServer::processJsonRpcRequest(const HttpRequest& request, HttpResponse& 
   if (!m_cors_domain.empty()) {
     response.addHeader("Access-Control-Allow-Origin", m_cors_domain);
     response.addHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    response.addHeader("Access-Control-Allow-Methods", "POST, GET");
   }  
 
   JsonRpcRequest jsonRequest;
