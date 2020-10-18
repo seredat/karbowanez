@@ -109,7 +109,7 @@ void invokeJsonRpcCommand(HttpClient& client, const std::string& method, const R
     HttpRequest httpReq;
     HttpResponse httpRes;
 
-    hreq.addHeader("Connection", "keep-alive");
+    httpReq.addHeader("Connection", "keep-alive");
     httpReq.addHeader("Content-Type", "application/json");
     if (!user.empty() || !password.empty()) {
       httpReq.addHeader("Authorization", "Basic " + base64::encode(Common::asBinaryArray(user + ":" + password)));
