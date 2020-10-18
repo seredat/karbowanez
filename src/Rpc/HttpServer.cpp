@@ -195,7 +195,6 @@ void HttpServer::sslServerUnit(boost::asio::ip::tcp::socket &socket, boost::asio
           HttpRequest req;
           HttpResponse resp;
           resp.addHeader("Access-Control-Allow-Origin", "*");
-          resp.addHeader("content-type", "application/json");
 
           std::iostream io_stream(&streambuf);
           parser.receiveRequest(io_stream, req);
