@@ -985,11 +985,6 @@ bool RpcServer::on_get_transactions_details_by_heights(const COMMAND_RPC_GET_TRA
 
 bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::request& req, COMMAND_RPC_GET_TRANSACTIONS_WITH_OUTPUT_GLOBAL_INDEXES_BY_HEIGHTS::response& rsp) {
   try {
-    if (req.heights.size() > BLOCK_LIST_MAX_COUNT) {
-      throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
-        std::string("Requested blocks count: ") + std::to_string(req.heights.size()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
-    }
-
     std::vector<uint32_t> heights;
     
     if (req.range) {
@@ -997,12 +992,25 @@ bool RpcServer::on_get_transactions_with_output_global_indexes_by_heights(const 
         throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
           std::string("The range is set to true but heights size is not equal to 2") };
       }
-      uint32_t upperBound = std::min(req.heights[1], m_core.getCurrentBlockchainHeight());
-      for (size_t i = 0; i < (upperBound - req.heights[0]); i++) {
-        heights.push_back(req.heights[0] + i);
+      std::vector<uint32_t> range = req.heights;
+
+      if (range.back() - range.front() > BLOCK_LIST_MAX_COUNT) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+          std::string("Requested blocks count: ") + std::to_string(range.back() - range.front()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
+      }
+
+      std::sort(range.begin(), range.end());
+      uint32_t upperBound = std::min(range[1], m_core.getCurrentBlockchainHeight());
+      for (size_t i = 0; i < (upperBound - range[0]); i++) {
+        heights.push_back(range[0] + i);
       }
     }
     else {
+      if (req.heights.size() > BLOCK_LIST_MAX_COUNT) {
+        throw JsonRpc::JsonRpcError{ CORE_RPC_ERROR_CODE_WRONG_PARAM,
+          std::string("Requested blocks count: ") + std::to_string(req.heights.size()) + " exceeded max limit of " + std::to_string(BLOCK_LIST_MAX_COUNT) };
+      }
+
       heights = req.heights;
     }
 
