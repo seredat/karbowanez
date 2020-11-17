@@ -9,13 +9,14 @@ jobs:
   build-windows:
     name: Windows
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@master
         with:
           fetch-depth: 0
 
-      - name: Setup MSBuild.exe
-        uses: warrenbuckley/Setup-MSBuild@v1
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Build
         shell: powershell
