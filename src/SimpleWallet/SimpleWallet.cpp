@@ -652,7 +652,7 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_consoleHandler.setHandler("balance", boost::bind(&simple_wallet::show_balance, this, _1), "Show current wallet balance");
   m_consoleHandler.setHandler("incoming_transfers", boost::bind(&simple_wallet::show_incoming_transfers, this, _1), "Show incoming transfers");
   m_consoleHandler.setHandler("outgoing_transfers", boost::bind(&simple_wallet::show_outgoing_transfers, this, _1), "Show outgoing transfers");
-  m_consoleHandler.setHandler("list_transfers", boost::bind(&simple_wallet::listTransfers, this, _1), "Show all known transfers");
+  m_consoleHandler.setHandler("list_transfers", boost::bind(&simple_wallet::list_transfers, this, _1), "Show all known transfers");
   m_consoleHandler.setHandler("payments", boost::bind(&simple_wallet::show_payments, this, _1), "payments <payment_id_1> [<payment_id_2> ... <payment_id_N>] - Show payments <payment_id_1>, ... <payment_id_N>");
   m_consoleHandler.setHandler("outputs", boost::bind(&simple_wallet::show_unlocked_outputs_count, this, _1), "Show the number of unlocked outputs available for a transaction");
   m_consoleHandler.setHandler("bc_height", boost::bind(&simple_wallet::show_blockchain_height, this, _1), "Show blockchain height");
@@ -1922,7 +1922,7 @@ bool simple_wallet::show_outgoing_transfers(const std::vector<std::string>& args
   return true;
 }
 
-bool simple_wallet::listTransfers(const std::vector<std::string>& args) {
+bool simple_wallet::list_transfers(const std::vector<std::string>& args) {
   bool haveTransfers = false;
 
   size_t transactionsCount = m_wallet->getTransactionCount();
