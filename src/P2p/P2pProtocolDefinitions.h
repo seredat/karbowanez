@@ -109,7 +109,7 @@ namespace CryptoNote
     {
       basic_node_data node_data;
       CORE_SYNC_DATA payload_data;
-      std::list<PeerlistEntry> local_peerlist; 
+      std::vector<PeerlistEntry> local_peerlist; 
 
       void serialize(ISerializer& s) {
         KV_MEMBER(node_data)
@@ -141,7 +141,7 @@ namespace CryptoNote
     {
       uint64_t local_time;
       CORE_SYNC_DATA payload_data;
-      std::list<PeerlistEntry> local_peerlist;
+      std::vector<PeerlistEntry> local_peerlist;
 
       void serialize(ISerializer& s) {
         KV_MEMBER(local_time)
@@ -259,8 +259,8 @@ namespace CryptoNote
 
     struct response
     {
-      std::list<PeerlistEntry> local_peerlist_white;
-      std::list<PeerlistEntry> local_peerlist_gray;
+      std::vector<PeerlistEntry> local_peerlist_white;
+      std::vector<PeerlistEntry> local_peerlist_gray;
       std::list<connection_entry> connections_list;
       PeerIdType my_id;
       uint64_t local_time;

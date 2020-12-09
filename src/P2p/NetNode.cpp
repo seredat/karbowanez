@@ -132,7 +132,7 @@ namespace CryptoNote
     const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_seed_node          = {"seed-node", "Connect to a node to retrieve peer addresses, and disconnect"};
     const command_line::arg_descriptor<bool> arg_p2p_hide_my_port                            = {"hide-my-port", "Do not announce yourself as peerlist candidate", false, true};
 
-    std::string print_peerlist_to_string(const std::list<PeerlistEntry>& pl) {
+    std::string print_peerlist_to_string(const std::vector<PeerlistEntry>& pl) {
       time_t now_time = 0;
       time(&now_time);
       std::stringstream ss;
@@ -1158,7 +1158,7 @@ namespace CryptoNote
   }
 
   //-----------------------------------------------------------------------------------
-  bool NodeServer::fix_time_delta(std::list<PeerlistEntry>& local_peerlist, time_t local_time, int64_t& delta)
+  bool NodeServer::fix_time_delta(std::vector<PeerlistEntry>& local_peerlist, time_t local_time, int64_t& delta)
   {
     //fix time delta
     time_t now = 0;
@@ -1179,7 +1179,7 @@ namespace CryptoNote
 
   //-----------------------------------------------------------------------------------
  
-  bool NodeServer::handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context)
+  bool NodeServer::handle_remote_peerlist(const std::vector<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context)
   {
     if (peerlist.size() > P2P_MAX_PEERS_IN_HANDSHAKE)
     {
@@ -1188,7 +1188,7 @@ namespace CryptoNote
     }
     
     int64_t delta = 0;
-    std::list<PeerlistEntry> peerlist_ = peerlist;
+    std::vector<PeerlistEntry> peerlist_ = peerlist;
     if(!fix_time_delta(peerlist_, local_time, delta))
       return false;
     //logger(Logging::TRACE) << context << "REMOTE PEERLIST: TIME_DELTA: " << delta << ", remote peerlist size=" << peerlist_.size();
@@ -1457,8 +1457,8 @@ namespace CryptoNote
   bool NodeServer::log_peerlist()
   {
     std::list<AnchorPeerlistEntry> pl_anchor;
-    std::list<PeerlistEntry> pl_wite;
-    std::list<PeerlistEntry> pl_gray;
+    std::vector<PeerlistEntry> pl_wite;
+    std::vector<PeerlistEntry> pl_gray;
     m_peerlist.get_peerlist_full(pl_anchor, pl_gray, pl_wite);
     logger(INFO) << ENDL << "Peerlist anchor:" << ENDL << print_peerlist_to_string(pl_anchor) << ENDL 
                          << "Peerlist white:" << ENDL << print_peerlist_to_string(pl_wite) << ENDL 

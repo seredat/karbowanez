@@ -122,7 +122,7 @@ void PeerlistManager::trim_gray_peerlist() {
 }
 
 //--------------------------------------------------------------------------------------------------
-bool PeerlistManager::merge_peerlist(const std::list<PeerlistEntry>& outer_bs)
+bool PeerlistManager::merge_peerlist(const std::vector<PeerlistEntry>& outer_bs)
 { 
   for(const PeerlistEntry& be : outer_bs) {
     append_with_peer_gray(be);
@@ -163,7 +163,7 @@ bool PeerlistManager::is_ip_allowed(uint32_t ip) const
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth) const
+bool PeerlistManager::get_peerlist_head(std::vector<PeerlistEntry>& bs_head, uint32_t depth) const
 {
   const peers_indexed::index<by_time>::type& by_time_index = m_peers_white.get<by_time>();
   uint32_t cnt = 0;
@@ -182,7 +182,7 @@ bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint3
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
+bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::vector<PeerlistEntry>& pl_gray, std::vector<PeerlistEntry>& pl_white) const
 {
   const anchor_peers_indexed::index<by_time>::type& by_time_index_an = m_peers_anchor.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_gr = m_peers_gray.get<by_time>();

@@ -79,9 +79,9 @@ public:
   bool init(bool allow_local_ip);
   size_t get_white_peers_count() const { return m_peers_white.size(); }
   size_t get_gray_peers_count() const { return m_peers_gray.size(); }
-  bool merge_peerlist(const std::list<PeerlistEntry>& outer_bs);
-  bool get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth = CryptoNote::P2P_DEFAULT_PEERS_IN_HANDSHAKE) const;
-  bool get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const;
+  bool merge_peerlist(const std::vector<PeerlistEntry>& outer_bs);
+  bool get_peerlist_head(std::vector<PeerlistEntry>& bs_head, uint32_t depth = CryptoNote::P2P_DEFAULT_PEERS_IN_HANDSHAKE) const;
+  bool get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::vector<PeerlistEntry>& pl_gray, std::vector<PeerlistEntry>& pl_white) const;
   bool get_white_peer_by_index(PeerlistEntry& p, size_t i) const;
   bool get_gray_peer_by_index(PeerlistEntry& p, size_t i) const;
   bool append_with_peer_anchor(const AnchorPeerlistEntry& pr);

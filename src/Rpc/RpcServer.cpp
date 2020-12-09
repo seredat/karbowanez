@@ -1446,8 +1446,8 @@ bool RpcServer::on_get_peer_list(const COMMAND_RPC_GET_PEER_LIST::request& req, 
   }
 
   std::list<AnchorPeerlistEntry> pl_anchor;
-  std::list<PeerlistEntry> pl_wite;
-  std::list<PeerlistEntry> pl_gray;
+  std::vector<PeerlistEntry> pl_wite;
+  std::vector<PeerlistEntry> pl_gray;
   m_p2p.getPeerlistManager().get_peerlist_full(pl_anchor, pl_gray, pl_wite);
   for (const auto& pe : pl_anchor) {
     std::stringstream ss;
