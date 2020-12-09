@@ -247,9 +247,11 @@ namespace CryptoNote
     m_timeoutTimer(m_dispatcher),
     m_stop(false),
     // intervals
-    // m_peer_handshake_idle_maker_interval(CryptoNote::P2P_DEFAULT_HANDSHAKE_INTERVAL),
+    m_peer_handshake_idle_maker_interval(CryptoNote::P2P_DEFAULT_HANDSHAKE_INTERVAL),
     m_connections_maker_interval(1),
-    m_peerlist_store_interval(60*30, false) {
+    m_peerlist_store_interval(60*30, false),
+    m_gray_peerlist_housekeeping_interval(CryptoNote::P2P_DEFAULT_HANDSHAKE_INTERVAL)
+  {
   }
 
   void NodeServer::serialize(ISerializer& s) {
@@ -992,9 +994,9 @@ namespace CryptoNote
       if(is_peer_used(pe))
         continue;
 
-	  if (!is_remote_host_allowed(pe.adr.ip)) {
-		  continue;
-	  }
+      if (!is_remote_host_allowed(pe.adr.ip)) {
+        continue;
+      }
 
       logger(DEBUGGING) << "Selected peer: " << pe.id << " " << pe.adr << " [peer_list=" << (use_white_list ? white : gray)
                     << "] last_seen: " << (pe.last_seen ? Common::timeIntervalToString(time(NULL) - pe.last_seen) : "never");
@@ -1151,6 +1153,7 @@ namespace CryptoNote
     try {
       m_connections_maker_interval.call(std::bind(&NodeServer::connections_maker, this));
       m_peerlist_store_interval.call(std::bind(&NodeServer::store_config, this));
+      m_gray_peerlist_housekeeping_interval.call(std::bind(&NodeServer::gray_peerlist_housekeeping, this));
     } catch (std::exception& e) {
       logger(DEBUGGING) << "exception in idle_worker: " << e.what();
     }
@@ -1529,6 +1532,25 @@ namespace CryptoNote
       if (!is_addr_connected(na)) {
         try_to_connect_and_handshake_with_new_peer(na);
       }
+    }
+
+    return true;
+  }
+
+  bool NodeServer::gray_peerlist_housekeeping() {
+    PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
+    
+    size_t random_index = Random::randomValue<size_t>() % m_peerlist.get_gray_peers_count();
+    if (!m_peerlist.get_gray_peer_by_index(pe, random_index))
+      return false;
+
+    if (!try_to_connect_and_handshake_with_new_peer(pe.adr, false, 0, gray, pe.last_seen)) {
+      m_peerlist.remove_from_peer_gray(pe);
+      logger(DEBUGGING) << "PEER EVICTED FROM GRAY PEER LIST IP address: " << Common::ipAddressToString(pe.adr.ip) << " Peer ID: " << std::hex << pe.id;
+    } else {
+      pe.last_seen = time(nullptr);
+      m_peerlist.append_with_peer_white(pe);
+      logger(DEBUGGING) << "PEER PROMOTED TO WHITE PEER LIST IP address: " << Common::ipAddressToString(pe.adr.ip) << " Peer ID: " << std::hex << pe.id;
     }
 
     return true;

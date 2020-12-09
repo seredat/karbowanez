@@ -84,6 +84,7 @@ public:
   bool get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::vector<PeerlistEntry>& pl_gray, std::vector<PeerlistEntry>& pl_white) const;
   bool get_white_peer_by_index(PeerlistEntry& p, size_t i) const;
   bool get_gray_peer_by_index(PeerlistEntry& p, size_t i) const;
+  bool remove_from_peer_gray(PeerlistEntry& p);
   bool append_with_peer_anchor(const AnchorPeerlistEntry& pr);
   bool append_with_peer_white(const PeerlistEntry& pr);
   bool append_with_peer_gray(const PeerlistEntry& pr);

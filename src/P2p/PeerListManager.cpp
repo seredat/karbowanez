@@ -331,10 +331,29 @@ bool PeerlistManager::remove_from_peer_anchor(const NetworkAddress& addr)
     if (iterator != m_peers_anchor.get<by_addr>().end()) {
       m_peers_anchor.erase(iterator);
     }
+
     return true;
   }
   catch (std::exception&) {
   }
+
+  return false;
+}
+//--------------------------------------------------------------------------------------------------
+
+bool PeerlistManager::remove_from_peer_gray(PeerlistEntry& p)
+{
+  try {
+    auto iterator = m_peers_gray.get<by_addr>().find(p.adr);
+    if (iterator != m_peers_gray.get<by_addr>().end()) {
+      m_peers_gray.erase(iterator);
+    }
+
+    return true;
+  }
+  catch (std::exception&) {
+  }
+
   return false;
 }
 //--------------------------------------------------------------------------------------------------

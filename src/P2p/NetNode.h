@@ -223,6 +223,8 @@ namespace CryptoNote
     bool parse_peers_and_add_to_container(const boost::program_options::variables_map& vm, 
       const command_line::arg_descriptor<std::vector<std::string> > & arg, std::vector<NetworkAddress>& container);
 
+    bool gray_peerlist_housekeeping();
+
     //debug functions
     std::string print_connections_container();
 
@@ -272,9 +274,10 @@ namespace CryptoNote
     CryptoNoteProtocolHandler& m_payload_handler;
     PeerlistManager m_peerlist;
 
-    // OnceInInterval m_peer_handshake_idle_maker_interval;
+    OnceInInterval m_peer_handshake_idle_maker_interval;
     OnceInInterval m_connections_maker_interval;
     OnceInInterval m_peerlist_store_interval;
+    OnceInInterval m_gray_peerlist_housekeeping_interval;
     System::Timer m_timedSyncTimer;
 
     std::string m_bind_ip;
