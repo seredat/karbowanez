@@ -1181,6 +1181,12 @@ namespace CryptoNote
  
   bool NodeServer::handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context)
   {
+    if (peerlist.size() > P2P_MAX_PEERS_IN_HANDSHAKE)
+    {
+      logger(WARNING) << "peer sent " << peerlist.size() << " peers, considered spamming";
+      return false;
+    }
+    
     int64_t delta = 0;
     std::list<PeerlistEntry> peerlist_ = peerlist;
     if(!fix_time_delta(peerlist_, local_time, delta))
@@ -1425,7 +1431,7 @@ namespace CryptoNote
           pe.id = peer_id_l;
           m_peerlist.append_with_peer_white(pe);
 
-          logger(Logging::TRACE) << context << "BACK PING SUCCESS, " << Common::ipAddressToString(context.m_remote_ip) << ":" << port_l << " added to whitelist";
+          logger(Logging::DEBUGGING) << context << "BACK PING SUCCESS, " << Common::ipAddressToString(context.m_remote_ip) << ":" << port_l << " added to whitelist";
       }
     }
 
