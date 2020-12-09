@@ -21,8 +21,8 @@
 
 #include <time.h>
 #include <boost/foreach.hpp>
+#include <crypto/random.h>
 #include <System/Ipv4Address.h>
-
 #include "Serialization/SerializationOverloads.h"
 
 using namespace CryptoNote;
@@ -170,14 +170,19 @@ bool PeerlistManager::get_peerlist_head(std::vector<PeerlistEntry>& bs_head, uin
 
   BOOST_REVERSE_FOREACH(const peers_indexed::value_type& vl, by_time_index)
   {
-    if (cnt++ > depth)
-      break;
+    //if (cnt++ > depth)
+    //  break;
 
     if (!vl.last_seen)
       continue;
 
     bs_head.push_back(vl);
   }
+
+  std::shuffle(bs_head.begin(), bs_head.end(), Random::generator());
+  if (bs_head.size() > depth)
+      bs_head.resize(depth);
+
   return true;
 }
 //--------------------------------------------------------------------------------------------------
