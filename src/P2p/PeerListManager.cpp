@@ -170,11 +170,13 @@ bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint3
 
   BOOST_REVERSE_FOREACH(const peers_indexed::value_type& vl, by_time_index)
   {
-    if (!vl.last_seen)
-      continue;
-    bs_head.push_back(vl);
     if (cnt++ > depth)
       break;
+
+    if (!vl.last_seen)
+      continue;
+
+    bs_head.push_back(vl);
   }
   return true;
 }
