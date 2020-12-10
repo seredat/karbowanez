@@ -1168,9 +1168,9 @@ namespace CryptoNote
     time(&now);
     delta = now - local_time;
 
-    BOOST_FOREACH(PeerlistEntry& be, local_peerlist)
+    for (PeerlistEntry& be : local_peerlist)
     {
-      if(be.last_seen > uint64_t(local_time))
+      if (be.last_seen > uint64_t(local_time))
       {
         logger(DEBUGGING) << "FOUND FUTURE peerlist for entry " << be.adr << " last_seen: " << be.last_seen << ", local_time (on remote node):" << local_time;
         return false;
