@@ -994,10 +994,9 @@ namespace CryptoNote
       if(is_peer_used(pe))
         continue;
 
-      if (!is_remote_host_allowed(pe.adr.ip)) {
+      if (!is_remote_host_allowed(pe.adr.ip))
         continue;
-      }
-
+      
       logger(DEBUGGING) << "Selected peer: " << pe.id << " " << pe.adr << " [peer_list=" << (use_white_list ? white : gray)
                     << "] last_seen: " << (pe.last_seen ? Common::timeIntervalToString(time(NULL) - pe.last_seen) : "never");
       
@@ -1283,7 +1282,7 @@ namespace CryptoNote
 
     m_peerlist.get_peerlist_full(rsp.local_peerlist_gray, rsp.local_peerlist_white);
     rsp.my_id = m_config.m_peer_id;
-    rsp.local_time = time(NULL);
+    rsp.local_time = time(nullptr);
     return 1;
   }
   //-----------------------------------------------------------------------------------
@@ -1375,7 +1374,7 @@ namespace CryptoNote
     }
 
     //fill response
-    rsp.local_time = time(NULL);
+    rsp.local_time = time(nullptr);
 
     std::vector<PeerlistEntry> local_peerlist_new;
     m_peerlist.get_peerlist_head(local_peerlist_new);
