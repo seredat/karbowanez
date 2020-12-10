@@ -89,6 +89,7 @@ namespace CryptoNote
     System::Context<void>* context;
     PeerIdType peerId;
     System::TcpConnection connection;
+    std::set<NetworkAddress> sent_addresses;
 
     P2pConnectionContext(System::Dispatcher& dispatcher, Logging::ILogger& log, System::TcpConnection&& conn) :
       context(nullptr),
