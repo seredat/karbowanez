@@ -65,6 +65,8 @@ using namespace Common;
 using namespace Logging;
 using namespace CryptoNote;
 
+const int64_t LAST_SEEN_EVICT_THRESHOLD = 3600 * 24 * 10; // 10 days before removing from gray list
+
 namespace {
 
 size_t get_random_index_with_fixed_probability(size_t max_index) {
@@ -1557,8 +1559,11 @@ namespace CryptoNote
       return false;
 
     if (!try_to_connect_and_handshake_with_new_peer(pe.adr, false, 0, gray, pe.last_seen)) {
-      m_peerlist.remove_from_peer_gray(pe);
-      logger(DEBUGGING) << "PEER EVICTED FROM GRAY PEER LIST IP address: " << Common::ipAddressToString(pe.adr.ip) << " Peer ID: " << std::hex << pe.id;
+      time_t now = time(nullptr);
+      if (now - pe.last_seen >= LAST_SEEN_EVICT_THRESHOLD) {
+        m_peerlist.remove_from_peer_gray(pe);
+        logger(DEBUGGING) << "PEER EVICTED FROM GRAY PEER LIST IP address: " << Common::ipAddressToString(pe.adr.ip) << " Peer ID: " << std::hex << pe.id;
+      }
     } else {
       pe.last_seen = time(nullptr);
       m_peerlist.append_with_peer_white(pe);
