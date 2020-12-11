@@ -1423,8 +1423,12 @@ namespace CryptoNote
   
   bool NodeServer::log_banlist()
   {
-	  logger(INFO) << "Banned nodes:" << ENDL << print_banlist_to_string(m_blocked_hosts) << ENDL;
-	  return true;
+    if (m_blocked_hosts.empty())
+      logger(INFO) << "No banned nodes";
+    else
+     logger(INFO) << "Banned nodes:" << ENDL << print_banlist_to_string(m_blocked_hosts) << ENDL;
+
+    return true;
   }
   //-----------------------------------------------------------------------------------
 
