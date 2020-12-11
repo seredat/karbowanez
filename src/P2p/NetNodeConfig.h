@@ -37,6 +37,7 @@ namespace CryptoNote {
   const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_exclusive_node = { "add-exclusive-node", "Specify list of peers to connect to only."
                                                                                                " If this option is given the options add-priority-node and seed-node are ignored" };
   const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_seed_node          = { "seed-node", "Connect to a node to retrieve peer addresses, and disconnect" };
+  const command_line::arg_descriptor<std::string> arg_ban_list                             = { "ban-list", "Specify ban list file, one IP address per line", "", true };
   const command_line::arg_descriptor<bool> arg_p2p_hide_my_port                            = { "hide-my-port", "Do not announce yourself as peerlist candidate", false, true };
 
 class NetNodeConfig {
@@ -55,6 +56,7 @@ public:
   std::vector<NetworkAddress> getPriorityNodes() const;
   std::vector<NetworkAddress> getExclusiveNodes() const;
   std::vector<NetworkAddress> getSeedNodes() const;
+  std::vector<uint32_t> getBanList() const;
   bool getHideMyPort() const;
   std::string getConfigFolder() const;
 
@@ -80,6 +82,7 @@ private:
   std::vector<NetworkAddress> priorityNodes;
   std::vector<NetworkAddress> exclusiveNodes;
   std::vector<NetworkAddress> seedNodes;
+  std::vector<uint32_t> banList;
   bool hideMyPort;
   std::string configFolder;
   std::string p2pStateFilename;

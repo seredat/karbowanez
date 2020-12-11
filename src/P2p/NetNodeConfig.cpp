@@ -17,6 +17,7 @@
 
 #include "NetNodeConfig.h"
 
+#include <fstream>
 #include <boost/utility/value_init.hpp>
 
 #include <Common/Util.h>
@@ -58,6 +59,7 @@ void NetNodeConfig::initOptions(boost::program_options::options_description& des
   command_line::add_arg(desc, arg_p2p_add_priority_node);
   command_line::add_arg(desc, arg_p2p_add_exclusive_node);
   command_line::add_arg(desc, arg_p2p_seed_node);
+  command_line::add_arg(desc, arg_ban_list);
   command_line::add_arg(desc, arg_p2p_hide_my_port);
 }
 
@@ -127,6 +129,25 @@ bool NetNodeConfig::init(const boost::program_options::variables_map& vm)
     hideMyPort = true;
   }
 
+  if (command_line::has_arg(vm, CryptoNote::arg_ban_list)) {
+    const std::string ban_list_file = command_line::get_arg(vm, CryptoNote::arg_ban_list);
+
+    std::ifstream file(ban_list_file);
+    if (!file) {
+      throw std::runtime_error("Failed to read ban list file " + ban_list_file);
+      return false;
+    }
+
+    for (std::string line; std::getline(file, line); )
+    {
+      uint32_t parsed_addr = Common::stringToIpAddress(line);
+      if (!parsed_addr) {
+        continue; // silently skip because no logging here
+      }
+      banList.push_back(parsed_addr);
+    }
+  }
+
   return true;
 }
 
@@ -176,6 +197,10 @@ std::vector<NetworkAddress> NetNodeConfig::getExclusiveNodes() const {
 
 std::vector<NetworkAddress> NetNodeConfig::getSeedNodes() const {
   return seedNodes;
+}
+
+std::vector<uint32_t> NetNodeConfig::getBanList() const {
+  return banList;
 }
 
 bool NetNodeConfig::getHideMyPort() const {

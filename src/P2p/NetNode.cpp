@@ -374,7 +374,15 @@ namespace CryptoNote
   //-----------------------------------------------------------------------------------
   bool NodeServer::block_host(const uint32_t address_ip, time_t seconds)
   {
-    m_blocked_hosts[address_ip] = time(nullptr) + seconds;
+    const time_t now = time(nullptr);
+
+    time_t limit;
+    if (now > std::numeric_limits<time_t>::max() - seconds)
+      limit = std::numeric_limits<time_t>::max();
+    else
+      limit = now + seconds;
+
+    m_blocked_hosts[address_ip] = limit;
     // drop any connection to that IP
     forEachConnection([&](P2pConnectionContext& context) {
       if (context.m_remote_ip == address_ip) {
@@ -482,6 +490,12 @@ namespace CryptoNote
     std::copy(seedNodes.begin(), seedNodes.end(), std::back_inserter(m_seed_nodes));
 
     m_hide_my_port = config.getHideMyPort();
+
+    std::vector<uint32_t> ban_list = config.getBanList();
+    for (const auto& a : ban_list) {
+      block_host(a, std::numeric_limits<time_t>::max());
+    }
+
     return true;
   }
 
