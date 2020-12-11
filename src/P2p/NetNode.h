@@ -129,8 +129,6 @@ namespace CryptoNote
   {
   public:
 
-    static void init_options(boost::program_options::options_description& desc);
-
     NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, Logging::ILogger& log);
 
     bool run();
