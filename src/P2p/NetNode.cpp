@@ -463,48 +463,6 @@ namespace CryptoNote
   }
   //-----------------------------------------------------------------------------------
 
-  bool NodeServer::handle_command_line(const boost::program_options::variables_map& vm)
-  {
-    logger(INFO) << "Handling NodeServer config...";
-
-    m_bind_ip = command_line::get_arg(vm, CryptoNote::arg_p2p_bind_ip);
-    m_port = command_line::get_arg(vm, CryptoNote::arg_p2p_bind_port);
-    m_external_port = command_line::get_arg(vm, CryptoNote::arg_p2p_external_port);
-    m_allow_local_ip = command_line::get_arg(vm, CryptoNote::arg_p2p_allow_local_ip);
-
-    if (command_line::has_arg(vm, CryptoNote::arg_p2p_add_peer))
-    {       
-      std::vector<std::string> peers = command_line::get_arg(vm, CryptoNote::arg_p2p_add_peer);
-      for(const std::string& pr_str: peers)
-      {
-        PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
-        pe.id = Random::randomValue<size_t>();
-        bool r = parse_peer_from_string(pe.adr, pr_str);
-        if (!(r)) { logger(ERROR, BRIGHT_RED) << "Failed to parse address from string: " << pr_str; return false; }
-        m_command_line_peers.push_back(pe);
-      }
-    }
-
-    if (command_line::has_arg(vm, CryptoNote::arg_p2p_add_exclusive_node)) {
-      if (!parse_peers_and_add_to_container(vm, CryptoNote::arg_p2p_add_exclusive_node, m_exclusive_peers))
-        return false;
-    }
-    if (command_line::has_arg(vm, CryptoNote::arg_p2p_add_priority_node)) {
-      if (!parse_peers_and_add_to_container(vm, CryptoNote::arg_p2p_add_priority_node, m_priority_peers))
-        return false;
-    }
-    if (command_line::has_arg(vm, CryptoNote::arg_p2p_seed_node)) {
-      if (!parse_peers_and_add_to_container(vm, CryptoNote::arg_p2p_seed_node, m_seed_nodes))
-        return false;
-    }
-
-    if (command_line::has_arg(vm, CryptoNote::arg_p2p_hide_my_port)) {
-      m_hide_my_port = true;
-    }
-
-    return true;
-  }
-
   bool NodeServer::handleConfig(const NetNodeConfig& config) {
     m_bind_ip = config.getBindIp();
     m_port = std::to_string(config.getBindPort());

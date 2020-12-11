@@ -195,7 +195,6 @@ namespace CryptoNote
     bool add_host_fail(const uint32_t address_ip);
     bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
     bool unblock_host(const uint32_t address_ip);
-    bool handle_command_line(const boost::program_options::variables_map& vm);
     bool is_remote_host_allowed(const uint32_t address_ip);
     bool is_addr_recently_failed(const uint32_t address_ip);
     bool handleConfig(const NetNodeConfig& config);
