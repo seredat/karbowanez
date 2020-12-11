@@ -32,6 +32,10 @@
 #include <boost/format.hpp>
 #include "math.h"
 
+#if defined(WIN32)
+#undef ERROR
+#endif
+
 namespace {
   template <typename T>
   static bool print_as_json(const T& obj) {
@@ -63,7 +67,7 @@ DaemonCommandsHandler::DaemonCommandsHandler(CryptoNote::Core& core, CryptoNote:
   m_consoleHandler.setHandler("set_log", boost::bind(&DaemonCommandsHandler::set_log, this, boost::arg<1>()), "set_log <level> - Change current log level, <level> is a number 0-4");
   m_consoleHandler.setHandler("print_diff", boost::bind(&DaemonCommandsHandler::print_diff, this, boost::arg<1>()), "Difficulty for next block");
   m_consoleHandler.setHandler("print_ban", boost::bind(&DaemonCommandsHandler::print_ban, this, boost::arg<1>()), "Print banned nodes");
-  m_consoleHandler.setHandler("ban", boost::bind(&DaemonCommandsHandler::ban, this, boost::arg<1>()), "Ban a given <IP> for a given amount of <seconds>, ban <IP> [<seconds>]");
+  m_consoleHandler.setHandler("ban", boost::bind(&DaemonCommandsHandler::ban, this, boost::arg<1>()), "Ban a given <IP> for [<seconds>] or permanently if no duration provided, ban <IP> [<seconds>]");
   m_consoleHandler.setHandler("unban", boost::bind(&DaemonCommandsHandler::unban, this, boost::arg<1>()), "Unban a given <IP>, unban <IP>");
   m_consoleHandler.setHandler("status", boost::bind(&DaemonCommandsHandler::status, this, boost::arg<1>()), "Show daemon status");
   m_consoleHandler.setHandler("save", boost::bind(&DaemonCommandsHandler::save, this, boost::arg<1>()), "Store blockchain");
@@ -422,23 +426,24 @@ bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
   if (args.size() != 1 && args.size() != 2) return false;
   std::string addr = args[0];
   uint32_t ip;
-  time_t seconds = 0;
-  if (args.size() > 1) {
-    try {
-      seconds = std::stoi(args[1]);
-    } catch (const std::exception &e) {
-      std::cout << "Incorrect time value: " << e.what() << std::endl;
-      return false;
-    }
-    if (seconds == 0) {
-      return false;
-    }
-  } 
+  time_t seconds = std::numeric_limits<time_t>::max();
   try {
+    if (args.size() > 1) {
+      seconds = std::stoi(args[1]);
+      if (seconds == 0) {
+        logger(Logging::ERROR) << "Invalid ban duration. Should be greater than zero.";
+        return false;
+      }
+    }
     ip = Common::stringToIpAddress(addr);
-  } catch (const std::exception &e) {
-     std::cout << "Incorrect IP value: " << e.what() << std::endl;
-     return false;
+    if (!ip) {
+      logger(Logging::ERROR) << "Invalid IP address: " << addr;
+      return false;
+    }
+  }
+  catch (const std::exception &e) {
+    logger(Logging::ERROR) << "Failed to parse ban parameters: " << e.what();
+    return false;
   }
   return m_srv.ban_host(ip, seconds);
 }
@@ -447,11 +452,9 @@ bool DaemonCommandsHandler::unban(const std::vector<std::string>& args)
 {
   if (args.size() != 1) return false;
   std::string addr = args[0];
-  uint32_t ip;
-  try {
-    ip = Common::stringToIpAddress(addr);
-  } catch (const std::exception &e) {
-    std::cout << "Incorrect IP value: " << e.what() << std::endl;
+  uint32_t ip = Common::stringToIpAddress(addr);
+  if (!ip) {
+    logger(Logging::ERROR) << "Invalid IP address: " << addr;
     return false;
   }
   return m_srv.unban_host(ip);
