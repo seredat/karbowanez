@@ -1376,11 +1376,11 @@ namespace CryptoNote
     //fill response
     rsp.local_time = time(nullptr);
 
-    std::vector<PeerlistEntry> local_peerlist_new;
-    m_peerlist.get_peerlist_head(local_peerlist_new);
+    std::vector<PeerlistEntry> local_peerlist;
+    m_peerlist.get_peerlist_head(local_peerlist);
     //only include out peers we did not already send
-    rsp.local_peerlist.reserve(local_peerlist_new.size());
-    for (auto &pe : local_peerlist_new)
+    rsp.local_peerlist.reserve(local_peerlist.size());
+    for (auto &pe : local_peerlist)
     {
       if (!context.sent_addresses.insert(pe.adr).second)
         continue;
