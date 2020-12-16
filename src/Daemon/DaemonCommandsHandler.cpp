@@ -404,19 +404,17 @@ bool DaemonCommandsHandler::start_mining(const std::vector<std::string> &args) {
   m_core.get_miner().start(adr, threads_count);
   return true;
 }
-
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::stop_mining(const std::vector<std::string>& args) {
   m_core.get_miner().stop();
   return true;
 }
-
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::print_ban(const std::vector<std::string>& args) {
   m_srv.log_banlist();
   return true;
 }
-
+//--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
 {
   if (args.size() != 1 && args.size() != 2) return false;
@@ -442,7 +440,7 @@ bool DaemonCommandsHandler::ban(const std::vector<std::string>& args)
   }
   return m_srv.ban_host(ip, seconds);
 }
-
+//--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::unban(const std::vector<std::string>& args)
 {
   if (args.size() != 1) return false;
@@ -456,7 +454,6 @@ bool DaemonCommandsHandler::unban(const std::vector<std::string>& args)
   }
   return m_srv.unban_host(ip);
 }
-
 //--------------------------------------------------------------------------------
 bool DaemonCommandsHandler::save(const std::vector<std::string>& args) {
   return m_core.saveBlockchain();
