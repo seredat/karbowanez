@@ -1509,7 +1509,12 @@ namespace CryptoNote
   bool NodeServer::gray_peerlist_housekeeping() {
     PeerlistEntry pe = boost::value_initialized<PeerlistEntry>();
     
-    size_t random_index = Random::randomValue<size_t>() % m_peerlist.get_gray_peers_count();
+    size_t gray_peers_count = m_peerlist.get_gray_peers_count();
+
+    if (!gray_peers_count)
+      return false;
+
+    size_t random_index = Random::randomValue<size_t>() % gray_peers_count;
     if (!m_peerlist.get_gray_peer_by_index(pe, random_index))
       return false;
 
