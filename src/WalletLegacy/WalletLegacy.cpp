@@ -1026,6 +1026,7 @@ std::string WalletLegacy::getReserveProof(const uint64_t &reserve, const std::st
 
   // minimize the number of outputs included in the proof, by only picking the N largest outputs that can cover the requested min reserve amount
   std::sort(selected_transfers.begin(), selected_transfers.end(), compareTransactionOutputInformationByAmount);
+  std::reverse(selected_transfers.begin(), selected_transfers.end());
   while (selected_transfers.size() >= 2 && selected_transfers[1].amount >= reserve)
     selected_transfers.erase(selected_transfers.begin());
   size_t sz = 0;
