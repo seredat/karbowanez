@@ -21,8 +21,8 @@
 
 #include <time.h>
 #include <boost/foreach.hpp>
+#include <crypto/random.h>
 #include <System/Ipv4Address.h>
-
 #include "Serialization/SerializationOverloads.h"
 
 using namespace CryptoNote;
@@ -122,7 +122,7 @@ void PeerlistManager::trim_gray_peerlist() {
 }
 
 //--------------------------------------------------------------------------------------------------
-bool PeerlistManager::merge_peerlist(const std::list<PeerlistEntry>& outer_bs)
+bool PeerlistManager::merge_peerlist(const std::vector<PeerlistEntry>& outer_bs)
 { 
   for(const PeerlistEntry& be : outer_bs) {
     append_with_peer_gray(be);
@@ -163,24 +163,31 @@ bool PeerlistManager::is_ip_allowed(uint32_t ip) const
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_head(std::list<PeerlistEntry>& bs_head, uint32_t depth) const
+bool PeerlistManager::get_peerlist_head(std::vector<PeerlistEntry>& bs_head, uint32_t depth) const
 {
   const peers_indexed::index<by_time>::type& by_time_index = m_peers_white.get<by_time>();
   uint32_t cnt = 0;
 
   BOOST_REVERSE_FOREACH(const peers_indexed::value_type& vl, by_time_index)
   {
+    //if (cnt++ > depth)
+    //  break;
+
     if (!vl.last_seen)
       continue;
+
     bs_head.push_back(vl);
-    if (cnt++ > depth)
-      break;
   }
+
+  std::shuffle(bs_head.begin(), bs_head.end(), Random::generator());
+  if (bs_head.size() > depth)
+      bs_head.resize(depth);
+
   return true;
 }
 //--------------------------------------------------------------------------------------------------
 
-bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::list<PeerlistEntry>& pl_gray, std::list<PeerlistEntry>& pl_white) const
+bool PeerlistManager::get_peerlist_full(std::list<AnchorPeerlistEntry>& pl_anchor, std::vector<PeerlistEntry>& pl_gray, std::vector<PeerlistEntry>& pl_white) const
 {
   const anchor_peers_indexed::index<by_time>::type& by_time_index_an = m_peers_anchor.get<by_time>();
   const peers_indexed::index<by_time>::type& by_time_index_gr = m_peers_gray.get<by_time>();
@@ -324,10 +331,29 @@ bool PeerlistManager::remove_from_peer_anchor(const NetworkAddress& addr)
     if (iterator != m_peers_anchor.get<by_addr>().end()) {
       m_peers_anchor.erase(iterator);
     }
+
     return true;
   }
   catch (std::exception&) {
   }
+
+  return false;
+}
+//--------------------------------------------------------------------------------------------------
+
+bool PeerlistManager::remove_from_peer_gray(PeerlistEntry& p)
+{
+  try {
+    auto iterator = m_peers_gray.get<by_addr>().find(p.adr);
+    if (iterator != m_peers_gray.get<by_addr>().end()) {
+      m_peers_gray.erase(iterator);
+    }
+
+    return true;
+  }
+  catch (std::exception&) {
+  }
+
   return false;
 }
 //--------------------------------------------------------------------------------------------------

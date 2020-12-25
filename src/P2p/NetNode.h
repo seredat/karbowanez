@@ -89,6 +89,7 @@ namespace CryptoNote
     System::Context<void>* context;
     PeerIdType peerId;
     System::TcpConnection connection;
+    std::set<NetworkAddress> sent_addresses;
 
     P2pConnectionContext(System::Dispatcher& dispatcher, Logging::ILogger& log, System::TcpConnection&& conn) :
       context(nullptr),
@@ -127,8 +128,6 @@ namespace CryptoNote
   class NodeServer :  public IP2pEndpoint
   {
   public:
-
-    static void init_options(boost::program_options::options_description& desc);
 
     NodeServer(System::Dispatcher& dispatcher, CryptoNote::CryptoNoteProtocolHandler& payload_handler, Logging::ILogger& log);
 
@@ -196,16 +195,15 @@ namespace CryptoNote
     bool add_host_fail(const uint32_t address_ip);
     bool block_host(const uint32_t address_ip, time_t seconds = P2P_IP_BLOCKTIME);
     bool unblock_host(const uint32_t address_ip);
-    bool handle_command_line(const boost::program_options::variables_map& vm);
     bool is_remote_host_allowed(const uint32_t address_ip);
     bool is_addr_recently_failed(const uint32_t address_ip);
     bool handleConfig(const NetNodeConfig& config);
     bool append_net_address(std::vector<NetworkAddress>& nodes, const std::string& addr);
     bool idle_worker();
-    bool handle_remote_peerlist(const std::list<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context);
+    bool handle_remote_peerlist(const std::vector<PeerlistEntry>& peerlist, time_t local_time, const CryptoNoteConnectionContext& context);
     bool get_local_node_data(basic_node_data& node_data);
 
-    bool fix_time_delta(std::list<PeerlistEntry>& local_peerlist, time_t local_time, int64_t& delta);
+    bool fix_time_delta(std::vector<PeerlistEntry>& local_peerlist, time_t local_time, int64_t& delta);
 
     bool connections_maker();
     bool make_new_connection_from_peerlist(bool use_white_list);
@@ -222,6 +220,8 @@ namespace CryptoNote
 
     bool parse_peers_and_add_to_container(const boost::program_options::variables_map& vm, 
       const command_line::arg_descriptor<std::vector<std::string> > & arg, std::vector<NetworkAddress>& container);
+
+    bool gray_peerlist_housekeeping();
 
     //debug functions
     std::string print_connections_container();
@@ -272,9 +272,10 @@ namespace CryptoNote
     CryptoNoteProtocolHandler& m_payload_handler;
     PeerlistManager m_peerlist;
 
-    // OnceInInterval m_peer_handshake_idle_maker_interval;
+    OnceInInterval m_peer_handshake_idle_maker_interval;
     OnceInInterval m_connections_maker_interval;
     OnceInInterval m_peerlist_store_interval;
+    OnceInInterval m_gray_peerlist_housekeeping_interval;
     System::Timer m_timedSyncTimer;
 
     std::string m_bind_ip;
@@ -285,7 +286,7 @@ namespace CryptoNote
     std::vector<NetworkAddress> m_priority_peers;
     std::vector<NetworkAddress> m_exclusive_peers;
     std::vector<NetworkAddress> m_seed_nodes;
-    std::list<PeerlistEntry> m_command_line_peers;
+    std::vector<PeerlistEntry> m_command_line_peers;
     uint64_t m_peer_livetime;
     boost::uuids::uuid m_network_id;
     std::map<uint32_t, time_t> m_blocked_hosts;
