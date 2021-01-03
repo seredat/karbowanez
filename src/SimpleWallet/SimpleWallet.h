@@ -113,6 +113,7 @@ namespace CryptoNote
     bool show_unlocked_outputs_count(const std::vector<std::string> &args);
     bool list_transfers(const std::vector<std::string> &args);
     bool transfer(const std::vector<std::string> &args);
+    bool prepare_tx(const std::vector<std::string>& args);
     bool print_address(const std::vector<std::string> &args = std::vector<std::string>());
     bool save(const std::vector<std::string> &args);
     bool reset(const std::vector<std::string> &args);
@@ -203,6 +204,8 @@ namespace CryptoNote
     uint32_t m_scan_height;
     bool m_daemon_ssl;
     bool m_daemon_no_verify;
+    bool m_do_not_relay_tx;
+    uint32_t m_scan_height;
 
     std::unique_ptr<std::promise<std::error_code>> m_initResultPromise;
 

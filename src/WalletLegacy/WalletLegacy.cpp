@@ -346,7 +346,7 @@ void WalletLegacy::initSync() {
   m_transferDetails = &subObject.getContainer();
   subObject.addObserver(this);
 
-  m_sender.reset(new WalletTransactionSender(m_currency, m_transactionsCache, m_account.getAccountKeys(), *m_transferDetails));
+  m_sender.reset(new WalletTransactionSender(m_currency, m_transactionsCache, m_account.getAccountKeys(), *m_transferDetails, m_node));
   m_state = INITIALIZED;
   
   m_blockchainSync.addObserver(this);
@@ -758,6 +758,31 @@ TransactionId WalletLegacy::sendTransaction(const std::vector<WalletLegacyTransf
   }
 
   return txId;
+}
+
+std::string WalletLegacy::prepareRawTransaction(TransactionId& transactionId, const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+  TransactionId txId = 0;
+  std::deque<std::shared_ptr<WalletLegacyEvent>> events;
+  throwIfNotInitialised();
+
+  std::string tx_as_hex;
+
+  {
+    std::unique_lock<std::mutex> lock(m_cacheMutex);
+    tx_as_hex = m_sender->makeRawTransaction(transactionId, events, transfers, fee, extra, mixIn, unlockTimestamp);
+  }
+
+  notifyClients(events);
+
+  return tx_as_hex;
+}
+
+std::string WalletLegacy::prepareRawTransaction(TransactionId& transactionId, const WalletLegacyTransfer& transfer, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+  std::vector<WalletLegacyTransfer> transfers;
+  transfers.push_back(transfer);
+  throwIfNotInitialised();
+
+  return prepareRawTransaction(transactionId, transfers, fee, extra, mixIn, unlockTimestamp);
 }
 
 TransactionId WalletLegacy::sendFusionTransaction(const std::list<TransactionOutputInformation>& fusionInputs, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
