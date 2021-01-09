@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#if defined (__NetBSD__)
+#if defined (__NetBSD__) || defined (__FreeBSD__)
 #include <net/if.h>
 #endif
 #if defined(_WIN32) || defined(__amigaos__) || defined(__amigaos4__)
