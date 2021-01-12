@@ -643,7 +643,9 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
   m_refresh_progress_reporter(*this), 
   m_initResultPromise(nullptr),
   m_walletSynchronized(false),
-  m_trackingWallet(false){
+  m_trackingWallet(false),
+  m_do_not_relay_tx(false)
+{
   m_consoleHandler.setHandler("start_mining", boost::bind(&simple_wallet::start_mining, this, _1), "start_mining [<number_of_threads>] - Start mining in daemon");
   m_consoleHandler.setHandler("stop_mining", boost::bind(&simple_wallet::stop_mining, this, _1), "Stop mining in daemon");
   //m_consoleHandler.setHandler("refresh", boost::bind(&simple_wallet::refresh, this, _1), "Resynchronize transactions and balance");
@@ -660,6 +662,9 @@ simple_wallet::simple_wallet(System::Dispatcher& dispatcher, const CryptoNote::C
     "transfer <mixin_count> <addr_1> <amount_1> [<addr_2> <amount_2> ... <addr_N> <amount_N>] [-p payment_id] [-f fee]"
     " - Transfer <amount_1>,... <amount_N> to <address_1>,... <address_N>, respectively. "
     "<mixin_count> is the number of transactions yours is indistinguishable from (from 0 to maximum available)");
+  m_consoleHandler.setHandler("prepare", boost::bind(&simple_wallet::prepare_tx, this, _1),
+    "Prepare raw transaction in hex format but do not relay, e.g. for manual relay <addr_1> <amount_1> ... <addr_N> <amount_N> [-p payment_id] [-f fee]"
+    " - Transfer <amount_1>,... <amount_N> to <address_1>,... <address_N>, respectively. ");
   m_consoleHandler.setHandler("set_log", boost::bind(&simple_wallet::set_log, this, _1), "set_log <level> - Change current log level, <level> is a number 0-4");
   m_consoleHandler.setHandler("address", boost::bind(&simple_wallet::print_address, this, _1), "Show current wallet public address");
   m_consoleHandler.setHandler("save", boost::bind(&simple_wallet::save, this, _1), "Save wallet synchronized data");
@@ -2096,24 +2101,53 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
 
     WalletHelper::IWalletRemoveObserverGuard removeGuard(*m_wallet, sent);
 
-    CryptoNote::TransactionId tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
+    std::string raw_tx;
+    CryptoNote::TransactionId tx;
+
+    if (!m_do_not_relay_tx) {
+      tx = m_wallet->sendTransaction(cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
+    }
+    else {
+      raw_tx = m_wallet->prepareRawTransaction(tx, cmd.dsts, cmd.fee, extraString, cmd.fake_outs_count, 0);
+    }
+
     if (tx == WALLET_LEGACY_INVALID_TRANSACTION_ID) {
       fail_msg_writer() << "Can't send money";
       return true;
     }
 
-    std::error_code sendError = sent.wait(tx);
-    removeGuard.removeObserver();
+    if (!m_do_not_relay_tx) {
+      std::error_code sendError = sent.wait(tx);
+      removeGuard.removeObserver();
 
-    if (sendError) {
-      fail_msg_writer() << sendError.message();
-      return true;
+      if (sendError) {
+        fail_msg_writer() << sendError.message();
+        return true;
+      }
     }
 
     CryptoNote::WalletLegacyTransaction txInfo;
     m_wallet->getTransaction(tx, txInfo);
     Crypto::SecretKey tx_key = reinterpret_cast<const Crypto::SecretKey&>(txInfo.secretKey.get());
-    success_msg_writer(true) << "Money successfully sent, transaction id: " << Common::podToHex(txInfo.hash) << ", key: " << Common::podToHex(tx_key);
+    if (!m_do_not_relay_tx) {
+      success_msg_writer(true) << "Money successfully sent, transaction id: " << Common::podToHex(txInfo.hash) << ", key: " << Common::podToHex(tx_key);
+    }
+    else {
+      const std::string filename = "raw_tx.txt";
+      boost::system::error_code ec;
+      if (boost::filesystem::exists(filename, ec)) {
+        boost::filesystem::remove(filename, ec);
+      }
+      std::ofstream txFile(filename, std::ios::out | std::ios::trunc | std::ios::binary);
+      if (!txFile.good()) {
+        return false;
+      }
+      txFile << raw_tx;
+
+      success_msg_writer(true) << "Raw transaction prepared successfully and saved to file : " << filename 
+        << ", id: " << Common::podToHex(txInfo.hash) << ", key: " << Common::podToHex(tx_key);
+      m_do_not_relay_tx = false;
+    }
 
     try {
       CryptoNote::WalletHelper::storeWallet(*m_wallet, m_wallet_file);
@@ -2130,6 +2164,13 @@ bool simple_wallet::transfer(const std::vector<std::string> &args) {
   }
 
   return true;
+}
+//----------------------------------------------------------------------------------------------------
+bool simple_wallet::prepare_tx(const std::vector<std::string>& args) {
+  m_do_not_relay_tx = true;
+  bool r = transfer(args);
+  m_do_not_relay_tx = false;
+  return r;
 }
 //----------------------------------------------------------------------------------------------------
 bool simple_wallet::estimate_fusion(const std::vector<std::string>& args) {
