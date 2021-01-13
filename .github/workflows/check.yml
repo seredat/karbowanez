@@ -206,7 +206,7 @@ jobs:
         id: build
         run: |
           sudo apt-get purge '*boost*'
-          sudo apt install -y libboost1.62-all-dev
+          sudo apt install -y libboost-all-dev
           build_folder="build/release"
           krb_ver=${GITHUB_SHA::7}
           release_name=Karbo-cli-ubuntu16.04-"$krb_ver"
