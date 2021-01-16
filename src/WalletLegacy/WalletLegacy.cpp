@@ -145,6 +145,7 @@ WalletLegacy::WalletLegacy(const CryptoNote::Currency& currency, INode& node, Lo
   m_isStopping(false),
   m_lastNotifiedActualBalance(0),
   m_lastNotifiedPendingBalance(0),
+  m_lastNotifiedUnmixableBalance(0),
   m_blockchainSync(node, m_logger.getLogger(), currency.genesisBlockHash()),
   m_transfersSync(currency, m_logger.getLogger(), m_blockchainSync, node),
   m_transferDetails(nullptr),
@@ -437,6 +438,7 @@ void WalletLegacy::shutdown() {
     m_transactionsCache.reset();
     m_lastNotifiedActualBalance = 0;
     m_lastNotifiedPendingBalance = 0;
+    m_lastNotifiedUnmixableBalance = 0;
   }
 }
 
