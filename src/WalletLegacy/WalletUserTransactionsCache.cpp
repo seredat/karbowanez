@@ -161,9 +161,8 @@ std::shared_ptr<WalletLegacyEvent> WalletUserTransactionsCache::onTransactionUpd
 
   if (!m_unconfirmedTransactions.findTransactionId(txInfo.transactionHash, id)) {
     id = findTransactionByHash(txInfo.transactionHash);
-  } else {
-    m_unconfirmedTransactions.erase(txInfo.transactionHash);
   }
+  m_unconfirmedTransactions.erase(txInfo.transactionHash);
 
   bool isCoinbase = txInfo.totalAmountIn == 0;
 
