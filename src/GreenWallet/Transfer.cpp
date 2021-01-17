@@ -406,7 +406,7 @@ void transfer(std::shared_ptr<WalletInfo> walletInfo, uint32_t height, bool send
 			if (!nodeAddress.empty())
 				nodeFee = calculateNodeFee(amount);
 
-			std::cout << WarningMsg("Due to dust inputs, we are unable to ")
+			std::cout << WarningMsg("Due to unmixable inputs, we are unable to ")
 				<< WarningMsg("send ")
 				<< InformationMsg(formatAmount(unsendable))
 				<< WarningMsg("of your balance.") << std::endl;
@@ -484,7 +484,7 @@ BalanceInfo doWeHaveEnoughBalance(uint64_t amount, uint64_t fee,
 	{
 		std::cout << std::endl
 			<< WarningMsg("This transaction is unable to be sent ")
-			<< WarningMsg("due to dust inputs.") << std::endl
+			<< WarningMsg("due to unmixable inputs.") << std::endl
 			<< "You can send "
 			<< InformationMsg(formatAmount(balanceNoDust))
 			<< " without issues (includes a network fee of "
