@@ -293,7 +293,7 @@ protected:
     std::vector<InputInfo>& keysInfo);
 
   uint64_t selectTransfers(uint64_t needeMoney,
-    bool unmixable,
+    bool dust,
     uint64_t dustThreshold,
     std::vector<WalletOuts>&& wallets,
     std::vector<OutputToTransfer>& selectedTransfers);
