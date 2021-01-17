@@ -2465,11 +2465,6 @@ uint64_t WalletGreen::selectTransfers(
   std::map<uint64_t, std::vector<OutputData>> buckets;
 
   for (auto walletIt = wallets.begin(); walletIt != wallets.end(); ++walletIt) {
-    // Sort inputs by their amounts, largest first
-    std::sort(walletIt->outs.begin(), walletIt->outs.end(), [](const TransactionOutputInformation& a, const TransactionOutputInformation& b) {
-      return a.amount > b.amount;
-    });
-
     for (auto outIt = walletIt->outs.begin(); outIt != walletIt->outs.end(); ++outIt) {
       if (is_valid_decomposed_amount(outIt->amount)) {
         int numberOfDigits = floor(log10(outIt->amount)) + 1;
