@@ -2187,6 +2187,24 @@ bool RpcServer::on_check_reserve_proof(const COMMAND_RPC_CHECK_RESERVE_PROOF::re
   for (size_t i = 0; i < proofs.size(); ++i) {
     transactionHashes.push_back(proofs[i].transaction_id);
   }
+
+  // first check against height if provided to spare further checks
+  // in case request is to check proof of funds that didn't exist yet at this height
+  if (req.height != 0) {
+    for (const auto& h : transactionHashes) {
+      uint32_t tx_height;
+      if (!m_core.getTransactionHeight(h, tx_height)) {
+        throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM,
+          std::string("Couldn't find block index containing transaction ") + Common::podToHex(h) + std::string(" of reserve proof"));
+      }
+
+      if (req.height < tx_height) {
+        throw JsonRpc::JsonRpcError(CORE_RPC_ERROR_CODE_WRONG_PARAM, std::string("Funds from transaction ")
+          + Common::podToHex(h) + std::string(" in block ") + std::to_string(tx_height) + std::string(" didn't exist at requested height"));
+      }
+    }
+  }
+
   std::list<Crypto::Hash> missed_txs;
   std::list<Transaction> txs;
   m_core.getTransactions(transactionHashes, txs, missed_txs);
