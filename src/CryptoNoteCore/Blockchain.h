@@ -85,6 +85,7 @@ namespace CryptoNote {
     Crypto::Hash getBlockIdByHeight(uint32_t height);
     bool getBlockByHash(const Crypto::Hash &h, Block &blk);
     bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight);
+    bool getTransactionHeight(const Crypto::Hash &txId, uint32_t& blockHeight);
 
     template<class archive_t> void serialize(archive_t & ar, const unsigned int version);
     
@@ -188,7 +189,7 @@ namespace CryptoNote {
         getBlockchainTransactions(txs_ids, txs, missed_txs);
       }
     }
-    
+
     //debug functions
     void print_blockchain(uint64_t start_index, uint64_t end_index);
     void print_blockchain_index();

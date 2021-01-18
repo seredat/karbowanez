@@ -739,6 +739,18 @@ bool Blockchain::getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeig
   return m_blockIndex.getBlockHeight(blockId, blockHeight);
 }
 
+bool Blockchain::getTransactionHeight(const Crypto::Hash &txId, uint32_t& blockHeight) {
+  std::lock_guard<decltype(m_blockchain_lock)> bcLock(m_blockchain_lock);
+
+  auto it = m_transactionMap.find(txId);
+  if (it != m_transactionMap.end()) {
+    blockHeight = it->second.block;
+    return true;
+  }
+
+  return false;
+}
+
 difficulty_type Blockchain::getDifficultyForNextBlock() {
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   std::vector<uint64_t> timestamps;

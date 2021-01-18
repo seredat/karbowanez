@@ -157,6 +157,10 @@ bool Core::getTransaction(const Crypto::Hash& id, Transaction& tx, bool checkTxP
   return false;
 }
 
+bool Core::getTransactionHeight(const Crypto::Hash &txId, uint32_t& blockHeight) {
+  return m_blockchain.getTransactionHeight(txId, blockHeight);
+}
+
 bool Core::get_alternative_blocks(std::list<Block>& blocks) {
   return m_blockchain.getAlternativeBlocks(blocks);
 }
