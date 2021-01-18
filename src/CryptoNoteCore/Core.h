@@ -133,6 +133,7 @@ namespace CryptoNote {
      virtual bool getTransaction(const Crypto::Hash& id, Transaction& tx, bool checkTxPool = false) override;
      virtual bool getBlockByHash(const Crypto::Hash &h, Block &blk) override;
      virtual bool getBlockHeight(const Crypto::Hash& blockId, uint32_t& blockHeight) override;
+     virtual bool getTransactionHeight(const Crypto::Hash &txId, uint32_t& blockHeight) override;
      //void get_all_known_block_ids(std::list<Crypto::Hash> &main, std::list<Crypto::Hash> &alt, std::list<Crypto::Hash> &invalid);
 
      bool get_alternative_blocks(std::list<Block>& blocks);
