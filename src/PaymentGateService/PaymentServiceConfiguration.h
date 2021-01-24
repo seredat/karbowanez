@@ -72,6 +72,8 @@ struct Configuration {
   bool printAddresses;
 
   size_t logLevel;
+
+  uint32_t scanHeight;
 };
 
 } //namespace PaymentService

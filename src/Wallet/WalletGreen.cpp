@@ -24,6 +24,7 @@
 #include <ctime>
 #include <cassert>
 #include <fstream>
+#include <future>
 #include <numeric>
 #include <set>
 #include <tuple>
