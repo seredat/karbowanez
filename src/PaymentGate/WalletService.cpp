@@ -42,7 +42,6 @@
 #include <System/EventLock.h>
 
 #include "PaymentServiceJsonRpcMessages.h"
-#include "NodeFactory.h"
 
 #include "Wallet/WalletGreen.h"
 #include "Wallet/LegacyKeysImporter.h"
@@ -326,13 +325,10 @@ std::vector<CryptoNote::WalletOrder> convertWalletRpcOrdersToWalletOrders(const 
 
 }
 
-void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher) {
+void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher, CryptoNote::INode& node) {
   Logging::LoggerRef log(logger, "generateNewWallet");
 
-  CryptoNote::INode* nodeStub = NodeFactory::createNodeStub();
-  std::unique_ptr<CryptoNote::INode> nodeGuard(nodeStub);
-
-  CryptoNote::IWallet* wallet = new CryptoNote::WalletGreen(dispatcher, currency, *nodeStub, logger);
+  CryptoNote::IWallet* wallet = new CryptoNote::WalletGreen(dispatcher, currency, node, logger);
   std::unique_ptr<CryptoNote::IWallet> walletGuard(wallet);
 
   std::string address;
@@ -374,7 +370,13 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
       }
 
       CryptoNote::AccountBase::generateViewFromSpend(private_spend_key, private_view_key);
-      wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
+
+      if (conf.scanHeight != 0) {
+        wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key, conf.scanHeight);
+      }
+      else {
+        wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
+      }
       address = wallet->createAddress(private_spend_key);
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Imported wallet successfully.";
   }
@@ -399,7 +401,12 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
       Crypto::SecretKey private_spend_key = *(struct Crypto::SecretKey *) &private_spend_key_hash;
       Crypto::SecretKey private_view_key = *(struct Crypto::SecretKey *) &private_view_key_hash;
 
-      wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
+      if (conf.scanHeight != 0) {
+        wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key, conf.scanHeight);
+      }
+      else {
+        wallet->initializeWithViewKey(conf.walletFile, conf.walletPassword, private_view_key);
+      }
       address = wallet->createAddress(private_spend_key);
       log(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet imported successfully.";
     }

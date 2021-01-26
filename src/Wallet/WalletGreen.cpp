@@ -24,6 +24,7 @@
 #include <ctime>
 #include <cassert>
 #include <fstream>
+#include <future>
 #include <numeric>
 #include <set>
 #include <tuple>
@@ -1255,26 +1256,21 @@ std::string WalletGreen::addWallet(const Crypto::PublicKey& spendPublicKey, cons
   }
 }
 
-CryptoNote::BlockDetails WalletGreen::getBlock(const uint32_t blockHeight) {
-	CryptoNote::BlockDetails block;
+uint64_t WalletGreen::getBlockTimestamp(const uint32_t blockHeight) {
+  uint64_t timestamp = 0;
 
-	if (m_node.getLastKnownBlockHeight() == 0) {
-		return block;
-	}
+  auto getBlockTimestampCompleted = std::promise<std::error_code>();
+  auto getBlockTimestampWaitFuture = getBlockTimestampCompleted.get_future();
 
-	std::promise<std::error_code> errorPromise;
+  m_node.getBlockTimestamp(std::move(blockHeight), std::ref(timestamp),
+    [&getBlockTimestampCompleted](std::error_code ec) {
+    auto detachedPromise = std::move(getBlockTimestampCompleted);
+    detachedPromise.set_value(ec);
+  });
 
-	auto e = errorPromise.get_future();
+  std::error_code ec = getBlockTimestampWaitFuture.get();
 
-	auto callback = [&errorPromise](std::error_code e) {
-		errorPromise.set_value(e);
-	};
-
-	m_node.getBlock(blockHeight, block, callback);
-
-	e.get();
-
-	return block;
+  return timestamp;
 }
 
 uint64_t WalletGreen::scanHeightToTimestamp(const uint32_t scanHeight) {
@@ -1283,7 +1279,7 @@ uint64_t WalletGreen::scanHeightToTimestamp(const uint32_t scanHeight) {
 	}
 
 	/* Get the block timestamp from the node if the node has it */
-	uint64_t timestamp = static_cast<uint64_t>(getBlock(scanHeight).timestamp);
+  uint64_t timestamp = getBlockTimestamp(scanHeight);
 
 	if (timestamp != 0) {
 		return timestamp;
