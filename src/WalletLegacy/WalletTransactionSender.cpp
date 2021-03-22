@@ -107,7 +107,7 @@ void WalletTransactionSender::validateTransfersAddresses(const std::vector<Walle
 }
 
 std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-    const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+    const std::vector<WalletLegacyTransfer>& transfers, const std::list<TransactionOutputInformation>& selectedOuts, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
 
   using namespace CryptoNote;
 
@@ -117,7 +117,16 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendRequest(Transact
 
   std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
 
-  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
+  if (selectedOuts.size() > 0) {
+    for (auto& out : selectedOuts) {
+      context->foundMoney += out.amount;
+    }
+    context->selectedTransfers = selectedOuts;
+  }
+  else {
+    context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
+  }
+
   throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
   transactionId = m_transactionsCache.addNewTransaction(neededMoney, fee, extra, transfers, unlockTimestamp);
@@ -162,7 +171,9 @@ std::shared_ptr<WalletRequest> WalletTransactionSender::makeSendFusionRequest(Tr
 }
 
 std::string WalletTransactionSender::makeRawTransaction(TransactionId& transactionId, std::deque<std::shared_ptr<WalletLegacyEvent>>& events,
-  const std::vector<WalletLegacyTransfer>& transfers, uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp) {
+  const std::vector<WalletLegacyTransfer>& transfers, const std::list<CryptoNote::TransactionOutputInformation>& selectedOuts,
+  uint64_t fee, const std::string& extra, uint64_t mixIn, uint64_t unlockTimestamp)
+{
 
   std::string raw_tx;
 
@@ -174,7 +185,16 @@ std::string WalletTransactionSender::makeRawTransaction(TransactionId& transacti
 
   std::shared_ptr<SendTransactionContext> context = std::make_shared<SendTransactionContext>();
 
-  context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
+  if (selectedOuts.size() > 0) {
+    for (auto& out : selectedOuts) {
+      context->foundMoney += out.amount;
+    }
+    context->selectedTransfers = selectedOuts;
+  }
+  else {
+     context->foundMoney = selectTransfersToSend(neededMoney, 0 == mixIn, context->dustPolicy.dustThreshold, context->selectedTransfers);
+  }
+
   throwIf(context->foundMoney < neededMoney, error::WRONG_AMOUNT);
 
   // add tx to wallet cache to prevent reuse of outputs used in this tx
@@ -182,7 +202,7 @@ std::string WalletTransactionSender::makeRawTransaction(TransactionId& transacti
   context->transactionId = transactionId;
   context->mixIn = mixIn;
 
-  if (context->mixIn) {    
+  if (context->mixIn) {
     uint64_t outsCount = mixIn + 1; // add one to make possible (if need) to skip real output key
     std::vector<uint64_t> amounts;
 
