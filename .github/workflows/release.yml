@@ -21,14 +21,11 @@ jobs:
         uses: microsoft/setup-msbuild@v1.0.2
 
       - name: Install Boost
-        shell: cmd
+        shell: powershell
         run: |
-          choco install wget --no-progress
-          wget -nv -O boost-installer.exe "https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe/download"
-          boost-installer.exe /dir=%BOOST_ROOT% /sp- /verysilent /suppressmsgboxes /norestart
-
-      - name: Install OpenSSL
-        run: choco install openssl
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost-installer.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost-installer.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$env:BOOST_ROOT"
 
       - name: Build
         shell: powershell
