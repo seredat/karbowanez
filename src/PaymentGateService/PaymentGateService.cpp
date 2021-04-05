@@ -285,6 +285,9 @@ void PaymentGateService::runInProcess(Logging::LoggerRef& log) {
   if (config.gateConfiguration.generateNewContainer) {
     generateNewWallet(currency, getWalletConfig(), logger, *dispatcher, *node);
   }
+  else if (config.gateConfiguration.changePassword) {
+    changePassword(currency, getWalletConfig(), logger, *dispatcher, *node, config.gateConfiguration.newContainerPassword);
+  }
   else {
     runWalletService(currency, *node);
   }
@@ -312,6 +315,9 @@ void PaymentGateService::runRpcProxy(Logging::LoggerRef& log) {
 
   if (config.gateConfiguration.generateNewContainer) {
     generateNewWallet(currency, getWalletConfig(), logger, *dispatcher, *node);
+  }
+  else if (config.gateConfiguration.changePassword) {
+    changePassword(currency, getWalletConfig(), logger, *dispatcher, *node, config.gateConfiguration.newContainerPassword);
   }
   else {
     runWalletService(currency, *node);

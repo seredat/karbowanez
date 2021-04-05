@@ -416,6 +416,19 @@ void generateNewWallet(const CryptoNote::Currency& currency, const WalletConfigu
   log(Logging::INFO, Logging::BRIGHT_WHITE) << "Wallet is saved";
 }
 
+void changePassword(const CryptoNote::Currency& currency, const WalletConfiguration& conf, Logging::ILogger& logger, System::Dispatcher& dispatcher, CryptoNote::INode& node, const std::string newPassword) {
+  Logging::LoggerRef log(logger, "changePassword");
+  log(Logging::INFO, Logging::BRIGHT_WHITE) << "Changing wallet password...";
+
+  CryptoNote::IWallet* wallet = new CryptoNote::WalletGreen(dispatcher, currency, node, logger);
+  std::unique_ptr<CryptoNote::IWallet> walletGuard(wallet);
+
+  wallet->start();
+  wallet->load(conf.walletFile, conf.walletPassword);
+  wallet->changePassword(conf.walletPassword, newPassword);
+  wallet->save();
+}
+
 WalletService::WalletService(const CryptoNote::Currency& currency, System::Dispatcher& sys, CryptoNote::INode& node,
   CryptoNote::IWallet& wallet, CryptoNote::IFusionManager& fusionManager, const WalletConfiguration& conf, Logging::ILogger& logger) :
     currency(currency),
