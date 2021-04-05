@@ -3332,7 +3332,7 @@ CryptoNote::AccountPublicAddress WalletGreen::parseAddress(const std::string& ad
 
 void WalletGreen::throwIfStopped() const {
   if (m_stopped) {
-    m_logger(ERROR, BRIGHT_RED) << "WalletGreen is already stopped";
+    m_logger(DEBUGGING, BRIGHT_RED) << "WalletGreen is already stopped";
     throw std::system_error(make_error_code(error::OPERATION_CANCELLED));
   }
 }
