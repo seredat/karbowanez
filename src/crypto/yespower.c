@@ -1197,7 +1197,7 @@ int yespower(yespower_local_t *local,
         srclen = 0;
     }
 
-    pbkdf2_blake256(init_hash, sizeof(init_hash), src, srclen, 1, B, 64);
+    pbkdf2_blake256(init_hash, sizeof(init_hash), src, srclen, 1, B, 128);
     memcpy(init_hash, B, sizeof(init_hash));
     smix_1_0(B, r, N, V, XY, &ctx);
     hmac_blake256_hash((uint8_t *)dst, B + B_size - 64, 64, init_hash, sizeof(init_hash));
@@ -1220,8 +1220,13 @@ fail:
 int yespower_tls(const uint8_t *src, size_t srclen,
     const yespower_params_t *params, yespower_binary_t *dst)
 {
+#if defined(WIN32)
     static __declspec(thread) int initialized = 0;
     static __declspec(thread) yespower_local_t local;
+#else
+    static __thread int initialized = 0;
+    static __thread yespower_local_t local;
+#endif
 
     if (!initialized) {
         init_region(&local);
