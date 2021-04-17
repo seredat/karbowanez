@@ -502,6 +502,20 @@ bool get_block_hashing_blob(const Block& b, BinaryArray& ba) {
   return true;
 }
 
+bool get_signed_block_hashing_blob(const Block& b, BinaryArray& ba) {
+  if (!toBinaryArray(static_cast<const BlockHeader&>(b), ba)) {
+    return false;
+  }
+
+  Hash treeRootHash = get_tx_tree_hash(b);
+  ba.insert(ba.end(), treeRootHash.data, treeRootHash.data + 32);
+  auto transactionCount = asBinaryArray(Tools::get_varint_data(b.transactionHashes.size() + 1));
+  ba.insert(ba.end(), transactionCount.begin(), transactionCount.end());
+  BinaryArray sig = Common::asBinaryArray(std::string((const char *)&b.signature, sizeof(Crypto::Signature)));
+  ba.insert(ba.end(), sig.begin(), sig.end());
+  return true;
+}
+
 bool get_parent_block_hashing_blob(const Block& b, BinaryArray& blob) {
   auto serializer = makeParentBlockSerializer(b, true, true);
   return toBinaryArray(serializer, blob);

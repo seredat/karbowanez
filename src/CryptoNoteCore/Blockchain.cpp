@@ -1232,7 +1232,7 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
     return m_currency.checkProofOfWork(context, block, currentDiffic, proofOfWork);
   }
 
-  if (!getBlockLongHash(context, block, proofOfWork)) {
+  if (!get_block_long_hash(context, block, proofOfWork)) {
     return false;
   }
 
@@ -1243,14 +1243,14 @@ bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& bloc
   return true;
 }
 
-bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
   if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
     return get_block_longhash(context, b, res);
   }
 
   BinaryArray pot;
-  if (!get_block_hashing_blob(b, pot)) {
-    logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
+  if (!get_signed_block_hashing_blob(b, pot)) {
+    logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in get_block_long_hash";
     return false;
   }
 
@@ -1266,7 +1266,7 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
   uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
-  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size(), currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
+  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size() - 1, currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
 
   for (uint8_t i = 1; i <= 8; i++) {
     uint8_t chunk[4] = {
@@ -2355,6 +2355,45 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     bvc.m_verification_failed = true;
     popTransactions(block, minerTransactionHash);
     return false;
+  }
+
+  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    // check miner account
+    Crypto::PublicKey pub;
+    if (!secret_key_to_public_key(blockData.minerViewKey, pub) && pub != blockData.minerAddress.viewPublicKey) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Miner address doesn't match miner's view key.";
+      return false;
+    }
+
+    // check block signature
+    BinaryArray ba;
+    if (!get_block_hashing_blob(blockData, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of block " << blockHash;
+      return false;
+    }
+    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
+    if (!Crypto::check_signature(sigHash, blockData.minerAddress.spendPublicKey, blockData.signature)) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockHash;
+      return false;
+    }
+
+    // check that reward goes to the miner adddress
+    AccountKeys minerAcc;
+    minerAcc.address = blockData.minerAddress;
+    minerAcc.viewSecretKey = blockData.minerViewKey;
+    uint64_t received = 0;
+    std::vector<size_t> outs;
+    if (!lookup_acc_outs(minerAcc, blockData.baseTransaction, outs, received)) {
+      logger(Logging::WARNING) << "Failed to lookup miner reward in block " << blockHash;
+      return false;
+    }
+
+    if (reward != received) {
+      logger(Logging::WARNING) << "Block reward mismatch for block " << blockHash
+        << ". Attached miner address only got " << m_currency.formatAmount(received)
+        << " of expected " << m_currency.formatAmount(reward);
+      return false;
+    }
   }
 
   block.height = static_cast<uint32_t>(m_blocks.size());
