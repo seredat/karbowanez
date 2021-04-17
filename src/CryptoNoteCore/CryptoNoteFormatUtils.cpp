@@ -559,9 +559,7 @@ bool get_block_longhash(cn_context &context, const Block& b, Hash& res) {
     cn_slow_hash(context, bd.data(), bd.size(), res);
   }
   else {
-    if (!y_slow_hash(bd.data(), bd.size(), res)) {
-      return false;
-    }
+    return false;
   }
   
   return true;

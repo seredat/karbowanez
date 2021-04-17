@@ -1248,24 +1248,23 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
     return get_block_longhash(context, b, res);
   }
 
-  BinaryArray bd;
-  if (!get_block_hashing_blob(b, bd)) {
+  BinaryArray pot;
+  if (!get_block_hashing_blob(b, pot)) {
     logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in getBlockLongHash";
     return false;
   }
 
   // Phase 1
 
-  Crypto::Hash hash_1;
+  Crypto::Hash hash_1, hash_2;
 
   // Hashing the current blockdata (preprocessing it)
-  cn_fast_hash(bd.data(), bd.size(), hash_1);
+  cn_fast_hash(pot.data(), pot.size(), hash_1);
   
   // Phase 2
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
-
   uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
   uint32_t maxHeight = std::min<uint32_t>(m_blocks.size(), currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
 
@@ -1294,13 +1293,18 @@ bool Blockchain::getBlockLongHash(Crypto::cn_context &context, const Block& b, C
       return false;
     }
 
-    bd.insert(std::end(bd), std::begin(ba), std::end(ba));
+    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
   }
 
   // Phase 3
 
   // stir the pot - hashing the 1 + 8 blocks as one continuous data
-  Crypto::extra_hashes[hash_1.data[0] & 3](bd.data(), bd.size(), reinterpret_cast<char *>(&res));
+  if (!Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2)) {
+    logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting Yespower hash";
+    return false;
+  }
+
+  res = hash_2;
 
   return true;
 }

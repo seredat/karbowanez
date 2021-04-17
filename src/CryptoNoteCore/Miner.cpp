@@ -285,7 +285,7 @@ namespace CryptoNote
       std::vector<std::future<void>> threads(nthreads);
       std::atomic<uint32_t> foundNonce;
       std::atomic<bool> found(false);
-      uint32_t startNonce = Crypto::rand<uint32_t>();
+      uint32_t startNonce = Random::randomValue<uint32_t>();
 
       for (unsigned i = 0; i < nthreads; ++i) {
         threads[i] = std::async(std::launch::async, [&, i]() {
