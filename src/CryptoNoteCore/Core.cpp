@@ -495,7 +495,7 @@ bool Core::get_block_template(Block& b, const AccountPublicAddress& adr, difficu
   {
     LockedBlockchainStorage blockchainLock(m_blockchain);
     height = m_blockchain.getCurrentBlockchainHeight();
-    diffic = m_blockchain.getDifficultyForNextBlock();
+    diffic = m_blockchain.getDifficultyForNextBlock(b.previousBlockHash);
     if (!(diffic)) {
       logger(ERROR, BRIGHT_RED) << "difficulty overhead.";
       return false;
@@ -1227,7 +1227,7 @@ std::error_code Core::executeLocked(const std::function<std::error_code()>& func
 }
 
 uint64_t Core::getNextBlockDifficulty() {
-  return m_blockchain.getDifficultyForNextBlock();
+  return m_blockchain.getDifficultyForNextBlock(get_tail_id());
 }
 
 uint64_t Core::getTotalGeneratedAmount() {
