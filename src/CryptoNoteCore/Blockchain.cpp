@@ -752,14 +752,18 @@ bool Blockchain::getTransactionHeight(const Crypto::Hash &txId, uint32_t& blockH
 }
 
 difficulty_type Blockchain::getDifficultyForNextBlock(const Crypto::Hash &prevHash) {
+  if (prevHash == NULL_HASH) {
+    return 1;
+  }
+
   std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
   std::vector<uint64_t> timestamps;
   std::vector<difficulty_type> cumulative_difficulties;
 
-  uint32_t height = (uint32_t)m_blocks.size();
-  uint8_t BlockMajorVersion = getBlockMajorVersionForHeight(static_cast<uint32_t>(height));
-  size_t need = std::min<size_t>(height - 1, static_cast<size_t>(m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion)));
-  size_t got = 0;
+  uint32_t height = static_cast<uint32_t>(m_blocks.size());
+  uint8_t BlockMajorVersion = getBlockMajorVersionForHeight(height);
+  uint32_t difficultyBlocksCount = std::min<uint32_t>(std::max<uint32_t>(height - 1, 1), m_currency.difficultyBlocksCountByBlockVersion(BlockMajorVersion));
+  uint32_t processed = 0;
 
   Crypto::Hash h = prevHash;
 
@@ -783,11 +787,11 @@ difficulty_type Blockchain::getDifficultyForNextBlock(const Crypto::Hash &prevHa
 
     timestamps.push_back(b.bl.timestamp);
     cumulative_difficulties.push_back(b.cumulative_difficulty);
-    got++;
+    processed++;
   
     h = b.bl.previousBlockHash;
 
-  } while (got < need);
+  } while (processed < difficultyBlocksCount);
 
   std::reverse(timestamps.begin(), timestamps.end());
   std::reverse(cumulative_difficulties.begin(), cumulative_difficulties.end());
