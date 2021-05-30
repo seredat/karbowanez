@@ -44,6 +44,7 @@ KRBD_RPC_IP="127.0.0.1"
 KRBD_RPC_PORT="32348"
 KRBD_LOG_LEVEL="2"
 KRBD_FEE_ADDRESS="Ke5tURH8PotZfvk3B444EtEu29PwtjTND4SBmw1NL7gd9gZ6y78F9cz4ZKepay2o2uH4HXu4poTUeJ4FyQMiaTukLKgrpLS"
+KRBD_FEE_AMOUNT="0.1"
 KRBD_VIEW_KEY=""
 
 KRBS_CONTROL="/usr/lib/karbo/krbs.sh"
@@ -164,7 +165,24 @@ service_init(){
         --rpc-bind-ip $KRBD_RPC_IP \
         --rpc-bind-port $KRBD_RPC_PORT \
         --fee-address $KRBD_FEE_ADDRESS \
+        --fee-amount $KRBD_FEE_AMOUNT \
         --view-key $KRBD_VIEW_KEY > /dev/null & echo $! > $RUN_DIR/KRBD.pid
+}
+
+# Function is ready
+service_is_ready(){
+  sleep 5
+  for i in $(seq 1 30); do
+    if [ -f $RUN_DIR/KRBD.pid ]; then
+      pid=$(sed 's/[^0-9]*//g' $RUN_DIR/KRBD.pid)
+      cpu_load=$(top -b -n 1 -d 1 -p $pid | grep $pid | sed 's/^\s//g' | sed 's/\s\+/\n/g' | sed -n 9p | sed 's/[^0-9,]*//g' | sed 's/,.*//g')
+      logger "-> Node load CPU: "$cpu_load
+      if [ "$cpu_load" -lt 5 ]; then
+        break
+      fi
+    fi
+    sleep 3
+  done
 }
 
 # Function start service
@@ -321,7 +339,7 @@ do_restart(){
   service_start
   if [ "$IS_KRBS" = "run" ]; then
     logger "DO RESTART: Simplewallet will be started again. Waiting for the node to be ready..."
-    sleep 15
+    service_is_ready
     logger "DO RESTART: starting Simplewallet service..."
     $KRBS_CONTROL --start > /dev/null
   fi
