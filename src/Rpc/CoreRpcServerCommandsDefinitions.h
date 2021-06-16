@@ -562,6 +562,7 @@ struct block_short_response {
   uint64_t cumulative_size;
   difficulty_type difficulty;
   uint64_t min_fee;
+  std::string miner;
 
   void serialize(ISerializer &s) {
     KV_MEMBER(timestamp)
@@ -571,6 +572,7 @@ struct block_short_response {
     KV_MEMBER(transactions_count)
     KV_MEMBER(difficulty)
     KV_MEMBER(min_fee)
+    KV_MEMBER(miner)
   }
 };
 
