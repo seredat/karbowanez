@@ -513,6 +513,14 @@ elseif(Boost_FOUND)
   message(STATUS "Found Boost Version: ${Boost_VERSION}")
 endif()
 
+# Force find_package(OpenSSL) to search the static library
+if (STATIC)
+	set (OPENSSL_USE_STATIC_LIBS ON)
+endif ()
+if (MSVC)
+	set(OPENSSL_MSVC_STATIC_RT ON)
+endif ()
+
 # We have to look for Homebrew OpenSSL a bit differently
 # Borrowed from https://github.com/tarantool/tarantool/commit/6eab201af1843f53a833c8928dc58fceffa08147
 if (APPLE)
@@ -547,13 +555,6 @@ if (OPENSSL_FOUND)
     include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
     message(STATUS "OpenSSL Found: ${OPENSSL_INCLUDE_DIR}")
     message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
-	
-	if (STATIC)
-		set (OPENSSL_USE_STATIC_LIBS ON)
-	endif ()
-	if (MSVC)
-		set(OPENSSL_MSVC_STATIC_RT ON)
-	endif ()
 else ()
     message(STATUS "OpenSSL Found: No... Skipping...")
 endif ()

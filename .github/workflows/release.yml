@@ -20,6 +20,9 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.0.2
 
+      - name: Install OpenSSL
+        run: choco install openssl
+
       - name: Install Boost
         shell: powershell
         run: |
@@ -114,7 +117,7 @@ jobs:
       - name: Build
         id: build
         run: |
-          sudo apt install -y libboost-all-dev
+          sudo apt-get update && sudo apt-get install -y libboost-all-dev
           build_folder="build/release"
           krb_ver=$(echo "$GITHUB_REF" | sed 's|refs/tags/||')
           release_name=Karbo-cli-ubuntu20.04-"$krb_ver"
