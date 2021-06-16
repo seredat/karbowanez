@@ -421,7 +421,18 @@ namespace CryptoNote
         }
         Crypto::Hash h = Crypto::cn_fast_hash(ba.data(), ba.size());
         try {
-          Crypto::generate_signature(h, m_mine_account.address.spendPublicKey, m_mine_account.spendSecretKey, b.signature);
+          Crypto::PublicKey txPublicKey = getTransactionPublicKeyFromExtra(b.baseTransaction.extra);
+          Crypto::KeyDerivation derivation;
+          if (!Crypto::generate_key_derivation(txPublicKey, m_mine_account.viewSecretKey, derivation)) {
+            logger(WARNING) << "failed to generate_key_derivation for block signature";
+            m_stop = true;
+          }
+          size_t outputIndex = b.nonce % b.baseTransaction.outputs.size();
+          Crypto::SecretKey ephSecKey;
+          Crypto::derive_secret_key(derivation, outputIndex, m_mine_account.spendSecretKey, ephSecKey);
+          Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(b.baseTransaction.outputs[outputIndex].target).key;
+
+          Crypto::generate_signature(h, ephPubKey, ephSecKey, b.signature);
         }
         catch (std::exception& e) {
           logger(WARNING) << "Signing block failed: " << e.what();
@@ -430,7 +441,6 @@ namespace CryptoNote
       }
 
       // step 2: get long hash
-
       Crypto::Hash pow;
       if (!m_stop) {
         if (!m_handler.get_block_long_hash(context, b, pow)) {

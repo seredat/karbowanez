@@ -209,8 +209,6 @@ void serialize(BlockDetails& block, ISerializer& serializer) {
   serializer(block.effectiveSizeMedian, "effectiveSizeMedian");
   serializer(block.penalty, "penalty");
   serializer(block.totalFeeAmount, "totalFeeAmount");
-  serializer(block.minerAddress, "minerAddress");
-  serializer(block.minerViewKey, "minerViewKey");
   serializer(block.minerSignature, "minerSignature");
   serializer(block.transactions, "transactions");
 }

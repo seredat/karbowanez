@@ -1553,10 +1553,6 @@ bool RpcServer::on_blocks_list_json(const COMMAND_RPC_GET_BLOCKS_LIST::request& 
     block_short.transactions_count = blk.transactionHashes.size() + 1;
     block_short.difficulty = blockDiff;
     block_short.min_fee = m_core.getMinimalFeeForHeight(i);
-    if (blk.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5)
-      block_short.miner = m_core.currency().accountAddressAsString(blk.minerAddress);
-    else
-      block_short.miner = "unknown";
 
     res.blocks.push_back(block_short);
 
@@ -1590,10 +1586,6 @@ bool RpcServer::on_alt_blocks_list_json(const COMMAND_RPC_GET_ALT_BLOCKS_LIST::r
       block_short.transactions_count = b.transactionHashes.size() + 1;
       block_short.difficulty = blockDiff;
       block_short.min_fee = m_core.getMinimalFeeForHeight(block_height);
-      if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5)
-        block_short.miner = m_core.currency().accountAddressAsString(b.minerAddress);
-      else
-        block_short.miner = "unknown";
 
       res.alt_blocks.push_back(block_short);
     }

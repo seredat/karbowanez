@@ -550,11 +550,6 @@ bool Core::get_block_template(Block& b, const AccountKeys& acc, difficulty_type&
     already_generated_coins = m_blockchain.getCoinsInCirculation();
   }
 
-  if (b.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    b.minerAddress = acc.address;
-    b.minerViewKey = acc.viewSecretKey;
-  }
-
   size_t txs_size;
   uint64_t fee;
   if (!m_mempool.fill_block_template(b, median_size, m_currency.maxBlockCumulativeSize(height), already_generated_coins, txs_size, fee)) {

@@ -165,8 +165,6 @@ struct BlockDetails {
   uint64_t effectiveSizeMedian = 0;
   double penalty = 0.0;
   uint64_t totalFeeAmount = 0;
-  std::string minerAddress;
-  Crypto::SecretKey minerViewKey;
   Crypto::Signature minerSignature;
   std::vector<TransactionDetails> transactions;
 };

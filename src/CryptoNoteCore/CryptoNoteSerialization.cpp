@@ -410,8 +410,6 @@ void serialize(Block& block, ISerializer& serializer) {
   serializeBlockHeader(block, serializer);
 
   if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    serializer(block.minerAddress, "miner_address");
-    serializer(block.minerViewKey, "miner_view_key");
     serializer(block.signature, "signature");
   }
 

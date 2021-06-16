@@ -2304,6 +2304,22 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     return false;
   }
 
+  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    // check block signature
+    BinaryArray ba;
+    if (!get_block_hashing_blob(blockData, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of block " << blockHash;
+      return false;
+    }
+    size_t outputIndex = blockData.nonce % blockData.baseTransaction.outputs.size();
+    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
+    Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(blockData.baseTransaction.outputs[outputIndex].target).key;
+    if (!Crypto::check_signature(sigHash, ephPubKey, blockData.signature)) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockHash;
+      return false;
+    }
+  }
+
   Crypto::Hash minerTransactionHash = getObjectHash(blockData.baseTransaction);
 
   BlockEntry block;
@@ -2355,45 +2371,6 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     bvc.m_verification_failed = true;
     popTransactions(block, minerTransactionHash);
     return false;
-  }
-
-  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
-    // check miner account
-    Crypto::PublicKey pub;
-    if (!secret_key_to_public_key(blockData.minerViewKey, pub) && pub != blockData.minerAddress.viewPublicKey) {
-      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Miner address doesn't match miner's view key.";
-      return false;
-    }
-
-    // check block signature
-    BinaryArray ba;
-    if (!get_block_hashing_blob(blockData, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of block " << blockHash;
-      return false;
-    }
-    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
-    if (!Crypto::check_signature(sigHash, blockData.minerAddress.spendPublicKey, blockData.signature)) {
-      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockHash;
-      return false;
-    }
-
-    // check that reward goes to the miner adddress
-    AccountKeys minerAcc;
-    minerAcc.address = blockData.minerAddress;
-    minerAcc.viewSecretKey = blockData.minerViewKey;
-    uint64_t received = 0;
-    std::vector<size_t> outs;
-    if (!lookup_acc_outs(minerAcc, blockData.baseTransaction, outs, received)) {
-      logger(Logging::WARNING) << "Failed to lookup miner reward in block " << blockHash;
-      return false;
-    }
-
-    if (reward != received) {
-      logger(Logging::WARNING) << "Block reward mismatch for block " << blockHash
-        << ". Attached miner address only got " << m_currency.formatAmount(received)
-        << " of expected " << m_currency.formatAmount(reward);
-      return false;
-    }
   }
 
   block.height = static_cast<uint32_t>(m_blocks.size());

@@ -186,12 +186,8 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
     blockDetails.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
   }
 
-  blockDetails.minerAddress = boost::value_initialized<std::string>();
-  blockDetails.minerViewKey = boost::value_initialized<Crypto::SecretKey>();
   blockDetails.minerSignature = boost::value_initialized<Crypto::Signature>();
   if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
-    blockDetails.minerAddress = getAccountAddressAsStr(CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX, block.minerAddress);
-    blockDetails.minerViewKey = block.minerViewKey;
     blockDetails.minerSignature = block.signature;
   }
 
