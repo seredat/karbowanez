@@ -1264,7 +1264,6 @@ bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b
     uint32_t maxHeight = std::min<uint32_t>(m_blocks.size() - 1, currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
 
     for (uint32_t i = 0; i < ITER; i++) {
-
       cn_fast_hash(pot.data(), pot.size(), hash_1);
 
       for (uint8_t j = 1; j <= 8; j++) {
@@ -1293,12 +1292,9 @@ bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b
 
         pot.insert(std::end(pot), std::begin(ba), std::end(ba));
       }
-
     }
-
   }
 
-  // stir the pot - hashing the 1 + 8 blocks as one continuous data
   if (!Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2)) {
     logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting Yespower hash";
     return false;
