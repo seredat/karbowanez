@@ -1281,10 +1281,10 @@ bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b
 
         uint32_t height_j = n % maxHeight;
 
-        const Block& bi = m_blocks[height_j].bl;
+        const Block& bj = m_blocks[height_j].bl;
 
         BinaryArray ba;
-        if (!get_block_hashing_blob(bi, ba)) {
+        if (!get_block_hashing_blob(bj, ba)) {
           logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " 
                                     << j << " at height " << height_j;
           return false;
