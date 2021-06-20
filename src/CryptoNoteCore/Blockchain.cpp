@@ -1265,35 +1265,38 @@ bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b
 
   // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
   // and throw them into the pot too
-  uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
-  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size() - 1, currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
-
-  for (uint8_t i = 1; i <= 8; i++) {
-    uint8_t chunk[4] = {
-      hash_1.data[i * 4 - 4], 
-      hash_1.data[i * 4 - 3], 
-      hash_1.data[i * 4 - 2], 
-      hash_1.data[i * 4 - 1]
-    };
-    
-    uint32_t n = (chunk[0] << 24) |
-                 (chunk[1] << 16) |
-                 (chunk[2] << 8)  |
-                 (chunk[3]);
-
-    uint32_t height_i = n % maxHeight;
-
+  {
     std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
-    Block bi = m_blocks[height_i].bl;
-    
-    BinaryArray ba;
-    if (!get_block_hashing_blob(bi, ba)) {
-      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " 
-                                << i << " at height " << height_i;
-      return false;
-    }
 
-    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+    uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
+    uint32_t maxHeight = std::min<uint32_t>(m_blocks.size() - 1, currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
+
+    for (uint8_t i = 1; i <= 8; i++) {
+      uint8_t chunk[4] = {
+        hash_1.data[i * 4 - 4], 
+        hash_1.data[i * 4 - 3], 
+        hash_1.data[i * 4 - 2], 
+        hash_1.data[i * 4 - 1]
+      };
+    
+      uint32_t n = (chunk[0] << 24) |
+                   (chunk[1] << 16) |
+                   (chunk[2] << 8)  |
+                   (chunk[3]);
+
+      uint32_t height_i = n % maxHeight;
+
+      Block bi = m_blocks[height_i].bl;
+    
+      BinaryArray ba;
+      if (!get_block_hashing_blob(bi, ba)) {
+        logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " 
+                                  << i << " at height " << height_i;
+        return false;
+      }
+
+      pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+    }
   }
 
   // Phase 3
