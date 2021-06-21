@@ -427,10 +427,9 @@ namespace CryptoNote
             logger(WARNING) << "failed to generate_key_derivation for block signature";
             m_stop = true;
           }
-          size_t outputIndex = b.nonce % b.baseTransaction.outputs.size();
           Crypto::SecretKey ephSecKey;
-          Crypto::derive_secret_key(derivation, outputIndex, m_mine_account.spendSecretKey, ephSecKey);
-          Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(b.baseTransaction.outputs[outputIndex].target).key;
+          Crypto::derive_secret_key(derivation, 0, m_mine_account.spendSecretKey, ephSecKey);
+          Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(b.baseTransaction.outputs[0].target).key;
 
           Crypto::generate_signature(h, ephPubKey, ephSecKey, b.signature);
         }

@@ -1123,6 +1123,12 @@ bool Blockchain::prevalidate_miner_transaction(const Block& b, uint32_t height) 
     return false;
   }
 
+  if (b.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5 && !(b.baseTransaction.outputs.size() == 1)) {
+    logger(ERROR, BRIGHT_RED)
+      << "Only 1 output in coinbase transaction allowed";
+    return false;
+  }
+
   if (!(b.baseTransaction.signatures.empty())) {
     logger(ERROR, BRIGHT_RED)
       << "Coinbase transaction in the block shouldn't have signatures";
@@ -2307,9 +2313,8 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
       logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of block " << blockHash;
       return false;
     }
-    size_t outputIndex = blockData.nonce % blockData.baseTransaction.outputs.size();
     Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
-    Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(blockData.baseTransaction.outputs[outputIndex].target).key;
+    Crypto::PublicKey ephPubKey = boost::get<KeyOutput>(blockData.baseTransaction.outputs[0].target).key;
     if (!Crypto::check_signature(sigHash, ephPubKey, blockData.signature)) {
       logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockHash;
       return false;
