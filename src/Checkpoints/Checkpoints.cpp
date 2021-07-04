@@ -158,7 +158,7 @@ bool Checkpoints::load_checkpoints_from_dns()
   std::string domain(CryptoNote::DNS_CHECKPOINTS_HOST);
   std::vector<std::string>records;
   bool res = true;
-
+  auto start = std::chrono::steady_clock::now();
   logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;
 
   try {
@@ -172,7 +172,7 @@ bool Checkpoints::load_checkpoints_from_dns()
 
     {
       std::unique_lock<std::mutex> l(m);
-      if (cv.wait_for(l, std::chrono::milliseconds(1000)) == std::cv_status::timeout) {
+      if (cv.wait_for(l, std::chrono::milliseconds(400)) == std::cv_status::timeout) {
         logger(Logging::DEBUGGING) << "Timeout lookup DNS checkpoint records from " << domain;
         return false;
       }
@@ -187,6 +187,9 @@ bool Checkpoints::load_checkpoints_from_dns()
     logger(Logging::DEBUGGING) << e.what();
     return false;
   }
+
+  auto dur = std::chrono::steady_clock::now() - start;
+  logger(Logging::DEBUGGING) << "DNS query time: " << std::chrono::duration_cast<std::chrono::milliseconds>(dur).count() << " ms";
 
   for (const auto& record : records) {
     uint32_t height;
