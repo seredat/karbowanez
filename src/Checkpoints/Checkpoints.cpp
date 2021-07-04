@@ -28,6 +28,9 @@
 #include <sstream>
 #include <vector>
 #include <iterator>
+#include <chrono>
+#include <thread>
+#include <condition_variable>
 
 #include "Checkpoints.h"
 #include "../CryptoNoteConfig.h"
@@ -38,7 +41,9 @@ using namespace Logging;
 
 namespace CryptoNote {
 //---------------------------------------------------------------------------
-Checkpoints::Checkpoints(Logging::ILogger &log) : logger(log, "checkpoints") {}
+Checkpoints::Checkpoints(Logging::ILogger &log) : logger(log, "checkpoints") {
+  m_mutex = new std::mutex();
+}
 //---------------------------------------------------------------------------
 bool Checkpoints::add_checkpoint(uint32_t height, const std::string &hash_str) {
   Crypto::Hash h = NULL_HASH;
@@ -147,13 +152,40 @@ std::vector<uint32_t> Checkpoints::getCheckpointHeights() const {
 //---------------------------------------------------------------------------
 bool Checkpoints::load_checkpoints_from_dns()
 {
+  std::lock_guard<std::mutex> lock(*m_mutex);
+  std::mutex m;
+  std::condition_variable cv;
   std::string domain(CryptoNote::DNS_CHECKPOINTS_HOST);
   std::vector<std::string>records;
+  bool res = true;
 
-  logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;
+  logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
 
-  if (!Common::fetch_dns_txt(domain, records)) {
-    logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " << domain;
+  try {
+    std::thread t([&cv, &domain, &res, &records]()
+    {
+      res = Common::fetch_dns_txt(domain, records);
+      cv.notify_one();
+    });
+
+    t.detach();
+
+    {
+      std::unique_lock<std::mutex> l(m);
+      if (cv.wait_for(l, std::chrono::milliseconds(1000)) == std::cv_status::timeout) {
+        logger(Logging::INFO) << "Timeout lookup DNS checkpoint records from " << domain;
+        return false;
+      }
+    }
+
+    if (!res) {
+      logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " + domain;
+      return false;
+    }
+  }
+  catch (std::runtime_error& e) {
+    logger(Logging::INFO) << e.what();
+    return false;
   }
 
   for (const auto& record : records) {
