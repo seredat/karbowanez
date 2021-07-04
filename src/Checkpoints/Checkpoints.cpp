@@ -159,7 +159,7 @@ bool Checkpoints::load_checkpoints_from_dns()
   std::vector<std::string>records;
   bool res = true;
 
-  logger(Logging::INFO) << "Fetching DNS checkpoint records from " << domain;
+  logger(Logging::DEBUGGING) << "Fetching DNS checkpoint records from " << domain;
 
   try {
     std::thread t([&cv, &domain, &res, &records]()
@@ -173,18 +173,18 @@ bool Checkpoints::load_checkpoints_from_dns()
     {
       std::unique_lock<std::mutex> l(m);
       if (cv.wait_for(l, std::chrono::milliseconds(1000)) == std::cv_status::timeout) {
-        logger(Logging::INFO) << "Timeout lookup DNS checkpoint records from " << domain;
+        logger(Logging::DEBUGGING) << "Timeout lookup DNS checkpoint records from " << domain;
         return false;
       }
     }
 
     if (!res) {
-      logger(Logging::INFO) << "Failed to lookup DNS checkpoint records from " + domain;
+      logger(Logging::DEBUGGING) << "Failed to lookup DNS checkpoint records from " + domain;
       return false;
     }
   }
   catch (std::runtime_error& e) {
-    logger(Logging::INFO) << e.what();
+    logger(Logging::DEBUGGING) << e.what();
     return false;
   }
 
@@ -199,7 +199,7 @@ bool Checkpoints::load_checkpoints_from_dns()
     char c;
     if (del == std::string::npos) continue;
     if ((ss.fail() || ss.get(c)) || !Common::podFromHex(hash_str, hash)) {
-      logger(Logging::INFO) << "Failed to parse DNS checkpoint record: " << record;
+      logger(Logging::DEBUGGING) << "Failed to parse DNS checkpoint record: " << record;
       continue;
     }
 
