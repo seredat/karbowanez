@@ -35,6 +35,8 @@
 #include "TransactionExtra.h"
 #include "parallel_hashmap/phmap_dump.h"
 
+#include "../crypto/hash.h"
+
 using namespace Logging;
 using namespace Common;
 
@@ -1225,6 +1227,88 @@ uint64_t Blockchain::getCurrentCumulativeBlocksizeLimit() {
   return m_current_block_cumul_sz_limit;
 }
 
+bool Blockchain::checkProofOfWork(Crypto::cn_context& context, const Block& block, difficulty_type currentDiffic, Crypto::Hash& proofOfWork) {
+  if (block.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return m_currency.checkProofOfWork(context, block, currentDiffic, proofOfWork);
+  }
+
+  if (!get_block_long_hash(context, block, proofOfWork)) {
+    return false;
+  }
+
+  if (!check_hash(proofOfWork, currentDiffic)) {
+	  return false;
+  }
+
+  return true;
+}
+
+bool Blockchain::get_block_long_hash(Crypto::cn_context &context, const Block& b, Crypto::Hash& res) {
+  if (b.majorVersion < CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    return get_block_longhash(context, b, res);
+  }
+
+  BinaryArray pot;
+  if (!get_signed_block_hashing_blob(b, pot)) {
+    logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob in get_block_long_hash";
+    return false;
+  }
+
+  // Phase 1
+
+  Crypto::Hash hash_1, hash_2;
+
+  // Hashing the current blockdata (preprocessing it)
+  cn_fast_hash(pot.data(), pot.size(), hash_1);
+  
+  // Phase 2
+
+  // Get the corresponding 8 blocks from blockchain based on preparatory hash_1
+  // and throw them into the pot too
+  uint32_t currentHeight = boost::get<BaseInput>(b.baseTransaction.inputs[0]).blockIndex;
+  uint32_t maxHeight = std::min<uint32_t>(m_blocks.size() - 1, currentHeight - 1 - m_currency.minedMoneyUnlockWindow());
+
+  for (uint8_t i = 1; i <= 8; i++) {
+    uint8_t chunk[4] = {
+      hash_1.data[i * 4 - 4], 
+      hash_1.data[i * 4 - 3], 
+      hash_1.data[i * 4 - 2], 
+      hash_1.data[i * 4 - 1]
+    };
+    
+    uint32_t n = (chunk[0] << 24) |
+                 (chunk[1] << 16) |
+                 (chunk[2] << 8)  |
+                 (chunk[3]);
+
+    uint32_t height_i = n % maxHeight;
+
+    std::lock_guard<decltype(m_blockchain_lock)> lk(m_blockchain_lock);
+    Block bi = m_blocks[height_i].bl;
+    
+    BinaryArray ba;
+    if (!get_block_hashing_blob(bi, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of additional block " 
+                                << i << " at height " << height_i;
+      return false;
+    }
+
+    pot.insert(std::end(pot), std::begin(ba), std::end(ba));
+  }
+
+  // Phase 3
+
+  // stir the pot - hashing the 1 + 8 blocks as one continuous data
+  if (!Crypto::y_slow_hash(pot.data(), pot.size(), hash_1, hash_2)) {
+    logger(Logging::ERROR, Logging::BRIGHT_RED) << "Error getting Yespower hash";
+    return false;
+  }
+
+  res = hash_2;
+
+  return true;
+}
+
 bool Blockchain::complete_timestamps_vector(uint8_t blockMajorVersion, uint64_t start_top_height, std::vector<uint64_t>& timestamps) {
   if (timestamps.size() >= m_currency.timestampCheckWindow(blockMajorVersion))
     return true;
@@ -1255,7 +1339,8 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
 
   // get fresh checkpoints from DNS - the best we have right now
 #ifndef __ANDROID__
-  m_checkpoints.load_checkpoints_from_dns();
+//  if (!m_currency.isTestnet())
+//    m_checkpoints.load_checkpoints_from_dns();
 #endif
 
   if (!m_checkpoints.is_alternative_block_allowed(getCurrentBlockchainHeight(), block_height)) {
@@ -1358,10 +1443,10 @@ bool Blockchain::handle_alternative_block(const Block& b, const Crypto::Hash& id
     if (!(current_diff)) { logger(ERROR, BRIGHT_RED) << "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!"; return false; }
     Crypto::Hash proof_of_work = NULL_HASH;
     // Always check PoW for alternative blocks
-    if (!m_currency.checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, bei.bl, current_diff, proof_of_work)) {
       logger(INFO, BRIGHT_RED) <<
         "Block with id: " << id
-        << ENDL << " for alternative chain, have not enough proof of work: " << proof_of_work
+        << ENDL << " for alternative chain, has not enough proof of work: " << proof_of_work
         << ENDL << " expected difficulty: " << current_diff;
       bvc.m_verification_failed = true;
       return false;
@@ -2202,7 +2287,7 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
       return false;
     }
   } else {
-    if (!m_currency.checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
+    if (!checkProofOfWork(m_cn_context, blockData, currentDifficulty, proof_of_work)) {
       logger(INFO, BRIGHT_WHITE) <<
         "Block " << blockHash << ", has too weak proof of work: " << proof_of_work << ", expected difficulty: " << currentDifficulty;
       bvc.m_verification_failed = true;
@@ -2270,6 +2355,45 @@ bool Blockchain::pushBlock(const Block& blockData, const std::vector<Transaction
     bvc.m_verification_failed = true;
     popTransactions(block, minerTransactionHash);
     return false;
+  }
+
+  if (blockData.majorVersion >= CryptoNote::BLOCK_MAJOR_VERSION_5) {
+    // check miner account
+    Crypto::PublicKey pub;
+    if (!secret_key_to_public_key(blockData.minerViewKey, pub) && pub != blockData.minerAddress.viewPublicKey) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Miner address doesn't match miner's view key.";
+      return false;
+    }
+
+    // check block signature
+    BinaryArray ba;
+    if (!get_block_hashing_blob(blockData, ba)) {
+      logger(ERROR, BRIGHT_RED) << "Failed to get_block_hashing_blob of block " << blockHash;
+      return false;
+    }
+    Crypto::Hash sigHash = Crypto::cn_fast_hash(ba.data(), ba.size());
+    if (!Crypto::check_signature(sigHash, blockData.minerAddress.spendPublicKey, blockData.signature)) {
+      logger(Logging::WARNING, Logging::BRIGHT_RED) << "Signature mismatch in block " << blockHash;
+      return false;
+    }
+
+    // check that reward goes to the miner adddress
+    AccountKeys minerAcc;
+    minerAcc.address = blockData.minerAddress;
+    minerAcc.viewSecretKey = blockData.minerViewKey;
+    uint64_t received = 0;
+    std::vector<size_t> outs;
+    if (!lookup_acc_outs(minerAcc, blockData.baseTransaction, outs, received)) {
+      logger(Logging::WARNING) << "Failed to lookup miner reward in block " << blockHash;
+      return false;
+    }
+
+    if (reward != received) {
+      logger(Logging::WARNING) << "Block reward mismatch for block " << blockHash
+        << ". Attached miner address only got " << m_currency.formatAmount(received)
+        << " of expected " << m_currency.formatAmount(reward);
+      return false;
+    }
   }
 
   block.height = static_cast<uint32_t>(m_blocks.size());

@@ -23,6 +23,7 @@
 
 #include "Common/StringTools.h"
 #include "CryptoNoteCore/CryptoNoteFormatUtils.h"
+#include "CryptoNoteCore/CryptoNoteBasicImpl.h"
 #include "CryptoNoteCore/CryptoNoteTools.h"
 #include "CryptoNoteCore/TransactionExtra.h"
 #include "CryptoNoteConfig.h"
@@ -117,7 +118,7 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
   blockDetails.proofOfWork = boost::value_initialized<Crypto::Hash>();
   if (calculate_pow) {
     Crypto::cn_context context;
-    if (!get_block_longhash(context, block, blockDetails.proofOfWork)) {
+    if (!m_core.get_block_long_hash(context, block, blockDetails.proofOfWork)) {
       return false;
     }
   }
@@ -185,6 +186,14 @@ bool BlockchainExplorerDataBuilder::fillBlockDetails(const Block &block, BlockDe
     blockDetails.penalty = static_cast<double>(maxReward - currentReward) / static_cast<double>(maxReward);
   }
 
+  blockDetails.minerAddress = boost::value_initialized<std::string>();
+  blockDetails.minerViewKey = boost::value_initialized<Crypto::SecretKey>();
+  blockDetails.minerSignature = boost::value_initialized<Crypto::Signature>();
+  if (block.majorVersion >= BLOCK_MAJOR_VERSION_5) {
+    blockDetails.minerAddress = getAccountAddressAsStr(CryptoNote::parameters::CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX, block.minerAddress);
+    blockDetails.minerViewKey = block.minerViewKey;
+    blockDetails.minerSignature = block.signature;
+  }
 
   blockDetails.transactions.reserve(block.transactionHashes.size() + 1);
   TransactionDetails transactionDetails;
