@@ -19,7 +19,6 @@
 
 #pragma once
 #include <map>
-#include <mutex>
 #include <CryptoNoteCore/CryptoNoteBasicImpl.h>
 #include <Logging/LoggerRef.h>
 
@@ -44,6 +43,5 @@ namespace CryptoNote
   private:
     std::map<uint32_t, Crypto::Hash> m_points;
     Logging::LoggerRef logger;
-    mutable std::mutex * m_mutex;
   };
 }
