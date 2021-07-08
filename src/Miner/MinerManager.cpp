@@ -234,7 +234,7 @@ BlockMiningParameters MinerManager::requestMiningParameters(System::Dispatcher& 
     HttpClient client(dispatcher, daemonHost, daemonPort, false);
 
     COMMAND_RPC_GETBLOCKTEMPLATE::request request;
-    request.wallet_address = miningAddress;
+    //request.wallet_address = miningAddress;
     request.reserve_size = 0;
 
     COMMAND_RPC_GETBLOCKTEMPLATE::response response;

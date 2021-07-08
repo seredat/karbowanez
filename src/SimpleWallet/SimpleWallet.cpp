@@ -1724,7 +1724,11 @@ bool simple_wallet::change_password(const std::vector<std::string>& args) {
 
 bool simple_wallet::start_mining(const std::vector<std::string>& args) {
   COMMAND_RPC_START_MINING::request req;
-  req.miner_address = m_wallet->getAddress();
+
+  AccountKeys acc;
+  m_wallet->getAccountKeys(acc);
+  req.miner_spend_key = Common::podToHex(acc.spendSecretKey);
+  req.miner_view_key = Common::podToHex(acc.viewSecretKey);
 
   bool ok = true;
   size_t max_mining_threads_count = (std::max)(std::thread::hardware_concurrency(), static_cast<unsigned>(2));
