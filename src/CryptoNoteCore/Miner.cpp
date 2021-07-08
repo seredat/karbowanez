@@ -1,4 +1,5 @@
 // Copyright (c) 2012-2016, The CryptoNote developers, The Bytecoin developers
+// Copyright (c) 2016-2020, The Karbo developers
 //
 // This file is part of Karbo.
 //
@@ -157,8 +158,8 @@ namespace CryptoNote
 
       if(m_do_print_hashrate) {
         uint64_t total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), static_cast<uint64_t>(0));
-        float hr = static_cast<float>(total_hr) / static_cast<float>(m_last_hash_rates.size()) / static_cast<float>(1000);
-        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << " kH/s" << "        \r";
+        float hr = static_cast<float>(total_hr) / static_cast<float>(m_last_hash_rates.size());
+        std::cout << "Hashrate: " << std::setprecision(2) << std::fixed << hr << " H/s" << "        \r";
       }
     }
     
